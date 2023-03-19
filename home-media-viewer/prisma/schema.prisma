@@ -1,0 +1,90 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+//  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+enum Status {
+  Deleted
+  Active
+}
+
+model User {
+  id        String      @id @default(uuid())
+  status    Status      @default(Active)
+  email     String      @unique
+  name      String
+  password  String
+  albums    Album[]
+}
+
+enum AlbumSourceType {
+    File
+    Ftp
+}
+
+model Album {
+  id                String              @id @default(uuid())
+  status            Status              @default(Active)
+  name              String
+  sourceType        AlbumSourceType
+  connectionString  String              @db.Text
+  basePath          String              @db.Text
+  users             User[]
+  files             File[]
+}
+
+model File {
+    id              String              @id @default(uuid())
+    status          Status              @default(Active)
+    path            String              @db.Text
+    name            String
+    extension       String
+    createdAt       DateTime
+    modifiedAt      DateTime
+    size            Int
+    hash            String?
+    albumId         String
+    album           Album               @relation(fields: [albumId], references: [id])
+    metas           FileMeta[]
+
+    @@index([extension])
+    @@index([name, extension])
+}
+
+enum FileMetaType {
+    Int
+    Float
+    String
+    DateTime
+    Location
+}
+
+model FileMeta {
+    id              String              @id @default(uuid())
+    fileId          String
+    file            File                @relation(fields: [fileId], references: [id])
+    metaKey         String
+    type            FileMetaType
+    intValue        Int?
+    floatValue      Float?
+    stringValue     String?             @db.Text
+    dateValue       DateTime?
+    latitude        Float?
+    longitude       Float?
+    
+    @@index([fileId])
+    @@index([metaKey])
+    @@index([metaKey, intValue])
+    @@index([metaKey, floatValue])
+    @@index([metaKey, dateValue])
+    @@index([metaKey, latitude])
+    @@index([metaKey, longitude])
+}

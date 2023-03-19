@@ -36,10 +36,12 @@ services:
       context: .
     user: "node"
     working_dir: /home/node/app
+    command: "npm run dev"
     depends_on:
       - dev-db
     environment:
       DATABASE_URL: ${DATABASE_URL}
+      NODE_ENV: development
     volumes:
       - ./home-media-viewer:/home/node/app
       - ./static:${APP_ALBUM_ROOT_PATH}

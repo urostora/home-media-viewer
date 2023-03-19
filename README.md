@@ -21,5 +21,7 @@ Install npm packages
 
 Prisma commands
 `docker-compose run --rm dependencies bash -c "npx prisma ...."`
+
 `docker-compose run --rm dependencies bash -c "npx prisma migrate dev --name=init"`
+
 `docker-compose run --rm dependencies bash -c "npx prisma db push"`
