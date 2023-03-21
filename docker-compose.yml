@@ -30,14 +30,16 @@ services:
       - home-media-dev-network
 
   app:
+    image: "node:18-alpine"
     container_name: media-viewer-dev-app
-    build:
-      dockerfile: ./docker/dev/app/Dockerfile
-      context: .
+    # build:
+    #   dockerfile: ./docker/dev/app/Dockerfile
+    #   context: .
     user: "node"
     working_dir: /home/node/app
     command: "npm run dev"
     depends_on:
+      - dependencies
       - dev-db
     environment:
       DATABASE_URL: ${DATABASE_URL}
