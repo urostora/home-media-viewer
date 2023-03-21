@@ -4,6 +4,10 @@ Docker-based project provides web access to media files in our storage.
 
 ## Usage
 
+### Prerequests
+
+This project requires only Docker to run.
+
 ### Run developer environment
 
 #### Before first use run these
