@@ -1,3 +1,4 @@
+import { EntityType, GeneralEntityListResponse, GeneralMutationResponse, GeneralResponse } from '@/types/api/generalTypes';
 import type { NextApiRequest, NextApiResponse } from 'next'
 
 export function getRequestBodyObject (req: NextApiRequest, res?: NextApiResponse): object | null {
@@ -18,4 +19,46 @@ export function getRequestBodyObject (req: NextApiRequest, res?: NextApiResponse
     }
 
     return ret;
+}
+
+export function getEntityEditRequestBodyObject (req: NextApiRequest, res?: NextApiResponse): EntityType | null {
+    const requestObject: any = getRequestBodyObject(req, res);
+
+    if (requestObject == null) {
+        return null;
+    }
+
+    if (typeof (requestObject.id ?? null) !== 'string') {
+        if (res != null) {
+            res.status(400).end('Missing parameter "id"');
+        }
+    }
+
+    return requestObject;
+}
+
+export function getApiResponse(parameters: any = {}): GeneralResponse {
+  const now = new Date();
+    const ret: GeneralMutationResponse = {
+        date: `${now.getFullYear()}.${('0' + (now.getMonth() + 1)).substring(-2)}.${('0' + now.getDate()).substring(-2)} ${('0' + now.getHours()).substring(-2)}:${('0' + now.getMinutes()).substring(-2)}:${('0' + now.getSeconds()).substring(-2)}`,
+        ok: parameters.ok ?? true,
+    };
+
+    if (typeof (parameters.error ?? null) === 'string') {
+      ret.error = parameters.error;
+    }
+
+    if (typeof (parameters.id ?? null) === 'string') {
+      ret.id = parameters.id;
+    }
+
+    return ret;
+}
+
+export function getApiResponseEntityList(parameters: any = {}, data: Array<any>, elementCount: number = 0): GeneralEntityListResponse<any> {
+  return {
+    ...getApiResponse(parameters),
+    data,
+    count: elementCount
+  };
 }

@@ -1,8 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { Prisma, PrismaClient } from '@prisma/client'
 
-import { getRequestBodyObject } from '../../../utils/apiHelpers'
-import { UserSearchType } from '@/types/api/userTypes';
+import { getRequestBodyObject, getEntityEditRequestBodyObject, getApiResponse, getApiResponseEntityList } from '@/utils/apiHelpers'
+import { UserEditType, UserSearchType } from '@/types/api/userTypes';
+import { addUser, checkEditUserData, updateUser } from '@/utils/userHelper';
 
 const prisma = new PrismaClient()
 
@@ -16,28 +17,65 @@ export default async function handler(
   switch (method) {
     case 'POST':
       // search User
-      const requestData: UserSearchType | null = getRequestBodyObject(req, res);
-      if (requestData == null) {
+      const postData: UserSearchType | null = getRequestBodyObject(req, res);
+      if (postData == null) {
         return;
       }
 
       const filter: Prisma.UserWhereInput = {
-        id: requestData.id ?? undefined,
-        name: requestData.name ?? undefined,
-        email: requestData.email ?? undefined,
+        id: postData.id ?? undefined,
+        name: postData.name ?? undefined,
+        email: postData.email ?? undefined,
       };
 
-      res.status(200).json(await prisma.user.findMany({
-        where: filter,
-        take: requestData.take ?? 10,
-        skip: requestData.skip ?? 0,
-      }));
+
+
+      const results = await prisma.$transaction([
+        prisma.user.count({ where: filter }),
+        prisma.user.findMany({
+          where: filter,
+          take: postData.take ?? 10,
+          skip: postData.skip ?? 0,
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          }
+        })
+      ]);
+
+      res.status(200).json(getApiResponseEntityList({}, results[1], results[0]) );
       break
-    // case 'PUT':
-    //   // Update or create data in your database
-    //   res.status(200).json({ id, name: name || `User ${id}` })
-    //   break
-    // case 'DELETE':
+    case 'PUT':
+      // Update or create data in your database
+      const putData: UserEditType | null = getRequestBodyObject(req, res);
+      if (putData == null) {
+        return;
+      }
+
+      const { id = null } = putData;
+      if (id == null) {
+        // add user
+        try {
+          const userAdded = await addUser(putData);
+
+          res.status(200).json(getApiResponse({ id: userAdded.id }));
+        } catch (e) {
+          res.status(400).end(`${e}`);
+        }
+
+      } else {
+        // edit user
+        try {
+          await updateUser(putData);
+          res.status(200).json(getApiResponse({ id }));
+        } catch (e) {
+          res.status(400).end(`${e}`);
+        }
+      }
+
+      break
+    case 'DELETE':
 
     default:
       res.setHeader('Allow', ['POST', 'PUT'])

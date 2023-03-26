@@ -1,3 +1,19 @@
+
+export interface GeneralResponse {
+    date: string,
+    ok: boolean,
+    error?: string,
+}
+
+export interface GeneralEntityListResponse<T> extends GeneralResponse {
+    count: number,
+    data: Array<T>
+}
+
+export interface GeneralMutationResponse extends GeneralResponse {
+    id?: string
+}
+
 export interface GeneralSearchType {
     id?: string,
     take?: number,
@@ -13,7 +29,23 @@ export interface StatusSearchType extends IdSearchType {
 }
 
 export enum Status {
-    Active,
-    Deleted,
-    Disabled,
+    Active = 'Active',
+    Deleted = 'Deleted',
+    Disabled = 'Disabled',
+}
+
+export interface EntityType {
+    id: string,
+}
+
+export interface EntityWithStatusType extends EntityType {
+    status: Status,
+}
+
+export interface EditEntityType {
+    id?: string,
+}
+
+export interface EditEntityWithStatusType extends EditEntityType {
+    status?: Status,
 }
