@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { PrismaClient } from '@prisma/client'
 import { STATUS_CODES } from 'http';
+import { getApiResponseEntityList } from '@/utils/apiHelpers';
 
 const prisma = new PrismaClient()
 
@@ -35,5 +36,5 @@ export default async function handler(
             status: true,
         }});
         
-    res.status(200).json(data)
+    res.status(200).json(getApiResponseEntityList({}, data));
 }
