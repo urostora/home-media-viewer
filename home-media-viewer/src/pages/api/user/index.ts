@@ -27,7 +27,7 @@ export default async function handler(
         id: postData.id ?? undefined,
         name: postData.name ?? undefined,
         email: postData.email ?? undefined,
-        status: postData.status ?? undefined,
+        status: postData.status ?? { in: [ 'Active', 'Disabled' ] },
       };
 
       const results = await prisma.$transaction([
