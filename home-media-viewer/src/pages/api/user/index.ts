@@ -1,9 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { Prisma, PrismaClient } from '@prisma/client'
 
-import { getRequestBodyObject, getEntityEditRequestBodyObject, getApiResponse, getApiResponseEntityList } from '@/utils/apiHelpers'
+import { getRequestBodyObject, getEntityTypeRequestBodyObject, getApiResponse, getApiResponseEntityList } from '@/utils/apiHelpers'
 import { UserEditType, UserSearchType } from '@/types/api/userTypes';
-import { addUser, checkEditUserData, updateUser } from '@/utils/userHelper';
+import { addUser, deleteUser, updateUser } from '@/utils/userHelper';
+import { EntityType } from '@/types/api/generalTypes';
 
 const prisma = new PrismaClient()
 
@@ -26,9 +27,8 @@ export default async function handler(
         id: postData.id ?? undefined,
         name: postData.name ?? undefined,
         email: postData.email ?? undefined,
+        status: postData.status ?? undefined,
       };
-
-
 
       const results = await prisma.$transaction([
         prisma.user.count({ where: filter }),
@@ -40,6 +40,7 @@ export default async function handler(
             id: true,
             name: true,
             email: true,
+            status: true,
           }
         })
       ]);
@@ -76,7 +77,20 @@ export default async function handler(
 
       break
     case 'DELETE':
+      // Update or create data in your database
+      const deleteData: EntityType | null = getEntityTypeRequestBodyObject(req, res);
+      if (deleteData == null) {
+        return;
+      }
 
+      const { id: idToDelete } = deleteData;
+
+      try {
+        await deleteUser(idToDelete);
+        res.status(200).json(getApiResponse({ idToDelete }));
+      } catch (e) {
+        res.status(400).end(`${e}`);
+      }
     default:
       res.setHeader('Allow', ['POST', 'PUT'])
       res.status(405).end(`Method ${method} Not Allowed`)

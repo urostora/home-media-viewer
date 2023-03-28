@@ -15,7 +15,6 @@ export interface GeneralMutationResponse extends GeneralResponse {
 }
 
 export interface GeneralSearchType {
-    id?: string,
     take?: number,
     skip?: number,
 }
@@ -47,5 +46,5 @@ export interface EditEntityType {
 }
 
 export interface EditEntityWithStatusType extends EditEntityType {
-    status?: Status,
+    status?: Status | Status[],
 }

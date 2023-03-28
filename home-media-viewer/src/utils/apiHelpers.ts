@@ -21,7 +21,7 @@ export function getRequestBodyObject (req: NextApiRequest, res?: NextApiResponse
     return ret;
 }
 
-export function getEntityEditRequestBodyObject (req: NextApiRequest, res?: NextApiResponse): EntityType | null {
+export function getEntityTypeRequestBodyObject (req: NextApiRequest, res?: NextApiResponse): EntityType | null {
     const requestObject: any = getRequestBodyObject(req, res);
 
     if (requestObject == null) {

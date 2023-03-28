@@ -24,6 +24,16 @@ export default async function handler(
         return;
     }
 
-    const data = await prisma.user.findMany({ where: { id: id }});
+    const data = await prisma.user.findMany({
+        where: {
+            id: id
+        },
+        select: {
+            id: true,
+            name: true,
+            email: true,
+            status: true,
+        }});
+        
     res.status(200).json(data)
 }

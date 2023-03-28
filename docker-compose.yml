@@ -28,6 +28,11 @@ services:
       - ${MARIADB_PORT_ON_HOST}:3306
     networks:
       - home-media-dev-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 800m
 
   app:
     image: "node:18-alpine"
@@ -51,6 +56,11 @@ services:
       - ${WEB_PORT}:3000
     networks:
       - home-media-dev-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1500m
     
 
 networks:

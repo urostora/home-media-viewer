@@ -14,6 +14,7 @@ datasource db {
 enum Status {
   Deleted
   Active
+  Disabled
 }
 
 model User {

@@ -1,6 +1,6 @@
 
 import { UserAddType, UserEditType } from "@/types/api/userTypes";
-import { Prisma, PrismaClient, User } from "@prisma/client";
+import { Prisma, PrismaClient, Status, User } from "@prisma/client";
 import bcrypt from "bcrypt";
 
 const prisma = new PrismaClient();
@@ -15,7 +15,7 @@ export const isPasswordStrong = (password: string) => {
 }
 
 export const checkUserData = async (data: UserEditType, currentId: string | null = null): Promise<void> => {
-  const { name = null, email = null, password = null } = data;
+  const { name = null, email = null, password = null, status = null } = data;
 
   let uniqueFilters: Prisma.UserWhereInput[] = [];
   if (typeof name === 'string') {
@@ -41,13 +41,22 @@ export const checkUserData = async (data: UserEditType, currentId: string | null
     notFilter.id = currentId;
   }
 
+  let statusFilter: Status[] = []
+  if (typeof status === 'string') {
+    statusFilter = [ status ];
+  } else if (Array.isArray(status)) {
+    statusFilter = status;
+  }
+
+  statusFilter = Prisma.validator<Status[]>()(statusFilter);
+  
   // check if user exists with same name or email
   if (uniqueFilters.length > 0) {
     const existingUser = await prisma.user.findFirst({
       where: {
         AND: [{
           status: {
-            in: [ 'Active' /*, 'Disabled'*/ ]
+            in: [ 'Active', 'Disabled' ]
           }
         }],
         OR: uniqueFilters,
@@ -94,7 +103,7 @@ export const updateUser = async (data: UserEditType) => {
 
   await checkUserData(data, id);
 
-  const { name = null, email = null, password = null } = data;
+  const { name = null, email = null, password = null, status = null } = data;
   const updateData: any = {};
 
   if (typeof name === 'string') {
@@ -109,10 +118,24 @@ export const updateUser = async (data: UserEditType) => {
     updateData.password = password;
   }
 
+  if (typeof status === 'string') {
+    updateData.status = status;
+  }
+
   const updatedUser = await prisma.user.update({
     where: {
       id
     },
     data: updateData
   });
+}
+
+export const deleteUser = async (id: string) => {
+  const user = await prisma.user.findFirst({ where: { id, status: { in: [ 'Active', 'Disabled' ] } }});
+
+  if (user == null) {
+    throw Error(`User not found with id ${id}`);
+  }
+
+  await prisma.user.update({ where: { id }, data: { status: 'Deleted' }});
 }
