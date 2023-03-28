@@ -40,7 +40,7 @@ export function getEntityTypeRequestBodyObject (req: NextApiRequest, res?: NextA
 export function getApiResponse(parameters: any = {}): GeneralResponse {
   const now = new Date();
     const ret: GeneralMutationResponse = {
-        date: `${now.getFullYear()}.${('0' + (now.getMonth() + 1)).substring(-2)}.${('0' + now.getDate()).substring(-2)} ${('0' + now.getHours()).substring(-2)}:${('0' + now.getMinutes()).substring(-2)}:${('0' + now.getSeconds()).substring(-2)}`,
+        date: `${now.getFullYear()}.${('0' + (now.getMonth() + 1)).slice(-2)}.${('0' + now.getDate()).slice(-2)} ${('0' + now.getHours()).slice(-2)}:${('0' + now.getMinutes()).slice(-2)}:${('0' + now.getSeconds()).slice(-2)}`,
         ok: parameters.ok ?? true,
     };
 
