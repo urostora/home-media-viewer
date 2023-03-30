@@ -12,6 +12,7 @@ export interface GeneralEntityListResponse<T> extends GeneralResponse {
 
 export interface GeneralMutationResponse extends GeneralResponse {
     id?: string
+    data?: object
 }
 
 export interface GeneralSearchType {

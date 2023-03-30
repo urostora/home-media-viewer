@@ -47,6 +47,7 @@ services:
       - dependencies
       - dev-db
     environment:
+      APP_ALBUM_ROOT_PATH: ${APP_ALBUM_ROOT_PATH}
       DATABASE_URL: ${DATABASE_URL}
       NODE_ENV: development
     volumes:

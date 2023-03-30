@@ -52,6 +52,10 @@ export function getApiResponse(parameters: any = {}): GeneralResponse {
       ret.id = parameters.id;
     }
 
+    if (parameters.data) {
+      ret.data = parameters.data;
+    }
+
     return ret;
 }
 
