@@ -17,6 +17,11 @@ enum Status {
   Disabled
 }
 
+enum MetadataProcessingStatus {
+  New
+  Processed
+}
+
 model User {
   id        String      @id @default(uuid())
   status    Status      @default(Active)
@@ -43,22 +48,24 @@ model Album {
 }
 
 model File {
-    id              String              @id @default(uuid())
-    status          Status              @default(Active)
-    path            String              @db.Text
-    name            String
-    extension       String
-    isDirectory     Boolean             @default(false)
-    createdAt       DateTime
-    modifiedAt      DateTime
-    size            Int
-    hash            String?
-    albumId         String
-    album           Album               @relation(fields: [albumId], references: [id])
-    metas           FileMeta[]
-    parentFileId    String?
-    parentFile      File?               @relation("DirectoryContent", fields: [parentFileId], references: [id])
-    files           File[]              @relation("DirectoryContent")
+    id                  String              @id @default(uuid())
+    status              Status              @default(Active)
+    path                String              @db.Text
+    name                String
+    extension           String
+    isDirectory         Boolean             @default(false)
+    createdAt           DateTime            @default(now())
+    modifiedAt          DateTime            @default(now())
+    size                Int?
+    hash                String?
+    metadataStatus      MetadataProcessingStatus  @default(New)
+    metadataProcessedAt DateTime?
+    albumId             String
+    album               Album               @relation(fields: [albumId], references: [id])
+    metas               FileMeta[]
+    parentFileId        String?
+    parentFile          File?               @relation("DirectoryContent", fields: [parentFileId], references: [id])
+    files               File[]              @relation("DirectoryContent")
 
     @@index([extension])
     @@index([name, extension])
