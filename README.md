@@ -30,7 +30,7 @@ This project requires only Docker to run.
 
 [API access](http://localhost:23000/api/hello)
 
-### Run node commands
+### Run commands on "dependencies" helper container
 
 Node version
 `docker-compose run --rm dependencies bash -c "node --version"`
@@ -39,7 +39,8 @@ Install npm packages
 `docker-compose run --rm dependencies bash -c "npm install"`
 
 Prisma commands
-`docker-compose run --rm dependencies bash -c "npx prisma ...."`
+
+`docker-compose run --rm dependencies bash -c "npx prisma generate"`
 
 `docker-compose run --rm dependencies bash -c "npx prisma migrate dev --name=init"`
 
