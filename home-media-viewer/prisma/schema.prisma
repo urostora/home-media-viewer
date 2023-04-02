@@ -95,11 +95,8 @@ model FileMeta {
     latitude        Float?
     longitude       Float?
     
-    @@index([fileId])
+    @@unique([fileId, metaKey])
+
+    @@index([fileId, metaKey])
     @@index([metaKey])
-    @@index([metaKey, intValue])
-    @@index([metaKey, floatValue])
-    @@index([metaKey, dateValue])
-    @@index([metaKey, latitude])
-    @@index([metaKey, longitude])
 }

@@ -1,6 +1,7 @@
 import { AlbumSearchType, AlbumUpdateType } from "@/types/api/albumTypes";
-import { Prisma, PrismaClient, Status } from "@prisma/client";
+import { Album, Prisma, PrismaClient, Status } from "@prisma/client";
 import fs from "fs";
+import { syncFilesInAlbumAndFile } from "./fileHelper";
 
 const prisma = new PrismaClient();
 
@@ -95,9 +96,10 @@ export const syncAlbums = async () => {
 
     const directoriesWithoutAlbum = directories.filter(path => activeAlbums.filter(a => a.basePath === `${baseDirectory}/${path}`).length === 0);
     const albumsWithoutDirectory = activeAlbums.filter(a => !directoriesWithFullPath.includes(a.basePath));
+    const existingAlbums = activeAlbums.filter(a => directoriesWithFullPath.includes(a.basePath));
 
     directoriesWithoutAlbum.forEach(async path => {
-        await prisma.album.create({
+        const newAlbum = await prisma.album.create({
             data: {
                 basePath: `${baseDirectory}/${path}`,
                 name: path,
@@ -105,6 +107,12 @@ export const syncAlbums = async () => {
                 connectionString: `file://${baseDirectory}/${path}`,
             }
         });
+
+        await syncFilesInAlbumAndFile(newAlbum);
+    });
+
+    existingAlbums.forEach(async (album: Album) => {
+        await syncFilesInAlbumAndFile(album);
     });
 
     albumsWithoutDirectory.forEach(async a => {
@@ -180,5 +188,11 @@ export const deleteAlbum = async (id: string) => {
 }
 
 export const syncAlbumFiles = async (albumId: string) => {
+    const album = await prisma.album.findFirst({ where: { id: albumId, status: { in: [ 'Active', 'Disabled' ] } }});
 
+    if (album == null) {
+        throw Error(`Album not found with id ${albumId}`);
+    }
+
+    await syncFilesInAlbumAndFile(album);
 }
