@@ -75,7 +75,7 @@ export const getPureExtension = (extension?: string): string => {
         : extension;
 }
 
-export const loadMetadata = async (file: File, fileAlbum?: Album) => {
+export const loadMetadata = async (file: File, fileAlbum?: Album): Promise<boolean> => {
     const metadataProcessor = getFileProcessor(file);
 
     let ok: boolean = true;
@@ -86,6 +86,7 @@ export const loadMetadata = async (file: File, fileAlbum?: Album) => {
         } catch(e) {
             ok = false;
             error = `${e}`;
+            console.log('Metadata processor error', e);
         }
 
         if (!file.isDirectory) {
@@ -107,6 +108,8 @@ export const loadMetadata = async (file: File, fileAlbum?: Album) => {
                 metadataStatus: 'NotSupported',
             }});
     }
+
+    return ok;
 }
 
 export const deleteMetadata = async (file: File) => {

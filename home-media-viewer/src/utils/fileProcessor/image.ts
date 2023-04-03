@@ -3,8 +3,8 @@ import { FileProcessor } from "./processorFactory";
 import { getFullPath } from "../fileHelper";
 
 import fs from "fs";
-import exif from "exif-reader";
-import { addFloatMeta, addIntMeta, addStringMeta } from "../metaHelper";
+import * as ExifReader from 'exifreader';
+import { addFloatMeta, addIntMeta, addPositionMeta, addStringMeta } from "../metaHelper";
 
 const imageFileProcessor: FileProcessor = async (file: File, fileAlbum?: Album): Promise<boolean> => {
     const path = await getFullPath(file, fileAlbum);
@@ -13,28 +13,30 @@ const imageFileProcessor: FileProcessor = async (file: File, fileAlbum?: Album):
         throw new Error(`File not found at path ${path}`);
     }
 
-    const imageContent = fs.readFileSync(path);
-    const meta = exif(imageContent);
+    const tags = await ExifReader.load(path);
 
-    if (typeof meta !== 'object') {
-        throw new Error('Could not read image metadata');
+    if (typeof tags !== 'object') {
+        throw new Error(`Could not read image metadata at path ${path}`);
     }
 
-    if (typeof meta.image === 'object') {
-        const { image } = meta;
+    if (typeof tags?.Orientation?.value === 'number') { await addIntMeta(file, 'orientation', Math.round(tags.Orientation.value)); }
+    if (typeof tags?.Model?.description === 'string') { await addStringMeta(file, 'model', tags.Model.description); }
+    if (typeof tags?.Make?.description === 'string') { await addStringMeta(file, 'make', tags.Make.description); }
+    if (typeof tags?.ImageWidth?.value === 'number') { await addIntMeta(file, 'resolution_x', Math.round(tags.ImageWidth.value)); }
+    if (typeof tags?.ImageLength?.value === 'number') { await addIntMeta(file, 'resolution_y', Math.round(tags.ImageLength.value)); }
 
-        if (typeof image.Make === 'string') { await addStringMeta(file, 'make', image.Make); }
-        if (typeof image.Model === 'string') { await addStringMeta(file, 'model', image.Model); }
-        if (typeof image.Orientation === 'number') { await addIntMeta(file, 'orientation', image.Orientation); }
-        if (typeof image.XResolution === 'number') { await addIntMeta(file, 'resolution_x', image.XResolution); }
-        if (typeof image.YResolution === 'number') { await addIntMeta(file, 'resolution_y', image.YResolution); }
+    if (
+        typeof tags?.GPSLatitude?.description === 'number'
+        &&  typeof tags?.GPSLongitude?.description === 'number'
+    ) {
+        await addPositionMeta(file, 'coordinates', tags.GPSLatitude.description, tags.GPSLongitude.description);
     }
-
-    if (typeof meta.exif === 'object') {
-        const { exif } = meta;
-
-        if (typeof exif.FNumber === 'number') { await addFloatMeta(file, 'fnumber', exif.FNumber); }
-        if (typeof exif.ISO === 'number') { await addIntMeta(file, 'fnumber', exif.ISO); }
+    
+    if (
+        Array.isArray(tags?.GPSAltitude?.value)
+        && typeof tags?.GPSAltitude?.value[0] === 'number'
+    ) {
+        await addFloatMeta(file, 'altitude', tags.GPSAltitude.value[0]);
     }
 
     return true;

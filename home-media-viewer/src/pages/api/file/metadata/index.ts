@@ -4,7 +4,7 @@ import { getAlbums } from '@/utils/albumHelper';
 import { getApiResponse, getEntityTypeRequestBodyObject, getRequestBodyObject } from '@/utils/apiHelpers';
 import { EntityType } from '@/types/api/generalTypes';
 import { AlbumSearchType } from '@/types/api/albumTypes';
-import { deleteMetadata } from '@/utils/fileHelper';
+import { deleteMetadata, loadMetadata } from '@/utils/fileHelper';
 
 const prisma = new PrismaClient()
 
@@ -19,37 +19,58 @@ export default async function handler(
         case 'POST':
             // update file metadata
             try {
-                const postData: AlbumSearchType | null = getRequestBodyObject(req, res);
-                if (postData == null) {
+                const fileData: EntityType | null = getEntityTypeRequestBodyObject(req, res);
+                if (fileData == null) {
                     return;
                 }
+            
+                const { id: idToUpdate } = fileData;
 
-                const results = await getAlbums(postData);
-                res.status(200).json(getApiResponse({ data: results }));
+                const file = await prisma.file.findFirst({
+                    where: {
+                        id: idToUpdate,
+                        status: { in: [ 'Active', 'Disabled'],
+                    }
+                }});
+
+                if (file === null) {
+                    throw new Error(`File not exists with id ${idToUpdate}`);
+                }
+
+                const ok = await loadMetadata(file);
+
+                res.status(200).json(getApiResponse({ ok, id: idToUpdate}));
             } catch (e) {
                 res.status(400).end(`${e}`);
             }
+            break;
         case 'DELETE':
             // delete metadata
-            const deleteData: EntityType | null = getEntityTypeRequestBodyObject(req, res);
-            if (deleteData == null) {
-                return;
-            }
-        
-            const { id: idToDelete } = deleteData;
-        
             try {
-                const file = prisma.file.findFirst({ where: { id: idToDelete }});
+                const updateData: EntityType | null = getEntityTypeRequestBodyObject(req, res);
+                if (updateData == null) {
+                    throw new Error('Parameter "id" not specified');
+                }
+            
+                const { id: idToUpdate } = updateData;
+        
+                const file = await prisma.file.findFirst({
+                    where: {
+                        id: idToUpdate,
+                        status: { in: [ 'Active', 'Disabled'],
+                    }
+                }});
+
                 if (file == null) {
-                    res.status(400).end(`File not found with id ${idToDelete}`);
-                    return;
+                    throw new Error(`File not exists with id ${idToUpdate}`);
                 }
 
                 await deleteMetadata(file);
-                res.status(200).json(getApiResponse({ idToDelete }));
+                res.status(200).json(getApiResponse({ id: idToUpdate }));
             } catch (e) {
                 res.status(400).end(`${e}`);
             }
+            break;
         default:
             res.setHeader('Allow', ['POST'])
             res.status(405).end(`Method ${method} Not Allowed`)

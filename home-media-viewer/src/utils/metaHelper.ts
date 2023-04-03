@@ -2,8 +2,8 @@ import { Album, File, Prisma, PrismaClient, Status } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-export const addIntMeta = (file: File, metaKey: string, value: number) => {
-    prisma.fileMeta.upsert({
+export const addIntMeta = async (file: File, metaKey: string, value: number) => {
+    const meta = await prisma.fileMeta.upsert({
         where: {
             fileId_metaKey: {
                 fileId: file.id,
@@ -11,6 +11,7 @@ export const addIntMeta = (file: File, metaKey: string, value: number) => {
             },       
         },
         update: {
+            type: 'Int',
             intValue: Math.round(value),
             floatValue: null,
             stringValue: null,
@@ -32,8 +33,8 @@ export const addIntMeta = (file: File, metaKey: string, value: number) => {
     });
 }
 
-export const addStringMeta = (file: File, metaKey: string, value: string) => {
-    prisma.fileMeta.upsert({
+export const addStringMeta = async (file: File, metaKey: string, value: string) => {
+    await prisma.fileMeta.upsert({
         where: {
             fileId_metaKey: {
                 fileId: file.id,
@@ -41,6 +42,7 @@ export const addStringMeta = (file: File, metaKey: string, value: string) => {
             },       
         },
         update: {
+            type: 'String',
             intValue: null,
             floatValue: null,
             stringValue: value,
@@ -62,8 +64,8 @@ export const addStringMeta = (file: File, metaKey: string, value: string) => {
     });
 }
 
-export const addFloatMeta = (file: File, metaKey: string, value: number) => {
-    prisma.fileMeta.upsert({
+export const addFloatMeta = async (file: File, metaKey: string, value: number) => {
+    await prisma.fileMeta.upsert({
         where: {
             fileId_metaKey: {
                 fileId: file.id,
@@ -71,6 +73,7 @@ export const addFloatMeta = (file: File, metaKey: string, value: number) => {
             },       
         },
         update: {
+            type: 'Float',
             intValue: null,
             floatValue: value,
             stringValue: null,
@@ -92,8 +95,8 @@ export const addFloatMeta = (file: File, metaKey: string, value: number) => {
     });
 }
 
-export const addDateMeta = (file: File, metaKey: string, value: Date) => {
-    prisma.fileMeta.upsert({
+export const addDateMeta = async (file: File, metaKey: string, value: Date) => {
+    await prisma.fileMeta.upsert({
         where: {
             fileId_metaKey: {
                 fileId: file.id,
@@ -101,6 +104,7 @@ export const addDateMeta = (file: File, metaKey: string, value: Date) => {
             },       
         },
         update: {
+            type: 'Float',
             intValue: null,
             floatValue: null,
             stringValue: null,
@@ -122,8 +126,8 @@ export const addDateMeta = (file: File, metaKey: string, value: Date) => {
     });
 }
 
-export const addPositionMeta = (file: File, metaKey: string, latitude: number, longitude: number) => {
-    prisma.fileMeta.upsert({
+export const addPositionMeta = async (file: File, metaKey: string, latitude: number, longitude: number) => {
+    await prisma.fileMeta.upsert({
         where: {
             fileId_metaKey: {
                 fileId: file.id,
@@ -131,6 +135,7 @@ export const addPositionMeta = (file: File, metaKey: string, latitude: number, l
             },       
         },
         update: {
+            type: 'Location',
             intValue: null,
             floatValue: null,
             stringValue: null,
@@ -141,7 +146,7 @@ export const addPositionMeta = (file: File, metaKey: string, latitude: number, l
         create: {
             fileId: file.id,
             metaKey,
-            type: 'Float',
+            type: 'Location',
             intValue: null,
             floatValue: null,
             stringValue: null,

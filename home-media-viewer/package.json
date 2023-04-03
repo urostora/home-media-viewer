@@ -17,14 +17,13 @@
     "bcrypt": "^5.1.0",
     "eslint": "8.36.0",
     "eslint-config-next": "13.2.4",
-    "exif-reader": "^1.2.0",
+    "exifreader": "^4.12.0",
     "next": "13.2.4",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "typescript": "5.0.2"
   },
   "devDependencies": {
-    "@types/exif-reader": "^1.0.0",
     "prisma": "^4.11.0",
     "ts-node": "^10.9.1"
   },
