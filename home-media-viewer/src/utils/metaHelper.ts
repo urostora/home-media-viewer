@@ -104,7 +104,7 @@ export const addDateMeta = async (file: File, metaKey: string, value: Date) => {
             },       
         },
         update: {
-            type: 'Float',
+            type: 'DateTime',
             intValue: null,
             floatValue: null,
             stringValue: null,
