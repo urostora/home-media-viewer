@@ -1,51 +1,50 @@
-
 export interface GeneralResponse {
-    date: string,
-    ok: boolean,
-    error?: string,
+  date: string;
+  ok: boolean;
+  error?: string;
 }
 
 export interface GeneralEntityListResponse<T> extends GeneralResponse {
-    count: number,
-    data: Array<T>
+  count: number;
+  data: Array<T>;
 }
 
 export interface GeneralMutationResponse extends GeneralResponse {
-    id?: string
-    data?: object
+  id?: string;
+  data?: object;
 }
 
 export interface GeneralSearchType {
-    take?: number,
-    skip?: number,
+  take?: number;
+  skip?: number;
 }
 
 export interface IdSearchType extends GeneralSearchType {
-    id?: string,
+  id?: string;
 }
 
 export interface StatusSearchType extends IdSearchType {
-    status?: Status,
+  status?: Status;
 }
 
 export enum Status {
-    Active = 'Active',
-    Deleted = 'Deleted',
-    Disabled = 'Disabled',
+  Active = 'Active',
+  Deleted = 'Deleted',
+  Disabled = 'Disabled',
 }
 
 export interface EntityType {
-    id: string,
+  id: string;
 }
 
 export interface EntityWithStatusType extends EntityType {
-    status: Status,
+  status: Status;
 }
 
 export interface EditEntityType {
-    id?: string,
+  id?: string;
 }
 
 export interface EditEntityWithStatusType extends EditEntityType {
-    status?: Status | Status[],
+  status?: Status | Status[];
 }

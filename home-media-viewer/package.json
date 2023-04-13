@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "prettier-format": "prettier --config .prettierrc 'src/**/*.ts' --write"
   },
   "dependencies": {
     "@prisma/client": "^4.11.0",
@@ -24,6 +25,8 @@
     "typescript": "5.0.2"
   },
   "devDependencies": {
+    "eslint-config-prettier": "^8.8.0",
+    "prettier": "^2.8.7",
     "prisma": "^4.11.0",
     "ts-node": "^10.9.1"
   },

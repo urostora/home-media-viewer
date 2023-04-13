@@ -1,18 +1,18 @@
-
-import { UserAddType, UserEditType } from "@/types/api/userTypes";
-import { Prisma, PrismaClient, Status, User } from "@prisma/client";
-import bcrypt from "bcrypt";
+import { UserAddType, UserEditType } from '@/types/api/userTypes';
+import { Prisma, PrismaClient, Status, User } from '@prisma/client';
+import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
 export const getHashedPassword = async (password: string) => await bcrypt.hash(password, 10);
 
-export const verifyPassword = async (password: string, hashedPassword: string) => bcrypt.compare(password, hashedPassword);
+export const verifyPassword = async (password: string, hashedPassword: string) =>
+  bcrypt.compare(password, hashedPassword);
 
 export const isPasswordStrong = (password: string) => {
   const regex = /^(?!.*\s)(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[~`!@#$%^&*()--+={}\[\]|\\:;"'<>,.?/_₹]).{8,16}$/;
   return regex.test(password);
-}
+};
 
 export const checkUserData = async (data: UserEditType, currentId: string | null = null): Promise<void> => {
   const { name = null, email = null, password = null, status = null } = data;
@@ -41,41 +41,49 @@ export const checkUserData = async (data: UserEditType, currentId: string | null
     notFilter.id = currentId;
   }
 
-  let statusFilter: Status[] = []
+  let statusFilter: Status[] = [];
   if (typeof status === 'string') {
-    statusFilter = [ status ];
+    statusFilter = [status];
   } else if (Array.isArray(status)) {
     statusFilter = status;
   }
 
   statusFilter = Prisma.validator<Status[]>()(statusFilter);
-  
+
   // check if user exists with same name or email
   if (uniqueFilters.length > 0) {
     const existingUser = await prisma.user.findFirst({
       where: {
-        AND: [{
-          status: {
-            in: [ 'Active', 'Disabled' ]
-          }
-        }],
+        AND: [
+          {
+            status: {
+              in: ['Active', 'Disabled'],
+            },
+          },
+        ],
         OR: uniqueFilters,
-        NOT: notFilter
-      }
+        NOT: notFilter,
+      },
     });
 
     if (existingUser != null) {
       throw Error(`User with name ${name} or email ${email} already exists`);
     }
   }
-}
+};
 
 export const addUser = async (data: UserEditType): Promise<User> => {
   const { name = null, email = null, password = null } = data;
 
-  if (typeof name !== 'string') { throw Error('Parameter "name" is not set'); }
-  if (typeof email !== 'string') { throw Error('Parameter "email" is not set'); }
-  if (typeof password !== 'string') { throw Error('Parameter "password" is not set'); }
+  if (typeof name !== 'string') {
+    throw Error('Parameter "name" is not set');
+  }
+  if (typeof email !== 'string') {
+    throw Error('Parameter "email" is not set');
+  }
+  if (typeof password !== 'string') {
+    throw Error('Parameter "password" is not set');
+  }
 
   await checkUserData(data);
 
@@ -84,9 +92,9 @@ export const addUser = async (data: UserEditType): Promise<User> => {
       name,
       email,
       password: await getHashedPassword(password),
-    }
+    },
   });
-}
+};
 
 export const updateUser = async (data: UserEditType) => {
   const { id = null } = data;
@@ -95,7 +103,7 @@ export const updateUser = async (data: UserEditType) => {
     throw Error('Parameter "id" must be a non-empty string');
   }
 
-  const user = await prisma.user.findFirst({ where: { id }});
+  const user = await prisma.user.findFirst({ where: { id } });
 
   if (user == null) {
     throw Error(`User not found with id ${id}`);
@@ -124,18 +132,18 @@ export const updateUser = async (data: UserEditType) => {
 
   const updatedUser = await prisma.user.update({
     where: {
-      id
+      id,
     },
-    data: updateData
+    data: updateData,
   });
-}
+};
 
 export const deleteUser = async (id: string) => {
-  const user = await prisma.user.findFirst({ where: { id, status: { in: [ 'Active', 'Disabled' ] } }});
+  const user = await prisma.user.findFirst({ where: { id, status: { in: ['Active', 'Disabled'] } } });
 
   if (user == null) {
     throw Error(`User not found with id ${id}`);
   }
 
-  await prisma.user.update({ where: { id }, data: { status: 'Deleted' }});
-}
+  await prisma.user.update({ where: { id }, data: { status: 'Deleted' } });
+};

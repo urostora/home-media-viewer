@@ -1,18 +1,19 @@
-import type { NextApiRequest, NextApiResponse } from 'next'
-import { Prisma, PrismaClient } from '@prisma/client'
+import type { NextApiRequest, NextApiResponse } from 'next';
+import { Prisma, PrismaClient } from '@prisma/client';
 
-import { getRequestBodyObject, getEntityTypeRequestBodyObject, getApiResponse, getApiResponseEntityList } from '@/utils/apiHelpers'
+import {
+  getRequestBodyObject,
+  getEntityTypeRequestBodyObject,
+  getApiResponse,
+  getApiResponseEntityList,
+} from '@/utils/apiHelpers';
 import { UserEditType, UserSearchType } from '@/types/api/userTypes';
 import { addUser, deleteUser, updateUser } from '@/utils/userHelper';
 import { EntityType } from '@/types/api/generalTypes';
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient();
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { method } = req;
 
   switch (method) {
@@ -27,7 +28,7 @@ export default async function handler(
         id: postData.id ?? undefined,
         name: postData.name ?? undefined,
         email: postData.email ?? undefined,
-        status: postData.status ?? { in: [ 'Active', 'Disabled' ] },
+        status: postData.status ?? { in: ['Active', 'Disabled'] },
       };
 
       const results = await prisma.$transaction([
@@ -41,12 +42,12 @@ export default async function handler(
             name: true,
             email: true,
             status: true,
-          }
-        })
+          },
+        }),
       ]);
 
-      res.status(200).json(getApiResponseEntityList({}, results[1], results[0]) );
-      break
+      res.status(200).json(getApiResponseEntityList({}, results[1], results[0]));
+      break;
     case 'PUT':
       // Update or create data in your database
       const putData: UserEditType | null = getRequestBodyObject(req, res);
@@ -64,7 +65,6 @@ export default async function handler(
         } catch (e) {
           res.status(400).end(`${e}`);
         }
-
       } else {
         // edit user
         try {
@@ -75,7 +75,7 @@ export default async function handler(
         }
       }
 
-      break
+      break;
     case 'DELETE':
       // Update or create data in your database
       const deleteData: EntityType | null = getEntityTypeRequestBodyObject(req, res);
@@ -92,7 +92,7 @@ export default async function handler(
         res.status(400).end(`${e}`);
       }
     default:
-      res.setHeader('Allow', ['POST', 'PUT'])
-      res.status(405).end(`Method ${method} Not Allowed`)
+      res.setHeader('Allow', ['POST', 'PUT']);
+      res.status(405).end(`Method ${method} Not Allowed`);
   }
 }
