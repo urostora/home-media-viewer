@@ -1,1 +1,6 @@
+
+# VSCode settings
+/.vscode
+
+# static test data for developing purposes
 static
