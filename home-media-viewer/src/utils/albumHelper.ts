@@ -1,9 +1,15 @@
 import { AlbumSearchType, AlbumUpdateType } from "@/types/api/albumTypes";
 import { Album, Prisma, PrismaClient, Status } from "@prisma/client";
 import fs from "fs";
-import { syncFilesInAlbumAndFile } from "./fileHelper";
+import { loadMetadata, syncFilesInAlbumAndFile } from "./fileHelper";
 
 const prisma = new PrismaClient();
+
+let isAppExiting = false;
+
+process.on('SIGTERM', () => {
+    isAppExiting = true;
+});
 
 export const getAlbums = async(params: AlbumSearchType) => {
     const filter: Prisma.AlbumWhereInput = {
@@ -195,4 +201,33 @@ export const syncAlbumFiles = async (albumId: string) => {
     }
 
     await syncFilesInAlbumAndFile(album);
+}
+
+export const processAlbumFilesMetadata = async (
+    albumId: string,
+    timeoutSec: number = Number.parseInt(process.env.LONG_PROCESS_TIMEOUT_SEC ?? '30')
+) => {
+    const startedOn = process.hrtime();
+    const album = await prisma.album.findFirst({ where: { id: albumId, status: { in: [ 'Active', 'Disabled' ] } }});
+
+    if (album == null) {
+        throw Error(`Album not found with id ${albumId}`);
+    }
+
+    const filesUnprocessed = await prisma.file.findMany({
+        where: {
+            album,
+            metadataStatus: 'New',
+        }
+    });
+
+    // this may be a long process
+    for(const f of filesUnprocessed) {
+        await loadMetadata(f, album);
+
+        const currentTime = process.hrtime(startedOn);
+        if (isAppExiting || currentTime[0] > timeoutSec) {
+            break;
+        }
+    }
 }
