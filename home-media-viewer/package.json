@@ -28,6 +28,7 @@
     "typescript": "5.0.2"
   },
   "devDependencies": {
+    "@types/ffprobe-static": "^2.0.1",
     "eslint-config-prettier": "^8.8.0",
     "prettier": "^2.8.7",
     "prisma": "^4.11.0",
