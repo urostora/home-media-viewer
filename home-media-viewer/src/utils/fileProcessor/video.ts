@@ -1,11 +1,11 @@
 import { Album, File } from '@prisma/client';
 import { FileProcessor } from './processorFactory';
-import { getFullPath } from '../fileHelper';
+import { getFullPath, updateContentDate } from '../fileHelper';
 
 import fs from 'fs';
 import ffprobe from 'ffprobe';
 import ffprobeStatic from 'ffprobe-static';
-import { addDateMeta, addFloatMeta, addIntMeta, addPositionMeta, addStringMeta } from '../metaHelper';
+import { addDateMeta, addFloatMeta, addIntMeta, addStringMeta } from '../metaHelper';
 import { getDateObject } from '../utils';
 
 const videoFileProcessor: FileProcessor = async (file: File, fileAlbum?: Album): Promise<boolean> => {
@@ -44,6 +44,7 @@ const videoFileProcessor: FileProcessor = async (file: File, fileAlbum?: Album):
     const dateObj = getDateObject(str.tags.creation_time);
 
     if (dateObj != null) {
+      await updateContentDate(file, dateObj);
       await addDateMeta(file, 'dateTime', dateObj);
     }
   }

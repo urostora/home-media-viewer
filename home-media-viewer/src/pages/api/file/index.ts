@@ -12,7 +12,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   switch (method) {
     case 'POST':
-      // search albums
+      // search files
       try {
         const postData: AlbumSearchType | null = getRequestBodyObject(req, res);
         if (postData == null) {

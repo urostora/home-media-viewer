@@ -65,6 +65,17 @@ export const addFile = async (filePath: string, album: Album, parentFile?: File)
   });
 };
 
+export const updateContentDate = async (file: File, date?: Date) => {
+  await prisma.file.update({
+    where: {
+      id: file.id,
+    },
+    data: {
+      contentDate: date ?? null,
+    }
+  });
+}
+
 export const getPureExtension = (extension?: string): string => {
   if (typeof extension !== 'string') {
     return '';

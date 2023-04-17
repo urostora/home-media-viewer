@@ -1,6 +1,6 @@
 import { Album, File } from '@prisma/client';
 import { FileProcessor } from './processorFactory';
-import { getFullPath } from '../fileHelper';
+import { getFullPath, updateContentDate } from '../fileHelper';
 
 import fs from 'fs';
 import * as ExifReader from 'exifreader';
@@ -24,6 +24,7 @@ const imageFileProcessor: FileProcessor = async (file: File, fileAlbum?: Album):
     const dateObj = getDateObject(tags.DateTime.description);
 
     if (dateObj != null) {
+      await updateContentDate(file, dateObj);
       await addDateMeta(file, 'dateTime', dateObj);
     }
   }

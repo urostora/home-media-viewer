@@ -48,3 +48,9 @@ export interface EditEntityType {
 export interface EditEntityWithStatusType extends EditEntityType {
   status?: Status | Status[];
 }
+
+export type DateFilter = {
+  from?: string;
+  to?: string;
+  equal?: string;
+}

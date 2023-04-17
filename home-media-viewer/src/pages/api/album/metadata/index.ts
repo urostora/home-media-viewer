@@ -1,10 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { PrismaClient } from '@prisma/client';
-import { getAlbums, processAlbumFilesMetadata } from '@/utils/albumHelper';
-import { getApiResponse, getEntityTypeRequestBodyObject, getRequestBodyObject } from '@/utils/apiHelpers';
+import { processAlbumFilesMetadata } from '@/utils/albumHelper';
+import { getApiResponse, getEntityTypeRequestBodyObject } from '@/utils/apiHelpers';
 import { EntityType } from '@/types/api/generalTypes';
-import { AlbumSearchType } from '@/types/api/albumTypes';
-import { deleteMetadata, loadMetadata } from '@/utils/fileHelper';
+import { deleteMetadata } from '@/utils/fileHelper';
 
 const prisma = new PrismaClient();
 

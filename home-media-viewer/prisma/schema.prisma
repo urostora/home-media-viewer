@@ -58,6 +58,7 @@ model File {
     isDirectory             Boolean             @default(false)
     createdAt               DateTime            @default(now())
     modifiedAt              DateTime            @default(now())
+    contentDate             DateTime?
     size                    Int?
     hash                    String?
     metadataStatus          MetadataProcessingStatus  @default(New)
