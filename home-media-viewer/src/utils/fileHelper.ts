@@ -1,7 +1,8 @@
-import { Album, File, MetadataProcessingStatus, PrismaClient } from '@prisma/client';
+import { Album, File, MetadataProcessingStatus, PrismaClient, Prisma } from '@prisma/client';
 import fs from 'fs';
 import path from 'path';
 import { getFileProcessor } from './fileProcessor/processorFactory';
+import { FileSearchType } from '@/types/api/fileTypes';
 
 const prisma = new PrismaClient();
 
@@ -74,7 +75,31 @@ export const updateContentDate = async (file: File, date?: Date) => {
       contentDate: date ?? null,
     }
   });
-}
+};
+
+export const getFiles = async (params: FileSearchType) => {
+  const filter: Prisma.FileWhereInput = {
+    albumId: params?.album?.id,
+  };
+
+  return await prisma.$transaction([
+    prisma.file.count({ where: filter }),
+    prisma.file.findMany({
+      where: filter,
+      take: params.take ?? 10,
+      skip: params.skip ?? 0,
+      select: {
+        id: true,
+        status: true,
+        name: true,
+        extension: true,
+        size: true,
+        modifiedAt: true,
+        contentDate: true,
+      }
+    }),
+  ]);
+};
 
 export const getPureExtension = (extension?: string): string => {
   if (typeof extension !== 'string') {

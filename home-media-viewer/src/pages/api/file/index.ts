@@ -4,6 +4,8 @@ import { deleteAlbum, getAlbums, updateAlbum } from '@/utils/albumHelper';
 import { getApiResponse, getEntityTypeRequestBodyObject, getRequestBodyObject } from '@/utils/apiHelpers';
 import { EntityType } from '@/types/api/generalTypes';
 import { AlbumSearchType, AlbumUpdateType } from '@/types/api/albumTypes';
+import { FileSearchType } from '@/types/api/fileTypes';
+import { getFiles } from '@/utils/fileHelper';
 
 const prisma = new PrismaClient();
 
@@ -14,12 +16,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     case 'POST':
       // search files
       try {
-        const postData: AlbumSearchType | null = getRequestBodyObject(req, res);
+        const postData: FileSearchType | null = getRequestBodyObject(req, res);
         if (postData == null) {
-          return;
+          throw Error('No search parameters specified');
         }
 
-        const results = await getAlbums(postData);
+        const results = await getFiles(postData);
         res.status(200).json(getApiResponse({ data: results }));
       } catch (e) {
         res.status(400).end(`${e}`);
