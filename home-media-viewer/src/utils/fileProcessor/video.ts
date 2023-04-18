@@ -7,6 +7,7 @@ import ffprobe from 'ffprobe';
 import ffprobeStatic from 'ffprobe-static';
 import { addDateMeta, addFloatMeta, addIntMeta, addStringMeta } from '../metaHelper';
 import { getDateObject } from '../utils';
+import { exec, execSync, spawn, spawnSync } from 'child_process';
 
 const videoFileProcessor: FileProcessor = async (file: File, fileAlbum?: Album): Promise<boolean> => {
   const path = await getFullPath(file, fileAlbum);
@@ -23,6 +24,8 @@ const videoFileProcessor: FileProcessor = async (file: File, fileAlbum?: Album):
   console.log(`Getting video data from ${path}`);
 
   const videoData = await ffprobe(`${path}`, { path: ffprobeStatic.path });
+
+  console.log('VideoData', videoData);
 
   if (typeof videoData !== 'object') {
     throw new Error(`Could not read video metadata at path ${path}`);
@@ -77,6 +80,14 @@ const videoFileProcessor: FileProcessor = async (file: File, fileAlbum?: Album):
     await addIntMeta(file, 'fps', Math.round(fpsValue));
   }
 
+  const customVideoResults = loadCustomVideoData(path, ffprobeStatic.path);
+  console.log('Result', customVideoResults);
+
+  // GPS related metas
+  // if (typeof videoData?.  GPSLatitude?.description === 'number' && typeof tags?.GPSLongitude?.description === 'number') {
+  //   await addPositionMeta(file, 'gps_coordinates', tags.GPSLatitude.description, tags.GPSLongitude.description);
+  // }
+
   return true;
 };
 
@@ -96,6 +107,80 @@ const getFpsValue = (fps: string | undefined): number | null => {
   }
 
   return Number.parseInt(res.groups.fps);
+};
+
+type CustomVideoResult = {
+  model?: string;
+  manufacturer?: string;
+  location?: {
+    lat: number;
+    lon: number;
+  };
+  creationTime?: Date;
+};
+
+const getKeyValueFromOutputResult = (input: string, key: string): string | null => {
+  const rex = new RegExp(`${key}\\s*\\:\\s*(?<result>[-_:\\w]+)`, 'i');
+  console.log(rex);
+  const m = rex.exec(input);
+  if (m != null && m?.groups) {
+    return m.groups['result'];
+  }
+
+  return null;
+};
+
+const loadCustomVideoData = (path: string, ffprobePath?: string): CustomVideoResult => {
+  const ret: CustomVideoResult = {};
+  const executablePath = ffprobePath ?? ffprobeStatic.path;
+
+  const child = spawnSync(executablePath, [path], { encoding: 'utf-8' });
+
+  if (!Array.isArray(child?.output)) {
+    return ret;
+  }
+
+  console.log('Raw output', child.output);
+
+  child.output.forEach((str) => {
+    if (typeof str !== 'string') {
+      return;
+    }
+
+    if (ret?.manufacturer == null) {
+      const res = getKeyValueFromOutputResult(str, 'manufacturer');
+      if (res != null) {
+        ret.manufacturer = res;
+      }
+    }
+
+    if (ret?.model == null) {
+      const res = getKeyValueFromOutputResult(str, 'model');
+      if (res != null) {
+        ret.model = res;
+      }
+    }
+
+    if (ret?.creationTime == null) {
+      const res = getKeyValueFromOutputResult(str, 'creation_time');
+      if (res != null) {
+        ret.creationTime = getDateObject(res) ?? undefined;
+      }
+    }
+
+    if (ret?.location == null) {
+      // get location
+      const m = str.match(/location\s*\:\s*(?<lat>[+-][\d\.]+)(?<lon>[+-][\d\.]+)/i);
+      if (m != null && m?.groups) {
+        ret.location = {
+          lat: Number.parseFloat(m.groups['lat']),
+          lon: Number.parseFloat(m.groups['lon']),
+        };
+      }
+    }
+  });
+
+  return ret;
 };
 
 const supportedExtensions: string[] = ['mp4', 'mkv', 'avi', 'mpg', 'mpeg', 'mov'];
