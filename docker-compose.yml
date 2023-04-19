@@ -54,6 +54,7 @@ services:
     volumes:
       - ./home-media-viewer:/home/node/app
       - ./static:${APP_ALBUM_ROOT_PATH}
+      - home-media-dev-storage:${APP_STORAGE_PATH}
     ports:
       - ${WEB_PORT}:3000
     networks:
@@ -63,7 +64,9 @@ services:
         limits:
           cpus: '2'
           memory: 1500m
-    
 
 networks:
   home-media-dev-network:
+
+volumes:
+  home-media-dev-storage:
