@@ -20,9 +20,6 @@ const videoFileProcessor: FileProcessor = async (file: File, fileAlbum?: Album):
     throw new Error('FFMpeg path not available');
   }
 
-  console.log('FFMpeg path', ffprobeStatic.path);
-  console.log(`Getting video data from ${path}`);
-
   const videoData = await ffprobe(`${path}`, { path: ffprobeStatic.path });
 
   console.log('VideoData', videoData);
@@ -81,7 +78,6 @@ const videoFileProcessor: FileProcessor = async (file: File, fileAlbum?: Album):
   }
 
   const customVideoResults = loadCustomVideoData(path, ffprobeStatic.path);
-  console.log('Result', customVideoResults);
 
   if (customVideoResults != null) {
     // alternative creation date value
@@ -154,8 +150,6 @@ const loadCustomVideoData = (path: string, ffprobePath?: string): CustomVideoRes
   if (!Array.isArray(child?.output)) {
     return ret;
   }
-
-  console.log('Raw output', child.output);
 
   child.output.forEach((str) => {
     if (typeof str !== 'string') {
