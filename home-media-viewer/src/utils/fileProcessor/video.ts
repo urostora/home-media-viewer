@@ -5,9 +5,9 @@ import { getFullPath, updateContentDate } from '../fileHelper';
 import fs from 'fs';
 import ffprobe from 'ffprobe';
 import ffprobeStatic from 'ffprobe-static';
-import { addDateMeta, addFloatMeta, addIntMeta, addStringMeta } from '../metaHelper';
+import { addDateMeta, addFloatMeta, addIntMeta, addPositionMeta, addStringMeta } from '../metaHelper';
 import { getDateObject } from '../utils';
-import { exec, execSync, spawn, spawnSync } from 'child_process';
+import { spawnSync } from 'child_process';
 
 const videoFileProcessor: FileProcessor = async (file: File, fileAlbum?: Album): Promise<boolean> => {
   const path = await getFullPath(file, fileAlbum);
@@ -83,10 +83,25 @@ const videoFileProcessor: FileProcessor = async (file: File, fileAlbum?: Album):
   const customVideoResults = loadCustomVideoData(path, ffprobeStatic.path);
   console.log('Result', customVideoResults);
 
-  // GPS related metas
-  // if (typeof videoData?.  GPSLatitude?.description === 'number' && typeof tags?.GPSLongitude?.description === 'number') {
-  //   await addPositionMeta(file, 'gps_coordinates', tags.GPSLatitude.description, tags.GPSLongitude.description);
-  // }
+  if (customVideoResults != null) {
+    // alternative creation date value
+    if (typeof customVideoResults?.creationTime === 'object' && typeof str?.tags?.creation_time !== 'string') {
+      await updateContentDate(file, customVideoResults.creationTime);
+      await addDateMeta(file, 'dateTime', customVideoResults.creationTime);
+    }
+
+    if (typeof customVideoResults?.model === 'string') {
+      await addStringMeta(file, 'model', customVideoResults.model);
+    }
+
+    if (typeof customVideoResults?.manufacturer === 'string') {
+      await addStringMeta(file, 'make', customVideoResults.manufacturer);
+    }
+
+    if (typeof customVideoResults?.location === 'object') {
+      await addPositionMeta(file, 'gps_coordinates', customVideoResults.location.lat, customVideoResults.location.lon);
+    }
+  }
 
   return true;
 };
