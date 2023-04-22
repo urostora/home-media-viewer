@@ -2,7 +2,7 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   binaryTargets = ["native", "linux-musl-openssl-3.0.x", "linux-musl"]
 }
 
@@ -25,79 +25,80 @@ enum MetadataProcessingStatus {
 }
 
 model User {
-  id        String      @id @default(uuid())
-  status    Status      @default(Active)
-  email     String      @unique
-  name      String
-  password  String
-  albums    Album[]
+  id       String  @id @default(uuid())
+  status   Status  @default(Active)
+  email    String  @unique
+  name     String
+  password String
+  albums   Album[]
 }
 
 enum AlbumSourceType {
-    File
-    Ftp
+  File
+  Ftp
 }
 
 model Album {
-  id                String              @id @default(uuid())
-  status            Status              @default(Active)
-  name              String
-  sourceType        AlbumSourceType
-  connectionString  String              @db.Text
-  basePath          String              @db.Text
-  users             User[]
-  files             File[]
+  id               String          @id @default(uuid())
+  status           Status          @default(Active)
+  name             String
+  sourceType       AlbumSourceType
+  connectionString String          @db.Text
+  basePath         String          @db.Text
+  users            User[]
+  files            File[]
 }
 
 model File {
-    id                      String              @id @default(uuid())
-    status                  Status              @default(Active)
-    path                    String              @db.Text
-    name                    String
-    extension               String
-    isDirectory             Boolean             @default(false)
-    createdAt               DateTime            @default(now())
-    modifiedAt              DateTime            @default(now())
-    contentDate             DateTime?
-    size                    Int?
-    hash                    String?
-    metadataStatus          MetadataProcessingStatus  @default(New)
-    metadataProcessedAt     DateTime?
-    metadataProcessingError String?             @db.Text
-    albumId                 String
-    album                   Album               @relation(fields: [albumId], references: [id])
-    metas                   FileMeta[]
-    parentFileId            String?
-    parentFile              File?               @relation("DirectoryContent", fields: [parentFileId], references: [id])
-    files                   File[]              @relation("DirectoryContent")
+  id                      String                   @id @default(uuid())
+  status                  Status                   @default(Active)
+  path                    String                   @db.Text
+  name                    String
+  extension               String
+  isDirectory             Boolean                  @default(false)
+  createdAt               DateTime                 @default(now())
+  modifiedAt              DateTime                 @default(now())
+  contentDate             DateTime?
+  size                    Int?
+  hash                    String?
+  metadataStatus          MetadataProcessingStatus @default(New)
+  metadataProcessedAt     DateTime?
+  metadataProcessingError String?                  @db.Text
+  thumbnailStatus         MetadataProcessingStatus @default(New)
+  thumbnailProcessedAt    DateTime?
+  albumId                 String
+  album                   Album                    @relation(fields: [albumId], references: [id])
+  metas                   FileMeta[]
+  parentFileId            String?
+  parentFile              File?                    @relation("DirectoryContent", fields: [parentFileId], references: [id])
+  files                   File[]                   @relation("DirectoryContent")
 
-    @@index([extension])
-    @@index([name, extension])
+  @@index([extension])
+  @@index([name, extension])
 }
 
 enum FileMetaType {
-    Int
-    Float
-    String
-    DateTime
-    Location
+  Int
+  Float
+  String
+  DateTime
+  Location
 }
 
 model FileMeta {
-    id              String              @id @default(uuid())
-    fileId          String
-    file            File                @relation(fields: [fileId], references: [id])
-    metaKey         String
-    type            FileMetaType
-    intValue        Int?
-    floatValue      Float?
-    stringValue     String?             @db.Text
-    dateValue       DateTime?
-    latitude        Float?
-    longitude       Float?
-    
-    @@unique([fileId, metaKey])
+  id          String       @id @default(uuid())
+  fileId      String
+  file        File         @relation(fields: [fileId], references: [id])
+  metaKey     String
+  type        FileMetaType
+  intValue    Int?
+  floatValue  Float?
+  stringValue String?      @db.Text
+  dateValue   DateTime?
+  latitude    Float?
+  longitude   Float?
 
-    @@index([fileId, metaKey])
-    @@index([metaKey])
+  @@unique([fileId, metaKey])
+  @@index([fileId, metaKey])
+  @@index([metaKey])
 }
