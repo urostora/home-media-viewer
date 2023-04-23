@@ -23,6 +23,9 @@ const imageFileProcessor: FileProcessor = async (file: File, fileAlbum?: Album):
     throw new Error(`Could not read image metadata at path ${path}`);
   }
 
+  let width: number | null = null;
+  let height: number | null = null;
+
   if (typeof tags?.DateTime?.description === 'string') {
     const dateObj = getDateObject(tags.DateTime.description);
 
@@ -42,10 +45,12 @@ const imageFileProcessor: FileProcessor = async (file: File, fileAlbum?: Album):
     await addStringMeta(file, 'make', tags.Make.description);
   }
   if (typeof tags?.ImageWidth?.value === 'number') {
-    await addIntMeta(file, 'resolution_x', Math.round(tags.ImageWidth.value));
+    width = Math.round(tags.ImageWidth.value);
+    await addIntMeta(file, 'resolution_x', width);
   }
   if (typeof tags?.ImageLength?.value === 'number') {
-    await addIntMeta(file, 'resolution_y', Math.round(tags.ImageLength.value));
+    height = Math.round(tags.ImageLength.value);
+    await addIntMeta(file, 'resolution_y', height);
   }
 
   // GPS related metas
@@ -68,17 +73,27 @@ const imageFileProcessor: FileProcessor = async (file: File, fileAlbum?: Album):
     await addStringMeta(file, 'gps_altitude_ref', tags.GPSAltitudeRef.description);
   }
 
-  // create thumbnail
-  thumbnailSizes.forEach(async (size) => {
-    console.log(`Creating thumbnail (size: ${size})`);
-    const thumbnailPath = getFileThumbnailPath(file, size);
-    console.log(`  Save to path ${thumbnailPath}`);
+  if (width !== null && height !== null) {
+    // create thumbnail
+    thumbnailSizes.forEach(async (size) => {
+      const thumbnailPath = getFileThumbnailPath(file, size);
 
-    const image = await jimp.read(path);
-    image.resize(size, size).quality(60).resize(size, size).write(thumbnailPath);
-  });
+      const image = await jimp.read(path);
+      const imageAspectRatio = width / height;
+      const thumbnailWidth = imageAspectRatio > 1 ? size : Math.floor(size / imageAspectRatio);
 
-  await updateThumbnailDate(file);
+      const thumbnailHeight = imageAspectRatio > 1 ? Math.floor(size / imageAspectRatio) : size;
+
+      console.log(`Creating thumbnail (size: ${size}) ${thumbnailWidth} x ${thumbnailHeight}`);
+      image
+        .resize(thumbnailWidth, thumbnailHeight)
+        .quality(size < 400 ? 50 : 75)
+        .write(thumbnailPath);
+      console.log(`  Saved to path ${thumbnailPath}`);
+    });
+
+    await updateThumbnailDate(file);
+  }
 
   return true;
 };
