@@ -79,8 +79,8 @@ const imageFileProcessor: FileProcessor = async (file: File, fileAlbum?: Album):
       const thumbnailPath = getFileThumbnailPath(file, size);
 
       const image = await jimp.read(path);
-      const imageAspectRatio = width / height;
-      const thumbnailWidth = imageAspectRatio > 1 ? size : Math.floor(size / imageAspectRatio);
+      const imageAspectRatio = (width ?? size) / (height ?? size);
+      const thumbnailWidth = imageAspectRatio > 1 ? size : Math.floor(size * imageAspectRatio);
 
       const thumbnailHeight = imageAspectRatio > 1 ? Math.floor(size / imageAspectRatio) : size;
 

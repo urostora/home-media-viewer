@@ -3,7 +3,6 @@ import { PrismaClient } from '@prisma/client';
 import { processAlbumFilesMetadata } from '@/utils/albumHelper';
 import { getApiResponse, getEntityTypeRequestBodyObject } from '@/utils/apiHelpers';
 import { EntityType } from '@/types/api/generalTypes';
-import { deleteMetadata } from '@/utils/fileHelper';
 
 const prisma = new PrismaClient();
 
