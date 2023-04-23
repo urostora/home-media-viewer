@@ -39,33 +39,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         res.status(400).end(`${e}`);
       }
       break;
-    case 'DELETE':
-      // delete metadata
-      try {
-        const updateData: EntityType | null = getEntityTypeRequestBodyObject(req, res);
-        if (updateData == null) {
-          throw new Error('Parameter "id" not specified');
-        }
-
-        const { id: idToUpdate } = updateData;
-
-        const file = await prisma.file.findFirst({
-          where: {
-            id: idToUpdate,
-            status: { in: ['Active', 'Disabled'] },
-          },
-        });
-
-        if (file == null) {
-          throw new Error(`File not exists with id ${idToUpdate}`);
-        }
-
-        await deleteMetadata(file);
-        res.status(200).json(getApiResponse({ id: idToUpdate }));
-      } catch (e) {
-        res.status(400).end(`${e}`);
-      }
-      break;
     default:
       res.setHeader('Allow', ['POST']);
       res.status(405).end(`Method ${method} Not Allowed`);
