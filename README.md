@@ -45,3 +45,9 @@ Prisma commands
 `docker-compose run --rm dependencies bash -c "npx prisma migrate dev --name=init"`
 
 `docker-compose run --rm dependencies bash -c "npx prisma db push"`
+
+## Background processes
+
+Update metadata
+
+`docker-compose exec app sh -c "./node_modules/.bin/ts-node ./src/backgroundProcesses/updateMetadata.ts"`
