@@ -77,6 +77,18 @@ export const updateContentDate = async (file: File, date?: Date) => {
   });
 };
 
+export const updateThumbnailDate = async (file: File, date?: Date) => {
+  await prisma.file.update({
+    where: {
+      id: file.id,
+    },
+    data: {
+      thumbnailProcessedAt: new Date(),
+      thumbnailStatus: 'Processed',
+    }
+  });
+};
+
 export const getFiles = async (params: FileSearchType) => {
   const filter: Prisma.FileWhereInput = {
     albumId: params?.album?.id,

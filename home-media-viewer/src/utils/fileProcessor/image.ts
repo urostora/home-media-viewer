@@ -1,11 +1,13 @@
-import { Album, File } from '@prisma/client';
+import { Album, File, Prisma } from '@prisma/client';
 import { FileProcessor } from './processorFactory';
-import { getFullPath, updateContentDate } from '../fileHelper';
+import { getFullPath, updateContentDate, updateThumbnailDate } from '../fileHelper';
 
 import fs from 'fs';
 import * as ExifReader from 'exifreader';
 import { addDateMeta, addFloatMeta, addIntMeta, addPositionMeta, addStringMeta } from '../metaHelper';
 import { getDateObject } from '../utils';
+import { getFileThumbnailPath, thumbnailSizes } from '../thumbnailHelper';
+import jimp from 'jimp';
 
 const imageFileProcessor: FileProcessor = async (file: File, fileAlbum?: Album): Promise<boolean> => {
   const path = await getFullPath(file, fileAlbum);
@@ -14,6 +16,7 @@ const imageFileProcessor: FileProcessor = async (file: File, fileAlbum?: Album):
     throw new Error(`File not found at path ${path}`);
   }
 
+  // read metadata
   const tags = await ExifReader.load(path);
 
   if (typeof tags !== 'object') {
@@ -64,6 +67,20 @@ const imageFileProcessor: FileProcessor = async (file: File, fileAlbum?: Album):
   if (typeof tags?.GPSAltitudeRef?.description === 'string') {
     await addStringMeta(file, 'gps_altitude_ref', tags.GPSAltitudeRef.description);
   }
+
+  // create thumbnail
+  thumbnailSizes.forEach(async size => {
+    const thumbnailPath = getFileThumbnailPath(file, size);
+    console.log(`Creating thumbnail (size: ${size}) to path ${thumbnailPath}`);
+
+    const image = await jimp.read(path);
+    image.resize(256, 256) // resize
+      .quality(60) // set JPEG quality
+      .resize(size, size)
+      .write(thumbnailPath);
+  });
+
+  await updateThumbnailDate(file);
 
   return true;
 };
