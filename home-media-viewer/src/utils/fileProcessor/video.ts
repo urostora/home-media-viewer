@@ -1,13 +1,15 @@
 import { Album, File } from '@prisma/client';
 import { FileProcessor } from './processorFactory';
-import { getFullPath, updateContentDate } from '../fileHelper';
+import { getFullPath, updateContentDate, updateThumbnailDate } from '../fileHelper';
 
-import fs from 'fs';
+import fs, { existsSync } from 'fs';
 import ffprobe from 'ffprobe';
 import ffprobeStatic from 'ffprobe-static';
+import pathToFfmpeg from 'ffmpeg-static';
 import { addDateMeta, addFloatMeta, addIntMeta, addPositionMeta, addStringMeta } from '../metaHelper';
 import { getDateObject } from '../utils';
 import { spawnSync } from 'child_process';
+import { getFileThumbnailPath, thumbnailSizes } from '../thumbnailHelper';
 
 const videoFileProcessor: FileProcessor = async (file: File, fileAlbum?: Album): Promise<boolean> => {
   const path = await getFullPath(file, fileAlbum);
@@ -21,8 +23,6 @@ const videoFileProcessor: FileProcessor = async (file: File, fileAlbum?: Album):
   }
 
   const videoData = await ffprobe(`${path}`, { path: ffprobeStatic.path });
-
-  console.log('VideoData', videoData);
 
   if (typeof videoData !== 'object') {
     throw new Error(`Could not read video metadata at path ${path}`);
@@ -99,6 +99,15 @@ const videoFileProcessor: FileProcessor = async (file: File, fileAlbum?: Album):
     }
   }
 
+  // create thumbnail
+  thumbnailSizes.forEach(async (size) => {
+    const thumbnailFilePath = getFileThumbnailPath(file, size);
+    const thumbnailPath = createThumbnailImage(path, thumbnailFilePath, size);
+    console.log(`Thumbnail size ${size} saved to path ${thumbnailFilePath}`);
+  });
+
+  await updateThumbnailDate(file);
+
   return true;
 };
 
@@ -132,7 +141,6 @@ type CustomVideoResult = {
 
 const getKeyValueFromOutputResult = (input: string, key: string): string | null => {
   const rex = new RegExp(`${key}\\s*\\:\\s*(?<result>[-_:\\w]+)`, 'i');
-  console.log(rex);
   const m = rex.exec(input);
   if (m != null && m?.groups) {
     return m.groups['result'];
@@ -190,6 +198,17 @@ const loadCustomVideoData = (path: string, ffprobePath?: string): CustomVideoRes
   });
 
   return ret;
+};
+
+const createThumbnailImage = (videoFilePath: string, thumbnailPath: string, size: number) => {
+  const executablePath = pathToFfmpeg;
+  if (typeof executablePath !== 'string' || !existsSync(executablePath)) {
+    return;
+  }
+
+  const args = ['-i', videoFilePath, '-frames:v', '1', '-vf', `scale=${Math.round(size)}:-1`, thumbnailPath];
+
+  const child = spawnSync(executablePath, args);
 };
 
 const supportedExtensions: string[] = ['mp4', 'mkv', 'avi', 'mpg', 'mpeg', 'mov'];

@@ -208,7 +208,7 @@ export const syncAlbumFiles = async (albumId: string) => {
 
 export const processAlbumFilesMetadata = async (
   albumId: string,
-  timeoutSec: number = Number.parseInt(process.env.LONG_PROCESS_TIMEOUT_SEC ?? '30'),
+  timeoutSec: number = Number.parseInt(process.env.LONG_PROCESS_TIMEOUT_SEC ?? '20'),
 ) => {
   const startedOn = process.hrtime();
   const album = await prisma.album.findFirst({ where: { id: albumId, status: { in: ['Active', 'Disabled'] } } });
@@ -226,6 +226,7 @@ export const processAlbumFilesMetadata = async (
 
   // this may be a long process
   for (const f of filesUnprocessed) {
+    console.log(`Create metadata to file ${f.path}`);
     await loadMetadata(f, album);
 
     const currentTime = process.hrtime(startedOn);
