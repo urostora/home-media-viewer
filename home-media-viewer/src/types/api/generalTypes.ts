@@ -2,6 +2,7 @@ export interface GeneralResponse {
   date: string;
   ok: boolean;
   error?: string;
+  count?: number;
 }
 
 export interface GeneralEntityListResponse<T> extends GeneralResponse {
@@ -52,5 +53,5 @@ export interface EditEntityWithStatusType extends EditEntityType {
 export type DateFilter = {
   from?: string;
   to?: string;
-  equal?: string;
-}
+  equals?: string;
+};

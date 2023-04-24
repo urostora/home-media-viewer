@@ -1,5 +1,11 @@
-import { AlbumSourceType, Status } from '@prisma/client';
-import type { EditEntityWithStatusType, StatusSearchType, EntityWithStatusType, DateFilter, EntityType } from './generalTypes';
+import { AlbumSourceType, MetadataProcessingStatus, Status } from '@prisma/client';
+import type {
+  EditEntityWithStatusType,
+  StatusSearchType,
+  EntityWithStatusType,
+  DateFilter,
+  EntityType,
+} from './generalTypes';
 import { AlbumSearchType } from './albumTypes';
 
 export interface FileSearchType extends StatusSearchType {
@@ -7,7 +13,10 @@ export interface FileSearchType extends StatusSearchType {
   parentFileId?: string;
   name?: string;
   extension?: string;
-  date?: DateFilter;
+  pathBeginsWith?: string;
+  fileDate?: DateFilter;
+  contentDate?: DateFilter;
+  metadataStatus?: MetadataProcessingStatus;
 }
 
-export interface FileUpdateType extends EntityWithStatusType { }
+export interface FileUpdateType extends EntityWithStatusType {}

@@ -20,10 +20,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
 
         const results = await getAlbums(postData);
-        res.status(200).json(getApiResponse({ data: results }));
+        res.status(200).json(getApiResponse(results));
       } catch (e) {
         res.status(400).end(`${e}`);
       }
+
+      break;
     case 'PUT':
       // Update or create data in your database
       const putData: AlbumUpdateType | null = getRequestBodyObject(req, res);
@@ -62,6 +64,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       } catch (e) {
         res.status(400).end(`${e}`);
       }
+
+      break;
     default:
       res.setHeader('Allow', ['POST']);
       res.status(405).end(`Method ${method} Not Allowed`);

@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { getFileProcessor } from './fileProcessor/processorFactory';
 import { FileSearchType } from '@/types/api/fileTypes';
+import { getDateTimeFilter } from './utils';
 
 const prisma = new PrismaClient();
 
@@ -73,7 +74,7 @@ export const updateContentDate = async (file: File, date?: Date) => {
     },
     data: {
       contentDate: date ?? null,
-    }
+    },
   });
 };
 
@@ -85,32 +86,50 @@ export const updateThumbnailDate = async (file: File, date?: Date) => {
     data: {
       thumbnailProcessedAt: new Date(),
       thumbnailStatus: 'Processed',
-    }
+    },
   });
 };
 
 export const getFiles = async (params: FileSearchType) => {
   const filter: Prisma.FileWhereInput = {
     albumId: params?.album?.id,
+    parentFileId: params?.parentFileId,
+    name: typeof params?.name !== 'string' ? undefined : { contains: params.name },
+    extension: params?.extension,
+    modifiedAt: getDateTimeFilter(params?.fileDate),
+    contentDate: getDateTimeFilter(params?.contentDate),
+    metadataStatus: params.metadataStatus,
   };
 
-  return await prisma.$transaction([
+  console.log(filter);
+
+  const results = await prisma.$transaction([
     prisma.file.count({ where: filter }),
     prisma.file.findMany({
       where: filter,
       take: params.take ?? 10,
       skip: params.skip ?? 0,
-      select: {
-        id: true,
-        status: true,
-        name: true,
-        extension: true,
-        size: true,
-        modifiedAt: true,
-        contentDate: true,
-      }
+      include: {
+        metas: {
+          select: {
+            type: true,
+            metaKey: true,
+            stringValue: true,
+            intValue: true,
+            floatValue: true,
+            dateValue: true,
+            latitude: true,
+            longitude: true,
+          },
+        },
+      },
     }),
   ]);
+
+  return {
+    data: results[1],
+    count: results[0],
+  };
 };
 
 export const getPureExtension = (extension?: string): string => {

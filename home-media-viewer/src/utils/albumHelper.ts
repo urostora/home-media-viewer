@@ -14,13 +14,13 @@ process.on('SIGTERM', () => {
 export const getAlbums = async (params: AlbumSearchType) => {
   const filter: Prisma.AlbumWhereInput = {
     id: params.id ?? undefined,
-    name: params.name ?? undefined,
-    basePath: params.basePath ?? undefined,
+    name: typeof params?.name === 'string' ? { contains: params?.name } : undefined,
+    basePath: typeof params.basePath === 'string' ? { contains: params.basePath } : undefined,
     sourceType: params.sourceType ?? undefined,
     status: params.status ?? { in: ['Active', 'Disabled'] },
   };
 
-  return await prisma.$transaction([
+  const results = await prisma.$transaction([
     prisma.album.count({ where: filter }),
     prisma.album.findMany({
       where: filter,
@@ -35,6 +35,11 @@ export const getAlbums = async (params: AlbumSearchType) => {
       },
     }),
   ]);
+
+  return {
+    data: results[1],
+    count: results[0],
+  };
 };
 
 export const checkAlbumData = async (data: AlbumUpdateType, currentId: string | null = null): Promise<void> => {

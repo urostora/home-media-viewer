@@ -52,12 +52,16 @@ export function getApiResponse(parameters: any = {}): GeneralResponse {
     ok: parameters.ok ?? true,
   };
 
-  if (typeof (parameters.error ?? null) === 'string') {
+  if (typeof parameters?.error === 'string') {
     ret.error = parameters.error;
   }
 
-  if (typeof (parameters.id ?? null) === 'string') {
+  if (typeof parameters?.id === 'string') {
     ret.id = parameters.id;
+  }
+
+  if (typeof parameters?.count === 'number') {
+    ret.count = parameters.count;
   }
 
   if (parameters.data) {
