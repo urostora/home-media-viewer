@@ -1,5 +1,5 @@
 import { File } from '@prisma/client';
-import { existsSync, mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 
 const getThumbnailBaseDirectory = (): string => {
   const dir = process.env.APP_STORAGE_PATH ?? '/mnt/storage/thumbnail';
@@ -31,7 +31,7 @@ export const getThumbnailDirectory = (fileId: string): string => {
 
 export const getFileThumbnailDirectory = (file: File): string => {
   return getThumbnailDirectory(file.id);
-}
+};
 
 export const getFileThumbnailPath = (file: File, size: number): string => {
   let ret = getThumbnailDirectory(file.id);
@@ -39,15 +39,25 @@ export const getFileThumbnailPath = (file: File, size: number): string => {
   ret += `/${file.id}_${Math.round(size)}.jpg`;
 
   return ret;
-}
+};
+
+export const getFileThumbnailInBase64 = (file: File): string | null => {
+  const path = getFileThumbnailPath(file, thumbnailSize.small);
+
+  if (existsSync(path)) {
+    // read binary data from file
+    const bitmap = readFileSync(path);
+    // convert the binary data to base64 encoded string
+    return bitmap.toString('base64');
+  }
+
+  return null;
+};
 
 export const thumbnailSize = {
   small: 200,
   medium: 600,
-  large: 1280
+  large: 1280,
 };
 
-export const thumbnailSizes = [
-  thumbnailSize.small,
-  thumbnailSize.medium, thumbnailSize.large
-];
+export const thumbnailSizes = [thumbnailSize.small, thumbnailSize.medium, thumbnailSize.large];

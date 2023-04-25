@@ -4,6 +4,7 @@ import path from 'path';
 import { getFileProcessor } from './fileProcessor/processorFactory';
 import { FileSearchType } from '@/types/api/fileTypes';
 import { getDateTimeFilter } from './utils';
+import { getFileThumbnailInBase64 } from './thumbnailHelper';
 
 const prisma = new PrismaClient();
 
@@ -126,9 +127,17 @@ export const getFiles = async (params: FileSearchType) => {
     }),
   ]);
 
+  const fileList = results[1].map((fileData) => {
+    const thumbnailData = getFileThumbnailInBase64(fileData);
+    return {
+      ...fileData,
+      thumbnail: thumbnailData,
+    };
+  });
+
   return {
-    data: results[1],
     count: results[0],
+    data: fileList,
   };
 };
 
