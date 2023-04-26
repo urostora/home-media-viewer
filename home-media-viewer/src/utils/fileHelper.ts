@@ -123,6 +123,10 @@ export const getFiles = async (params: FileSearchType) => {
           },
         },
       },
+      orderBy: [
+        { isDirectory: 'desc' },
+        { name: 'asc' }
+      ]
     }),
   ]);
 
