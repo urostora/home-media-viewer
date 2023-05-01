@@ -14,12 +14,18 @@ const doJob = async () => {
   for (const album of activeAlbums) {
     console.log(`Processing album ${album.name} (${album.id})`);
 
-    const filesUnprocessed = await prisma.file.findMany({ where: { album, status: 'Active', metadataStatus: 'New' } });
+    const filesUnprocessed = await prisma.file.findMany({ where: { AND: [
+      { album, status: 'Active' },
+      { OR: [
+        { metadataStatus: 'New' },
+        { isDirectory: true } ]
+      }
+    ]}});
     console.log(`  ${filesUnprocessed.length} unprocessed files found`);
 
     let fileIndex = 0;
     for (const file of filesUnprocessed) {
-      console.log(`  (${fileIndex}/${filesUnprocessed.length}) processing file ${file.path} (${file.id})`);
+      console.log(`  (${fileIndex}/${filesUnprocessed.length}) processing ${file.isDirectory ? 'directory' : 'file'} ${file.path} (${file.id})`);
 
       parallelJobs.push(loadMetadata(file, album));
 
