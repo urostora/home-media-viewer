@@ -19,4 +19,38 @@ export interface FileSearchType extends StatusSearchType {
   metadataStatus?: MetadataProcessingStatus;
 }
 
+export interface FileMetaType {
+  type: FileMetaType;
+  metaKey: string;
+  stringValue: string | null;
+  intValue: number | null;
+  floatValue: number | null;
+  dateValue: string | null;
+  latitude: number | null;
+  longitude: number | null;
+}
+
+export interface FileResultType {
+  id: string;
+  status: Status;
+  path: string;
+  name: string;
+  extension: string;
+  isDirectory: boolean;
+  createdAt: string;
+  modifiedAt: string;
+  contentDate: string | null;
+  size: number | null;
+  hash: string | null;
+  metadataStatus: MetadataProcessingStatus;
+  metadataProcessedAt: string | null;
+  metadataProcessingError: string | null;
+  thumbnailStatus: MetadataProcessingStatus;
+  thumbnailProcessedAt: string | null;
+  albumId: string;
+  parentFileId: string | null;
+  metas: FileMetaType[];
+  thumbnail: string | null;
+}
+
 export interface FileUpdateType extends EntityWithStatusType {}
