@@ -1,10 +1,10 @@
 import { Album, File, MetadataProcessingStatus, PrismaClient, Prisma } from '@prisma/client';
 import fs from 'fs';
 import path from 'path';
-import { getFileProcessor } from './fileProcessor/processorFactory';
+import { getFileProcessor } from '@/utils/fileProcessor/processorFactory';
 import { FileSearchType } from '@/types/api/fileTypes';
-import { getDateTimeFilter } from './utils';
-import { getFileThumbnailInBase64 } from './thumbnailHelper';
+import { getDateTimeFilter } from '@/utils/utils';
+import { getFileThumbnailInBase64 } from '@/utils/thumbnailHelper';
 
 const prisma = new PrismaClient();
 
@@ -124,10 +124,7 @@ export const getFiles = async (params: FileSearchType) => {
           },
         },
       },
-      orderBy: [
-        { isDirectory: 'desc' },
-        { name: 'asc' }
-      ]
+      orderBy: [{ isDirectory: 'desc' }, { name: 'asc' }],
     }),
   ]);
 

@@ -1,9 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { Prisma, PrismaClient } from '@prisma/client';
-import { deleteAlbum, getAlbums, updateAlbum } from '@/utils/albumHelper';
+import { addAlbum, deleteAlbum, getAlbums, updateAlbum } from '@/utils/albumHelper';
 import { getApiResponse, getEntityTypeRequestBodyObject, getRequestBodyObject } from '@/utils/apiHelpers';
 import { EntityType } from '@/types/api/generalTypes';
-import { AlbumSearchType, AlbumUpdateType } from '@/types/api/albumTypes';
+import { AlbumAddType, AlbumSearchType, AlbumUpdateType } from '@/types/api/albumTypes';
 
 const prisma = new PrismaClient();
 
@@ -28,20 +28,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       break;
     case 'PUT':
       // Update or create data in your database
-      const putData: AlbumUpdateType | null = getRequestBodyObject(req, res);
+      const putData: AlbumAddType | null = getRequestBodyObject(req, res);
       if (putData == null) {
         res.status(400).end('Parameter Id is not specified');
         return;
       }
 
-      const { id = null } = putData;
-      if (id == null) {
+      const { path = null } = putData;
+      if (path == null) {
         // cannot add album (albums are created wit sync command)
-        res.status(400).end('Parameter Id is not specified');
+        res.status(400).end('Parameter path is not specified');
       } else {
         // edit album
         try {
-          await updateAlbum(putData);
+          const id = await addAlbum(putData);
           res.status(200).json(getApiResponse({ id }));
         } catch (e) {
           res.status(400).end(`${e}`);

@@ -10,3 +10,9 @@ export interface AlbumSearchType extends StatusSearchType {
 export interface AlbumUpdateType extends EditEntityWithStatusType {
   name?: string;
 }
+
+export interface AlbumAddType {
+  path?: string;
+  type?: AlbumSourceType;
+  name?: string;
+}

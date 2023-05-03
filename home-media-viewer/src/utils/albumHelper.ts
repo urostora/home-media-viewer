@@ -1,6 +1,7 @@
-import { AlbumSearchType, AlbumUpdateType } from '@/types/api/albumTypes';
-import { Album, Prisma, PrismaClient, Status } from '@prisma/client';
+import { AlbumAddType, AlbumSearchType, AlbumUpdateType } from '@/types/api/albumTypes';
+import { Album, AlbumSourceType, Prisma, PrismaClient, Status } from '@prisma/client';
 import fs from 'fs';
+import pathModule from 'path';
 import { loadMetadata, syncFilesInAlbumAndFile } from './fileHelper';
 
 const prisma = new PrismaClient();
@@ -149,6 +150,49 @@ export const syncAlbums = async () => {
     albumsAdded: directoriesWithoutAlbum.length,
     albumsDeleted: albumsWithoutDirectory.length,
   };
+};
+
+export const addAlbum = async (data: AlbumAddType): Promise<string> => {
+  if (typeof data?.path !== 'string') {
+    throw Error('Parameter "path" must be a non-empty string');
+  }
+
+  const finalPath = data.path.startsWith('/') ? data.path : `${process.env.APP_ALBUM_ROOT_PATH}/${data.path}`;
+  let directoryName = '';
+  try {
+    const stat = fs.statSync(finalPath);
+
+    if (!stat.isDirectory()) {
+      throw Error(`"path" (${finalPath}) is not directory`);
+    }
+
+    directoryName = pathModule.basename(finalPath);
+  } catch {
+    throw Error(`"path" (${finalPath}) not found`);
+  }
+
+  const existingAlbum = await prisma.album.findFirst({ where: { basePath: finalPath } });
+  if (existingAlbum != null) {
+    throw Error(`Album with "path" (${finalPath}) already exists`);
+  }
+
+  const albumName = typeof data?.name === 'string' ? data.name : directoryName;
+
+  const albumWithSameName = await prisma.album.findFirst({ where: { name: albumName } });
+  if (albumWithSameName != null) {
+    throw Error(`Album with name "${albumName}" already exists`);
+  }
+
+  const newAlbum = await prisma.album.create({
+    data: {
+      name: albumName,
+      basePath: finalPath,
+      connectionString: `file://${finalPath}`,
+      sourceType: AlbumSourceType.File,
+    },
+  });
+
+  return newAlbum.id;
 };
 
 export const updateAlbum = async (data: AlbumUpdateType) => {
