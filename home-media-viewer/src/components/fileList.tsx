@@ -3,6 +3,7 @@ import { Status } from '@/types/api/generalTypes';
 import { apiLoadFiles } from '@/utils/frontend/dataSource/file';
 import Image from 'next/image';
 import { useState, useEffect } from 'react'
+import ContentFilter, { ContentFilterType } from './content/contentFilter';
 
 export default function FileList() {
     const [data, setData] = useState<FileResultType[] | null>(null);
@@ -15,6 +16,27 @@ export default function FileList() {
             metadataStatus: 'Processed',
         };
     }
+
+    const onContentFilterChanged = (contentFilter: ContentFilterType) => {
+        const defaultFilter = getFileFilter();
+        const filter: FileSearchType = {
+            ...defaultFilter,
+            contentDate: { from: contentFilter.dateFrom }
+        };
+
+        apiLoadFiles(filter)
+            .then(result => {
+                setData(result);
+                setLoading(false);
+            })
+            .catch(e => {
+                setLoading(false);
+                setErrorMessage(e ?? 'Could not load file list');
+            });
+
+        setData(null);
+        setLoading(true);
+    };
 
     useEffect(() => {
         setLoading(true);
@@ -44,6 +66,7 @@ export default function FileList() {
     });
 
     return (<div>
+        <ContentFilter onFilterChanged={onContentFilterChanged} />
         <ul>
             {fileElements}
         </ul>
