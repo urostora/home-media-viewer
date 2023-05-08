@@ -23,16 +23,28 @@ const imageFileProcessor: FileProcessor = async (file: File, fileAlbum?: Album):
     throw new Error(`Could not read image metadata at path ${path}`);
   }
 
+  console.log(tags);
+
   let width: number | null = null;
   let height: number | null = null;
+  let contentDate: Date | null = null;
 
   if (typeof tags?.DateTime?.description === 'string') {
     const dateObj = getDateObject(tags.DateTime.description);
-
     if (dateObj != null) {
-      await updateContentDate(file, dateObj);
-      await addDateMeta(file, 'dateTime', dateObj);
+      contentDate = dateObj;
     }
+  }
+  if (contentDate == null && typeof tags?.DateTimeOriginal?.description === 'string') {
+    const dateObj = getDateObject(tags.DateTimeOriginal.description);
+    if (dateObj != null) {
+      contentDate = dateObj;
+    }
+  }
+
+  if (contentDate != null) {
+    await updateContentDate(file, contentDate);
+    await addDateMeta(file, 'dateTime', contentDate);
   }
 
   if (typeof tags?.Orientation?.value === 'number') {
@@ -44,12 +56,24 @@ const imageFileProcessor: FileProcessor = async (file: File, fileAlbum?: Album):
   if (typeof tags?.Make?.description === 'string') {
     await addStringMeta(file, 'make', tags.Make.description);
   }
+
   if (typeof tags?.ImageWidth?.value === 'number') {
     width = Math.round(tags.ImageWidth.value);
+  } else if (typeof tags['Image Width']?.value === 'number') {
+    width = Math.round(tags['Image Width']?.value);
+  }
+
+  if (width != null) {
     await addIntMeta(file, 'resolution_x', width);
   }
+
   if (typeof tags?.ImageLength?.value === 'number') {
     height = Math.round(tags.ImageLength.value);
+  } else if (typeof tags['Image Height']?.value === 'number') {
+    height = Math.round(tags['Image Height']?.value);
+  }
+  
+  if (height != null) {
     await addIntMeta(file, 'resolution_y', height);
   }
 

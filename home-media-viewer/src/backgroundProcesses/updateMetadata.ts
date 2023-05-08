@@ -4,13 +4,13 @@ import { loadMetadata } from '@/utils/fileHelper';
 import { syncAlbumFiles } from '@/utils/albumHelper';
 
 const prisma = new PrismaClient();
-const threadCount = os.cpus().length;
+const threadCount = Math.max(1, os.cpus().length - 2);
 
 const doJob = async () => {
   console.log(`Processing metadata (${threadCount} threads available)`);
   const activeAlbums = await prisma.album.findMany({ where: { status: { in: ['Active'] } } });
 
-  const parallelJobs = [];
+  const parallelJobs: Promise<boolean>[] = [];
 
   for (const album of activeAlbums) {
     console.log(`Processing album ${album.name} (${album.id})`);

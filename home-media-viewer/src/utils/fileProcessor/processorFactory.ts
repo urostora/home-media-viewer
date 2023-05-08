@@ -18,7 +18,7 @@ export const getFileProcessor = (file: File): FileProcessor => {
     return directoryFileProcessor;
   }
 
-  const processorFound = processors[file.extension] ?? null;
+  const processorFound = processors[file.extension.toLowerCase()] ?? null;
 
   return processorFound ?? defaultFileProcessor;
 };
