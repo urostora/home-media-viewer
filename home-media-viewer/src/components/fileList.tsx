@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react'
 import ContentFilter, { ContentFilterType } from './content/contentFilter';
 
 export default function FileList() {
+    const [ currentFilter, setCurrentFilter ] = useState<ContentFilterType>({});
     const [data, setData] = useState<FileResultType[] | null>(null);
     const [isLoading, setLoading] = useState<boolean>(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -18,10 +19,10 @@ export default function FileList() {
     }
 
     const onContentFilterChanged = (contentFilter: ContentFilterType) => {
-        const defaultFilter = getFileFilter();
         const filter: FileSearchType = {
-            ...defaultFilter,
-            contentDate: { from: contentFilter.dateFrom }
+            ...currentFilter,
+            contentDate: { from: contentFilter.dateFrom, to: contentFilter.dateTo },
+            take: 50,
         };
 
         apiLoadFiles(filter)
@@ -36,6 +37,7 @@ export default function FileList() {
 
         setData(null);
         setLoading(true);
+        setCurrentFilter(contentFilter);
     };
 
     useEffect(() => {
@@ -62,11 +64,11 @@ export default function FileList() {
     }
 
     const fileElements = data.map(fileData => {
-        return <li key={fileData.id}>{fileData.name}<Image alt={fileData.name} width={200} height={150} src={`data:image/jpeg;base64,${fileData.thumbnail}`} /></li>;
+        return <li key={fileData.id} data-id={fileData.id}>{fileData.name}<Image alt={fileData.name} width={200} height={150} src={`data:image/jpeg;base64,${fileData.thumbnail}`} /></li>;
     });
 
     return (<div>
-        <ContentFilter onFilterChanged={onContentFilterChanged} />
+        <ContentFilter onFilterChanged={onContentFilterChanged} currentFilter={currentFilter} />
         <ul>
             {fileElements}
         </ul>

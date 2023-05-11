@@ -7,27 +7,30 @@ export type ContentFilterType = {
 
 export type ContentFilterPropsType = {
     onFilterChanged?(filter: ContentFilterType): void,
+    currentFilter: ContentFilterType,
 }
 
 const ContentFilter = (props: ContentFilterPropsType) => {
-
-    const [ currentFilter, setCurrentFilter ] = useState<ContentFilterType>({});
+    const { currentFilter, onFilterChanged } = props;
 
     const dateFromChanged = (e: React.FormEvent<HTMLInputElement>) => {
         const value = e.currentTarget.value;
 
-        const newFilterValue = {
-            ...currentFilter,
-            dateFrom: value
-        };
-
-        if (typeof props?.onFilterChanged === 'function') {
-            props.onFilterChanged(newFilterValue);
+        if (typeof onFilterChanged === 'function') {
+            onFilterChanged({ dateFrom: value});
         }
 
-        console.log('New filter', newFilterValue);
+        console.log('DateFrom changed to', value);
+    };
 
-        setCurrentFilter(newFilterValue);
+    const dateToChanged = (e: React.FormEvent<HTMLInputElement>) => {
+        const value = e.currentTarget.value;
+
+        if (typeof onFilterChanged === 'function') {
+            onFilterChanged({ dateTo: value});
+        }
+
+        console.log('DateTo changed to', value);
     };
 
     console.log('Current filter:', currentFilter);
@@ -39,6 +42,14 @@ const ContentFilter = (props: ContentFilterPropsType) => {
                 type="datetime-local"
                 onChange={dateFromChanged}
                 value={currentFilter.dateFrom}
+            />
+        </>
+        <>
+            <span>To</span>
+            <input
+                type="datetime-local"
+                onChange={dateToChanged}
+                value={currentFilter.dateTo}
             />
         </>
     </>);
