@@ -23,7 +23,7 @@ const imageFileProcessor: FileProcessor = async (file: File, fileAlbum?: Album):
     throw new Error(`Could not read image metadata at path ${path}`);
   }
 
-  console.log(tags);
+  // console.log(tags);
 
   let width: number | null = null;
   let height: number | null = null;
@@ -102,15 +102,11 @@ const imageFileProcessor: FileProcessor = async (file: File, fileAlbum?: Album):
     thumbnailSizes.forEach(async (size) => {
       const thumbnailPath = getFileThumbnailPath(file, size);
 
+      console.log(`Creating thumbnail size: ${size}`);
       const image = await jimp.read(path);
-      const imageAspectRatio = (width ?? size) / (height ?? size);
-      const thumbnailWidth = imageAspectRatio > 1 ? size : Math.floor(size * imageAspectRatio);
-
-      const thumbnailHeight = imageAspectRatio > 1 ? Math.floor(size / imageAspectRatio) : size;
-
-      console.log(`Creating thumbnail (size: ${size}) ${thumbnailWidth} x ${thumbnailHeight}`);
       image
-        .resize(thumbnailWidth, thumbnailHeight)
+        // .resize(thumbnailWidth, thumbnailHeight)
+        .scaleToFit(size, size)
         .quality(size < 400 ? 50 : 75)
         .write(thumbnailPath);
       console.log(`  Saved to path ${thumbnailPath}`);
