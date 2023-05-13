@@ -4,6 +4,8 @@ import { apiLoadFiles } from '@/utils/frontend/dataSource/file';
 import Image from 'next/image';
 import { useState, useEffect } from 'react'
 import ContentFilter, { ContentFilterType } from './content/contentFilter';
+import ContentThumbnail from './content/contentThumbnail';
+import hmvStyle from '@/styles/hmv.module.scss';
 
 export default function FileList() {
     const [ currentFilter, setCurrentFilter ] = useState<ContentFilterType>({});
@@ -64,13 +66,20 @@ export default function FileList() {
     }
 
     const fileElements = data.map(fileData => {
-        return <li key={fileData.id} data-id={fileData.id}>{fileData.name}<Image alt={fileData.name} width={200} height={150} src={`data:image/jpeg;base64,${fileData.thumbnail}`} /></li>;
+        return <ContentThumbnail key={fileData.id} data-id={fileData.id} content={fileData} />;
+        
+        return (<li key={fileData.id} data-id={fileData.id}>
+            <span>{fileData.name}</span>
+            <div /*style={{width: '200px', height: '200px', position: 'relative'}}*/>
+                <Image sizes='200' width={200} height={200} alt={fileData.name} style={{objectFit: 'contain'}} src={`data:image/jpeg;base64,${fileData.thumbnail}`} />
+            </div>
+        </li>);
     });
 
     return (<div>
         <ContentFilter onFilterChanged={onContentFilterChanged} currentFilter={currentFilter} />
-        <ul>
+        <div className={hmvStyle.contentContainer}>
             {fileElements}
-        </ul>
+        </div>
     </div>);
 }
