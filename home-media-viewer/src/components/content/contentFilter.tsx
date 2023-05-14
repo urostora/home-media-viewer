@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 export type ContentFilterType = {
     dateFrom?: string;
@@ -7,30 +7,38 @@ export type ContentFilterType = {
 
 export type ContentFilterPropsType = {
     onFilterChanged?(filter: ContentFilterType): void,
-    currentFilter: ContentFilterType,
+    currentFilter?: ContentFilterType
 }
 
 const ContentFilter = (props: ContentFilterPropsType) => {
-    const { currentFilter, onFilterChanged } = props;
+    const { onFilterChanged, currentFilter = null } = props;
 
-    const dateFromChanged = (e: React.FormEvent<HTMLInputElement>) => {
-        const value = e.currentTarget.value;
+    const [ dateFrom, setDateFrom] = useState<string | undefined>(currentFilter?.dateFrom ?? undefined);
+    const [ dateTo, setDateTo] = useState<string | undefined>(currentFilter?.dateTo ?? undefined);
 
-        if (typeof onFilterChanged === 'function') {
-            onFilterChanged({ dateFrom: value});
+    const finalFilter = {
+        ...currentFilter ?? {},
+        dateFrom,
+        dateTo,
+    };
+
+    const applyFilters = () => {
+        if (typeof onFilterChanged !== 'function') {
+            return;
         }
 
-        console.log('DateFrom changed to', value);
+        onFilterChanged({
+            dateFrom,
+            dateTo,
+        });
+    };
+
+    const dateFromChanged = (e: React.FormEvent<HTMLInputElement>) => {
+        setDateFrom(e.currentTarget.value);
     };
 
     const dateToChanged = (e: React.FormEvent<HTMLInputElement>) => {
-        const value = e.currentTarget.value;
-
-        if (typeof onFilterChanged === 'function') {
-            onFilterChanged({ dateTo: value});
-        }
-
-        console.log('DateTo changed to', value);
+        setDateTo(e.currentTarget.value);
     };
 
     console.log('Current filter:', currentFilter);
@@ -40,17 +48,20 @@ const ContentFilter = (props: ContentFilterPropsType) => {
             <span>From</span>
             <input
                 type="datetime-local"
+                value={finalFilter?.dateFrom ?? ''}
                 onChange={dateFromChanged}
-                value={currentFilter.dateFrom}
             />
         </>
         <>
             <span>To</span>
             <input
                 type="datetime-local"
+                value={finalFilter?.dateTo ?? ''}
                 onChange={dateToChanged}
-                value={currentFilter.dateTo}
             />
+        </>
+        <>
+            <input type="button" onClick={applyFilters} value="Apply filters" />
         </>
     </>);
 }

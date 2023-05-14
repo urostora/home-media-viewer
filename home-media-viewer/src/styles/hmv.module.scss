@@ -1,6 +1,28 @@
 
 
-.contentContainer {
+.contentsContainer {
     display: flex;
     flex-flow: row wrap;
+    background-color: gray;
+}
+
+.contentThumbnailContainer {
+    margin: 15px;
+    padding: 5px;
+    border-radius: 15px;
+    border: 1px solid darkblue;
+    background-color: lightgray;
+    flex-grow: 1;
+
+    .thumbnailName {
+        width: 100%;
+        text-align: center;
+        padding: 3px;
+        font-weight: bold;
+    }
+
+    .imageContainer {
+        width: 200px;
+        height: 200px;
+    }
 }

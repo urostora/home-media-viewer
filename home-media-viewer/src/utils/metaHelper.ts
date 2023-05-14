@@ -1,4 +1,5 @@
-import { Album, File, Prisma, PrismaClient, Status } from '@prisma/client';
+import { FileMetadataType as FileMetadataType } from '@/types/api/fileTypes';
+import { Album, File, FileMetaType, Prisma, PrismaClient, Status } from '@prisma/client';
 
 const prisma = new PrismaClient();
 

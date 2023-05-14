@@ -1,4 +1,4 @@
-import { AlbumSourceType, MetadataProcessingStatus, Status } from '@prisma/client';
+import { AlbumSourceType, MetadataProcessingStatus, Status, FileMetaType } from '@prisma/client';
 import type {
   EditEntityWithStatusType,
   StatusSearchType,
@@ -19,7 +19,7 @@ export interface FileSearchType extends StatusSearchType {
   metadataStatus?: MetadataProcessingStatus;
 }
 
-export interface FileMetaType {
+export interface FileMetadataType {
   type: FileMetaType;
   metaKey: string;
   stringValue: string | null;
@@ -49,7 +49,7 @@ export interface FileResultType {
   thumbnailProcessedAt: string | null;
   albumId: string;
   parentFileId: string | null;
-  metas: FileMetaType[];
+  metas: FileMetadataType[];
   thumbnail: string | null;
 }
 

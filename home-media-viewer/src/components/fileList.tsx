@@ -6,12 +6,13 @@ import { useState, useEffect } from 'react'
 import ContentFilter, { ContentFilterType } from './content/contentFilter';
 import ContentThumbnail from './content/contentThumbnail';
 import hmvStyle from '@/styles/hmv.module.scss';
+import ContentList from './content/contentList';
 
 export default function FileList() {
     const [ currentFilter, setCurrentFilter ] = useState<ContentFilterType>({});
-    const [data, setData] = useState<FileResultType[] | null>(null);
-    const [isLoading, setLoading] = useState<boolean>(false);
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [ data, setData ] = useState<FileResultType[] | null>(null);
+    const [ isLoading, setLoading ] = useState<boolean>(false);
+    const [ errorMessage, setErrorMessage ] = useState<string | null>(null);
 
     const getFileFilter = (): FileSearchType => {
         return {
@@ -27,6 +28,10 @@ export default function FileList() {
             take: 50,
         };
 
+        setData(null);
+        setLoading(true);
+        setCurrentFilter(contentFilter);
+
         apiLoadFiles(filter)
             .then(result => {
                 setData(result);
@@ -36,10 +41,6 @@ export default function FileList() {
                 setLoading(false);
                 setErrorMessage(e ?? 'Could not load file list');
             });
-
-        setData(null);
-        setLoading(true);
-        setCurrentFilter(contentFilter);
     };
 
     useEffect(() => {
@@ -56,8 +57,11 @@ export default function FileList() {
             });
     }, []);
 
-    if (isLoading) return <p>Loading...</p>
-    if (!data) return <p>No files available</p>
+    let contentList = null;
+
+    if (isLoading) contentList = <p>Loading...</p>
+    else if (!data) contentList = <p>No files available</p>
+    else contentList = <ContentList data={data} />
 
     console.log(data);
 
@@ -65,21 +69,8 @@ export default function FileList() {
         return <p className='errorMessage'>{errorMessage}</p>;
     }
 
-    const fileElements = data.map(fileData => {
-        return <ContentThumbnail key={fileData.id} data-id={fileData.id} content={fileData} />;
-        
-        return (<li key={fileData.id} data-id={fileData.id}>
-            <span>{fileData.name}</span>
-            <div /*style={{width: '200px', height: '200px', position: 'relative'}}*/>
-                <Image sizes='200' width={200} height={200} alt={fileData.name} style={{objectFit: 'contain'}} src={`data:image/jpeg;base64,${fileData.thumbnail}`} />
-            </div>
-        </li>);
-    });
-
     return (<div>
-        <ContentFilter onFilterChanged={onContentFilterChanged} currentFilter={currentFilter} />
-        <div className={hmvStyle.contentContainer}>
-            {fileElements}
-        </div>
+        <ContentFilter key={1} currentFilter={currentFilter} onFilterChanged={onContentFilterChanged} />
+        {contentList}
     </div>);
 }
