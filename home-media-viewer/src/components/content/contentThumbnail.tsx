@@ -1,6 +1,7 @@
 import { FileMetadataType, FileResultType } from "@/types/api/fileTypes";
 import Image from "next/image";
 import hmvStyle from '@/styles/hmv.module.scss';
+import { MetaType, contentSizeToString, durationInSecToString } from "@/utils/metaUtils";
 
 export type ContentThumbnailPropsType = {
     contentSelected?(content: FileResultType): void,
@@ -44,7 +45,13 @@ const getMetaMap = (metaList?: FileMetadataType[] | undefined) => {
 };
 
 const ContentThumbnail = (props: ContentThumbnailPropsType) => {
-    const { content } = props;
+    const { content, contentSelected } = props;
+
+    const onCardClicked = () => {
+      if (typeof contentSelected === 'function') {
+        contentSelected(content);
+      }
+    }
 
     const imageContent = content.thumbnail == null
         ? null
@@ -55,22 +62,28 @@ const ContentThumbnail = (props: ContentThumbnailPropsType) => {
     console.log('metaMap: ', metaMap);
 
     const metaListElements: Array<{ name: string, value: string}> = [];
+
+    metaListElements.push({name: 'Size', value: contentSizeToString(content.size ?? 0)});
+
     if (typeof metaMap.get('resolution_x') === 'number') {
-        metaListElements.push({name: 'Felbontás', value: `${metaMap.get('resolution_x')} x ${metaMap.get('resolution_y')}`});
+        metaListElements.push({name: 'Resolution', value: `${metaMap.get('resolution_x')} x ${metaMap.get('resolution_y')}`});
+    }
+    if (typeof metaMap.get(MetaType.Duration) === 'number') {
+        metaListElements.push({name: 'Duration', value: durationInSecToString(metaMap.get(MetaType.Duration) as number ?? 0)});
     }
 
     return (
-        <div className={hmvStyle.contentThumbnailContainer} >
-            <div className="thumbnailName">
+        <div className={hmvStyle.contentCardContainer} onClick={onCardClicked} >
+            <div className={hmvStyle.contentName}>
                 <>{content.name}</>
             </div>
-            <div>
-                <div>
+            <div className={hmvStyle.contentDataContainer}>
+                <div className={hmvStyle.contentDetails}>
                     <ul>
                         {metaListElements.map((mle, index) => (<li key={index}>{mle.name}: {mle.value}</li>))}
                     </ul>
                 </div>
-                <div className="imageContainer">
+                <div className={hmvStyle.imageContainer}>
                     {imageContent}
                 </div>
             </div>

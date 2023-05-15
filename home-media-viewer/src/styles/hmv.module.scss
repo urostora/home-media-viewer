@@ -6,23 +6,37 @@
     background-color: gray;
 }
 
-.contentThumbnailContainer {
+.contentCardContainer {
     margin: 15px;
     padding: 5px;
     border-radius: 15px;
     border: 1px solid darkblue;
     background-color: lightgray;
     flex-grow: 1;
+    display: flex;
+    flex-flow: column nowrap;
 
-    .thumbnailName {
+    .contentName {
         width: 100%;
         text-align: center;
         padding: 3px;
         font-weight: bold;
     }
 
+    .contentDataContainer {
+        display: flex;
+        flex-flow: row nowrap;
+    }
+
+    .contentDetails {
+        font-size: small;
+        list-style: none;
+        flex-grow: 1;
+    }
+
     .imageContainer {
         width: 200px;
         height: 200px;
+        flex-grow: 0;
     }
 }

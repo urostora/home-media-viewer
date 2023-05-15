@@ -9,7 +9,7 @@ import hmvStyle from '@/styles/hmv.module.scss';
 import ContentList from './content/contentList';
 
 export default function FileList() {
-    const [ currentFilter, setCurrentFilter ] = useState<ContentFilterType>({});
+    const [ currentFilter, setCurrentFilter ] = useState<ContentFilterType>({ dateFrom: '2000-01-01'});
     const [ data, setData ] = useState<FileResultType[] | null>(null);
     const [ isLoading, setLoading ] = useState<boolean>(false);
     const [ errorMessage, setErrorMessage ] = useState<string | null>(null);
@@ -43,6 +43,10 @@ export default function FileList() {
             });
     };
 
+    const onCardSelected = (content: FileResultType) => {
+        console.log(`Content selected: ${content.path}`);
+    }
+
     useEffect(() => {
         setLoading(true);
 
@@ -61,7 +65,7 @@ export default function FileList() {
 
     if (isLoading) contentList = <p>Loading...</p>
     else if (!data) contentList = <p>No files available</p>
-    else contentList = <ContentList data={data} />
+    else contentList = <ContentList data={data} contentSelected={onCardSelected} />
 
     console.log(data);
 

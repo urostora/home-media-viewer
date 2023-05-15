@@ -8,10 +8,10 @@ export type ContentListPropsType = {
 }
 
 const ContentList = (props: ContentListPropsType) => {
-    const { data } = props;
+    const { data, contentSelected } = props;
 
     const fileElements = data.map(data => {
-        return <ContentThumbnail key={data.id} data-id={data.id} content={data} />;
+        return <ContentThumbnail key={data.id} data-id={data.id} content={data} contentSelected={contentSelected} />;
     });
 
     return (<div className={hmvStyle.contentsContainer}>
