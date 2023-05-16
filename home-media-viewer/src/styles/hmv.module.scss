@@ -30,8 +30,11 @@
 
     .contentDetails {
         font-size: small;
-        list-style: none;
         flex-grow: 1;
+
+        ul {
+            list-style: none;
+        }
     }
 
     .imageContainer {
