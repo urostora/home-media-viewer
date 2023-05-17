@@ -7,12 +7,14 @@ import ContentFilter, { ContentFilterType } from './content/contentFilter';
 import ContentThumbnail from './content/contentThumbnail';
 import hmvStyle from '@/styles/hmv.module.scss';
 import ContentList from './content/contentList';
+import ContentDisplay from './content/contentDisplay';
 
 export default function FileList() {
     const [ currentFilter, setCurrentFilter ] = useState<ContentFilterType>({ dateFrom: '2000-01-01 00:00:00'});
     const [ data, setData ] = useState<FileResultType[] | null>(null);
     const [ isLoading, setLoading ] = useState<boolean>(false);
     const [ errorMessage, setErrorMessage ] = useState<string | null>(null);
+    const [ contentSelected, setContentSelected ] = useState<FileResultType | null>(null)
 
     const getFileFilter = (): FileSearchType => {
         return {
@@ -45,6 +47,19 @@ export default function FileList() {
 
     const onCardSelected = (content: FileResultType) => {
         console.log(`Content selected: ${content.path}`);
+        setContentSelected(content);
+    }
+
+    const onContentDisplayClosed = () => {
+        setContentSelected(null);
+    }
+
+    const getContentDisplay = (content: FileResultType | null = null) => {
+        if (content == null) {
+            return null;
+        }
+
+        return <ContentDisplay content={content} closeHandler={onContentDisplayClosed} />;
     }
 
     useEffect(() => {
@@ -73,8 +88,13 @@ export default function FileList() {
         return <p className='errorMessage'>{errorMessage}</p>;
     }
 
+    if (contentSelected != null) {
+
+    }
+
     return (<div>
         <ContentFilter key={1} currentFilter={currentFilter} onFilterChanged={onContentFilterChanged} />
         {contentList}
+        {getContentDisplay(contentSelected)}
     </div>);
 }
