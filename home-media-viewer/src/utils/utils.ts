@@ -31,7 +31,6 @@ export const getDateObject = (dateTimeString: string | undefined | null): Date |
 };
 
 export const getDateTimeFilter = (obj?: DateFilter): Prisma.DateTimeFilter | undefined => {
-  console.log('getDateTimeFilter', obj);
   if (typeof obj !== 'object') {
     return undefined;
   }
@@ -48,7 +47,7 @@ export const getDateTimeFilter = (obj?: DateFilter): Prisma.DateTimeFilter | und
     const ret: Prisma.DateTimeFilter = {};
     const fromDate = getDateObject(obj?.from);
     const toDate = getDateObject(obj?.to);
-    console.log('getDateTimeFilter from - to', fromDate, toDate);
+
     if (fromDate != null || toDate != null) {
       if (fromDate != null) {
         ret.gte = fromDate;
