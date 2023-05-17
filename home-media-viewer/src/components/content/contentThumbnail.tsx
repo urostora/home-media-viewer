@@ -2,6 +2,7 @@ import { FileMetadataType, FileResultType } from "@/types/api/fileTypes";
 import Image from "next/image";
 import hmvStyle from '@/styles/hmv.module.scss';
 import { MetaType, contentSizeToString, durationInSecToString } from "@/utils/metaUtils";
+import { ReactElement } from "react";
 
 export type ContentThumbnailPropsType = {
     contentSelected?(content: FileResultType): void,
@@ -59,23 +60,39 @@ const ContentThumbnail = (props: ContentThumbnailPropsType) => {
 
     const metaMap = getMetaMap(content.metas);
 
-    console.log('metaMap: ', metaMap);
+    // console.log('metaMap: ', metaMap);
 
-    const metaListElements: Array<{ name: string, value: string}> = [];
+    const metaListElements: Array<{ name: string, value: string | ReactElement}> = [];
 
     metaListElements.push({name: 'Size', value: contentSizeToString(content.size ?? 0)});
+    metaListElements.push({name: 'Path', value: content.path});
 
-    if (typeof metaMap.get('resolution_x') === 'number') {
-        metaListElements.push({name: 'Resolution', value: `${metaMap.get('resolution_x')} x ${metaMap.get('resolution_y')}`});
+    if (typeof content.contentDate === 'string' && content.contentDate.length > 0) {
+      const cd = new Date(content.contentDate);
+      metaListElements.push({name: 'Date', value: `${cd.toLocaleDateString()} ${cd.toLocaleTimeString()}`});
+    }
+    if (typeof metaMap.get(MetaType.ResolutionX) === 'number') {
+        metaListElements.push({name: 'Resolution', value: `${metaMap.get(MetaType.ResolutionX)} x ${metaMap.get(MetaType.ResolutionY)}`});
     }
     if (typeof metaMap.get(MetaType.Duration) === 'number') {
         metaListElements.push({name: 'Duration', value: durationInSecToString(metaMap.get(MetaType.Duration) as number ?? 0)});
     }
+    if (typeof metaMap.get(MetaType.GpsCoordinates) === 'object') {
+      const coord = metaMap.get(MetaType.GpsCoordinates) as { latitude?: number, longitude?: number};
+      if (coord) {
+        const link = `https://www.google.com/maps/search/?api=1&query=${coord?.latitude}%2C${coord?.longitude}`;
+        metaListElements.push({ name: 'Location', value: (<a href={link} target="__blank">View in Google Maps</a>)});
+      }
+    }
+
+    const contentName = content.name + (content.extension.length > 0 ? `.${content.extension}` : '');
+
+    let coordinate
 
     return (
         <div className={hmvStyle.contentCardContainer} onClick={onCardClicked} >
             <div className={hmvStyle.contentName}>
-                <>{content.name}</>
+                <>{contentName}</>
             </div>
             <div className={hmvStyle.contentDataContainer}>
                 <div className={hmvStyle.contentDetails}>

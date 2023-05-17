@@ -9,7 +9,7 @@ import hmvStyle from '@/styles/hmv.module.scss';
 import ContentList from './content/contentList';
 
 export default function FileList() {
-    const [ currentFilter, setCurrentFilter ] = useState<ContentFilterType>({ dateFrom: '2000-01-01'});
+    const [ currentFilter, setCurrentFilter ] = useState<ContentFilterType>({ dateFrom: '2000-01-01 00:00:00'});
     const [ data, setData ] = useState<FileResultType[] | null>(null);
     const [ isLoading, setLoading ] = useState<boolean>(false);
     const [ errorMessage, setErrorMessage ] = useState<string | null>(null);
@@ -18,14 +18,14 @@ export default function FileList() {
         return {
             status: Status.Active,
             metadataStatus: 'Processed',
+            take: 50,
         };
     }
 
     const onContentFilterChanged = (contentFilter: ContentFilterType) => {
         const filter: FileSearchType = {
-            ...currentFilter,
+            ...getFileFilter(),
             contentDate: { from: contentFilter.dateFrom, to: contentFilter.dateTo },
-            take: 50,
         };
 
         setData(null);

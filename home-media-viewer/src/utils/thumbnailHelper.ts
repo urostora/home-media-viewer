@@ -33,12 +33,16 @@ export const getFileThumbnailDirectory = (file: File): string => {
   return getThumbnailDirectory(file.id);
 };
 
-export const getFileThumbnailPath = (file: File, size: number): string => {
-  let ret = getThumbnailDirectory(file.id);
+export const getFileIdThumbnailPath = (fileId: string, size: number): string => {
+  let ret = getThumbnailDirectory(fileId);
 
-  ret += `/${file.id}_${Math.round(size)}.jpg`;
+  ret += `/${fileId}_${Math.round(size)}.jpg`;
 
   return ret;
+};
+
+export const getFileThumbnailPath = (file: File, size: number): string => {
+  return getFileIdThumbnailPath(file.id, size);
 };
 
 export const getFileThumbnailInBase64 = (file: File): string | null => {
