@@ -2,7 +2,7 @@ import { FileResultType } from "@/types/api/fileTypes"
 import hmvStyle from '@/styles/hmv.module.scss';
 import { ReactElement } from "react";
 import Image from "next/image";
-import { getThumbnailUrl } from "@/utils/frontend/contentUtils";
+import { getContentUrl, getThumbnailUrl } from "@/utils/frontend/contentUtils";
 
 type ContentDisplayProps = {
     content?: FileResultType,
@@ -27,11 +27,17 @@ const ContentDisplay = (props: ContentDisplayProps) => {
     }
 
     const getContentElement = (content: FileResultType): ReactElement => {
-        // if (isImage(content.extension)) {
+        if (isImage(content.extension)) {
             const thumbnailLink = getThumbnailUrl(content.id, 1280);
             // eslint-disable-next-line @next/next/no-img-element
-            return (<img src={thumbnailLink} alt={content.path} />)
-        // }
+            return (<img src={thumbnailLink} alt={content.path} />);
+        } else if (isVideo(content.extension)) {
+            const contentLink = getContentUrl(content.id);
+            // eslint-disable-next-line @next/next/no-img-element
+            return (<video controls><source src={contentLink} /></video>);
+        }
+
+        return <></>;
     }
 
     const onCloseClicked = () => {

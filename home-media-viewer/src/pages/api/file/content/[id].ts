@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { PrismaClient } from '@prisma/client';
 import { getFileIdThumbnailPath } from '@/utils/thumbnailHelper';
 import { handleFileResponseByPath } from '@/utils/responseHelper';
+import { getFullPath } from '@/utils/fileHelper';
 
 const prisma = new PrismaClient();
 
@@ -12,22 +13,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     case 'GET':
       // search files
       try {
-        const { params } = req.query;
+        const { id } = req.query;
 
-        if (!params || !Array.isArray(params) || params.length != 2) {
-          throw Error('Insufficient parameters provided (../fileId/size)');
+        if (typeof id !== 'string') {
+          throw Error('Insufficient parameters provided (missing fileId)');
         }
 
-        const [fileId, sizeString] = params;
-        let size = 200;
-        try {
-          size = Number.parseInt(sizeString);
-        } catch (e) {
-          throw Error('Invalid thumbnail size');
+        const file = await prisma.file.findFirst({ where: { id }, include: { album: true } });
+
+        if (file == null) {
+          throw Error('Invalid file id');
         }
 
-        const thumbnailPath = getFileIdThumbnailPath(fileId, size ?? 200);
-        handleFileResponseByPath(req, res, thumbnailPath);
+        const filePath = await getFullPath(file, file.album);
+        handleFileResponseByPath(req, res, filePath);
       } catch (e) {
         res.status(400).end(`${e}`);
       }
