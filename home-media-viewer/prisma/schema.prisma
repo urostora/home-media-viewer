@@ -31,6 +31,7 @@ model User {
   name     String
   password String
   albums   Album[]
+  isAdmin  Boolean @default(false)
 }
 
 enum AlbumSourceType {

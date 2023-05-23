@@ -25,7 +25,7 @@ export const syncFilesInAlbumAndFile = async (album: Album, parentFile?: File) =
 
   console.log(`Syncronize directory ${directoryPath}`);
 
-  const dbFiles = await prisma.file.findMany({ where: { albumId: album.id, parentFile: parentFile } });
+  const dbFiles = await prisma.file.findMany({ where: { albumId: album.id, parentFile: parentFile ?? null } });
   const dbFileNames = dbFiles.map((f: File) => f.name + (f.extension.length > 0 ? `.${f.extension}` : ''));
   const dirFiles = fs.readdirSync(directoryPath);
 
@@ -191,7 +191,7 @@ export const loadMetadata = async (file: File, fileAlbum?: Album): Promise<boole
           metadataProcessingError: error,
         },
       });
-      
+
       console.log('    File data updated');
     }
   } else {
