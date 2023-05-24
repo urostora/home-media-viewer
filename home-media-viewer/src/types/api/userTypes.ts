@@ -16,6 +16,7 @@ export interface UserEditType extends EditEntityWithStatusType {
   name?: string;
   email?: string;
   password?: string;
+  isAdmin?: boolean;
 }
 
 export interface UserDataType extends EntityWithStatusType {

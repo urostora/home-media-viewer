@@ -73,7 +73,7 @@ export const checkUserData = async (data: UserEditType, currentId: string | null
 };
 
 export const addUser = async (data: UserEditType): Promise<User> => {
-  const { name = null, email = null, password = null } = data;
+  const { name = null, email = null, password = null, isAdmin = null } = data;
 
   if (typeof name !== 'string') {
     throw Error('Parameter "name" is not set');
@@ -92,6 +92,7 @@ export const addUser = async (data: UserEditType): Promise<User> => {
       name,
       email,
       password: await getHashedPassword(password),
+      isAdmin: isAdmin ?? false,
     },
   });
 };
@@ -111,7 +112,7 @@ export const updateUser = async (data: UserEditType) => {
 
   await checkUserData(data, id);
 
-  const { name = null, email = null, password = null, status = null } = data;
+  const { name = null, email = null, password = null, isAdmin = null, status = null } = data;
   const updateData: any = {};
 
   if (typeof name === 'string') {
@@ -128,6 +129,10 @@ export const updateUser = async (data: UserEditType) => {
 
   if (typeof status === 'string') {
     updateData.status = status;
+  }
+
+  if (typeof isAdmin === 'boolean') {
+    updateData.isAdmin = isAdmin;
   }
 
   const updatedUser = await prisma.user.update({
