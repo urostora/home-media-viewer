@@ -54,6 +54,7 @@ export function getApiResponse(parameters: any = {}): GeneralResponse {
 
   if (typeof parameters?.error === 'string') {
     ret.error = parameters.error;
+    ret.ok = false;
   }
 
   if (typeof parameters?.id === 'string') {

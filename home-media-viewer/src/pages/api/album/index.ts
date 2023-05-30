@@ -4,10 +4,11 @@ import { addAlbum, deleteAlbum, getAlbums, updateAlbum } from '@/utils/albumHelp
 import { getApiResponse, getEntityTypeRequestBodyObject, getRequestBodyObject } from '@/utils/apiHelpers';
 import { EntityType } from '@/types/api/generalTypes';
 import { AlbumAddType, AlbumSearchType, AlbumUpdateType } from '@/types/api/albumTypes';
+import { withSessionRoute } from '@/utils/sessionRoute';
 
 const prisma = new PrismaClient();
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
 
   switch (method) {
@@ -19,6 +20,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           return;
         }
 
+        if (req.session?.user?.admin !== true) {
+          postData.user = req.session?.user?.id ?? '';
+        }
+
         const results = await getAlbums(postData);
         res.status(200).json(getApiResponse(results));
       } catch (e) {
@@ -27,6 +32,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       break;
     case 'PUT':
+      if (req.session?.user?.admin !== true) {
+        res.status(403).end('Only administrators allowed');
+        return;
+      }
+
       // Update or create data in your database
       const putData: AlbumAddType | null = getRequestBodyObject(req, res);
       if (putData == null) {
@@ -50,6 +60,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       break;
     case 'DELETE':
+      if (req.session?.user?.admin !== true) {
+        res.status(403).end('Only administrators allowed');
+        return;
+      }
       // Update or create data in your database
       const deleteData: EntityType | null = getEntityTypeRequestBodyObject(req, res);
       if (deleteData == null) {
@@ -70,4 +84,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       res.setHeader('Allow', ['POST']);
       res.status(405).end(`Method ${method} Not Allowed`);
   }
-}
+};
+
+export default withSessionRoute(handler);

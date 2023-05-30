@@ -13,12 +13,22 @@ process.on('SIGTERM', () => {
 });
 
 export const getAlbums = async (params: AlbumSearchType) => {
+  const usersFilter =
+    typeof params.user !== 'string'
+      ? undefined
+      : {
+          some: {
+            id: params.user,
+          },
+        };
+
   const filter: Prisma.AlbumWhereInput = {
     id: params.id ?? undefined,
     name: typeof params?.name === 'string' ? { contains: params?.name } : undefined,
     basePath: typeof params.basePath === 'string' ? { contains: params.basePath } : undefined,
     sourceType: params.sourceType ?? undefined,
     status: params.status ?? { in: ['Active', 'Disabled'] },
+    users: usersFilter,
   };
 
   const results = await prisma.$transaction([

@@ -2,10 +2,11 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { PrismaClient } from '@prisma/client';
 import { STATUS_CODES } from 'http';
 import { getApiResponseEntityList } from '@/utils/apiHelpers';
+import { apiOnlyWithAdminUsers } from '@/utils/auth/apiHoc';
 
 const prisma = new PrismaClient();
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const { query, method } = req;
 
   if (method !== 'GET') {
@@ -35,4 +36,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   });
 
   res.status(200).json(getApiResponseEntityList({}, data));
-}
+};
+
+export default apiOnlyWithAdminUsers(handler);

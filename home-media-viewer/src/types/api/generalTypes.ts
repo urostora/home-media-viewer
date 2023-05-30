@@ -5,6 +5,14 @@ export interface GeneralResponse {
   count?: number;
 }
 
+export interface GeneralResponseWithData<T> {
+  date: string;
+  ok: boolean;
+  error?: string;
+  count?: number;
+  data?: T;
+}
+
 export interface GeneralEntityListResponse<T> extends GeneralResponse {
   count: number;
   data: Array<T>;

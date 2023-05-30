@@ -38,5 +38,5 @@ export default withIronSessionApiRoute(async function loginRoute(req, res) {
   };
   await req.session.save();
   console.log(`User ${user.name} logged in`);
-  res.send(getApiResponse({ ok: true }));
+  res.send(getApiResponse({ ok: true, data: { name: user.name, email: user.email, isAdmin: user.isAdmin } }));
 }, getIronSessionOptions());

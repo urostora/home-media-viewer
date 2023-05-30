@@ -10,19 +10,12 @@ import {
 import { UserEditType, UserSearchType } from '@/types/api/userTypes';
 import { addUser, deleteUser, updateUser } from '@/utils/userHelper';
 import { EntityType } from '@/types/api/generalTypes';
-import { withSessionRoute } from '@/utils/sessionRoute';
+import { apiOnlyWithAdminUsers } from '@/utils/auth/apiHoc';
 
 const prisma = new PrismaClient();
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
-
-  console.log('/api/user session', req.session);
-
-  if (req.session?.user?.admin !== true) {
-    // not admin user - forbidden
-    res.status(403).end('Only administrators allowed');
-  }
 
   switch (method) {
     case 'POST':
@@ -105,4 +98,4 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 };
 
-export default withSessionRoute(handler);
+export default apiOnlyWithAdminUsers(handler);

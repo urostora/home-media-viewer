@@ -2,11 +2,15 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { Prisma, PrismaClient } from '@prisma/client';
 import { syncAlbums } from '@/utils/albumHelper';
 import { getApiResponse } from '@/utils/apiHelpers';
+import { apiOnlyWithAdminUsers } from '@/utils/auth/apiHoc';
 
 const prisma = new PrismaClient();
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
+
+  res.status(403).write('function deprecated');
+  return;
 
   switch (method) {
     case 'POST':
@@ -20,4 +24,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       res.setHeader('Allow', ['POST']);
       res.status(405).end(`Method ${method} Not Allowed`);
   }
-}
+};
+
+export default apiOnlyWithAdminUsers(handler);

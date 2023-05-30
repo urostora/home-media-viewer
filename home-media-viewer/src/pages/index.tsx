@@ -6,10 +6,21 @@ import { File } from 'buffer'
 import FileList from '@/components/fileList'
 import PageHeader from '@/components/layout/pageHeader'
 import LayoutLoggedIn from '@/components/layout/layoutLoggedIn'
+import { AuthContext, AuthData } from '@/components/auth/authContext'
+import { useContext, useState } from 'react'
+import LayoutNotLoggedIn from '@/components/layout/layoutNotLoggedIn'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export default function Home() {
+  const [ authData, setAuthData ] = useState<AuthData>({ isLoggedIn: false });
+
+  const userAuthenticated = (ad: AuthData) => {
+    if (ad.isLoggedIn) {
+      setAuthData(ad);
+    }
+  };
+
   return (
     <>
       <Head>
@@ -19,9 +30,16 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main className={styles.main}>
-        <LayoutLoggedIn>
-          <FileList />
-        </LayoutLoggedIn>
+        {
+          authData.isLoggedIn
+          ? (
+            <AuthContext.Provider value={authData}>
+              <LayoutLoggedIn>
+                <FileList />
+              </LayoutLoggedIn>
+            </AuthContext.Provider>
+            )
+          : <LayoutNotLoggedIn onUserAuthenticated={userAuthenticated} /> }
       </main>
     </>
   )

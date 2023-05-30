@@ -5,6 +5,7 @@ export interface AlbumSearchType extends StatusSearchType {
   name?: string;
   basePath?: string;
   sourceType?: AlbumSourceType;
+  user?: string;
 }
 
 export interface AlbumUpdateType extends EditEntityWithStatusType {
