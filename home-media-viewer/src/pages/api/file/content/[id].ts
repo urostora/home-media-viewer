@@ -1,12 +1,12 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { PrismaClient } from '@prisma/client';
-import { getFileIdThumbnailPath } from '@/utils/thumbnailHelper';
 import { handleFileResponseByPath } from '@/utils/responseHelper';
 import { getFullPath } from '@/utils/fileHelper';
+import { withSessionRoute } from '@/utils/sessionRoute';
 
 const prisma = new PrismaClient();
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
 
   switch (method) {
@@ -19,10 +19,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           throw Error('Insufficient parameters provided (missing fileId)');
         }
 
-        const file = await prisma.file.findFirst({ where: { id }, include: { album: true } });
+        const albumFilter =
+          req.session?.user?.admin === true ? undefined : { users: { some: { id: req.session?.user?.id ?? '' } } };
+
+        const file = await prisma.file.findFirst({ where: { id, album: albumFilter }, include: { album: true } });
 
         if (file == null) {
-          throw Error('Invalid file id');
+          throw Error('Invalid or not allowed file');
         }
 
         const filePath = await getFullPath(file, file.album);
@@ -36,4 +39,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       res.setHeader('Allow', ['GET']);
       res.status(405).end(`Method ${method} Not Allowed`);
   }
-}
+};
+
+export default withSessionRoute(handler);

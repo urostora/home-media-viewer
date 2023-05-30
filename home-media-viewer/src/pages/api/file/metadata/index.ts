@@ -1,14 +1,13 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { PrismaClient } from '@prisma/client';
-import { getAlbums } from '@/utils/albumHelper';
 import { getApiResponse, getEntityTypeRequestBodyObject, getRequestBodyObject } from '@/utils/apiHelpers';
 import { EntityType } from '@/types/api/generalTypes';
-import { AlbumSearchType } from '@/types/api/albumTypes';
 import { deleteMetadata, loadMetadata } from '@/utils/fileHelper';
+import { apiOnlyWithAdminUsers } from '@/utils/auth/apiHoc';
 
 const prisma = new PrismaClient();
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
 
   switch (method) {
@@ -71,4 +70,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       res.setHeader('Allow', ['POST']);
       res.status(405).end(`Method ${method} Not Allowed`);
   }
-}
+};
+
+export default apiOnlyWithAdminUsers(handler);

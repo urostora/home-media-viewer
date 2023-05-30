@@ -17,6 +17,7 @@ export interface FileSearchType extends StatusSearchType {
   fileDate?: DateFilter;
   contentDate?: DateFilter;
   metadataStatus?: MetadataProcessingStatus;
+  user?: string;
 }
 
 export interface FileMetadataType {

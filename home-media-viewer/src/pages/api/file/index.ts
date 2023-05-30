@@ -6,6 +6,7 @@ import { EntityType } from '@/types/api/generalTypes';
 import { AlbumSearchType, AlbumUpdateType } from '@/types/api/albumTypes';
 import { FileSearchType } from '@/types/api/fileTypes';
 import { getFiles } from '@/utils/fileHelper';
+import { withSessionRoute } from '@/utils/sessionRoute';
 
 const prisma = new PrismaClient();
 
@@ -21,6 +22,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
           throw Error('No search parameters specified');
         }
 
+        if (req.session?.user?.admin !== true) {
+          postData.user = req.session?.user?.id ?? '';
+        }
+
         const results = await getFiles(postData);
         res.status(200).json(getApiResponse(results));
       } catch (e) {
@@ -29,6 +34,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
       break;
     case 'PUT':
+      if (req.session?.user?.admin !== true) {
+        res.status(403).end('Only administrators allowed');
+        return;
+      }
+
       // Update or create data in your database
       const putData: AlbumUpdateType | null = getRequestBodyObject(req, res);
       if (putData == null) {
@@ -52,6 +62,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
       break;
     case 'DELETE':
+      if (req.session?.user?.admin !== true) {
+        res.status(403).end('Only administrators allowed');
+        return;
+      }
+
       // Update or create data in your database
       const deleteData: EntityType | null = getEntityTypeRequestBodyObject(req, res);
       if (deleteData == null) {
@@ -74,4 +89,4 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 };
 
-export default handler;
+export default withSessionRoute(handler);

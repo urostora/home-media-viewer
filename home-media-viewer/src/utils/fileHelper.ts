@@ -104,6 +104,17 @@ export const updateThumbnailDate = async (file: File, date?: Date) => {
 };
 
 export const getFiles = async (params: FileSearchType) => {
+  const albumSearchParams =
+    typeof params?.user !== 'string'
+      ? undefined
+      : {
+          users: {
+            some: {
+              id: params?.user ?? '',
+            },
+          },
+        };
+
   const filter: Prisma.FileWhereInput = {
     albumId: params?.album?.id,
     parentFileId: params?.parentFileId,
@@ -112,6 +123,7 @@ export const getFiles = async (params: FileSearchType) => {
     modifiedAt: getDateTimeFilter(params?.fileDate),
     contentDate: getDateTimeFilter(params?.contentDate),
     metadataStatus: params.metadataStatus,
+    album: albumSearchParams,
   };
 
   console.log(filter);
