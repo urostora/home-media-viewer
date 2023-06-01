@@ -2,6 +2,7 @@ import { LoginRequestType } from "@/types/loginTypes";
 import { apiLogin } from "@/utils/frontend/dataSource/auth";
 import { FormEvent, useState } from "react";
 import { AuthData } from "./authContext";
+import hmvStyle from '@/styles/hmv.module.scss';
 
 
 interface LoginProps {
@@ -55,20 +56,23 @@ const Login = (props: LoginProps) => {
         }
     }
 
-    return (<div className="LoginForm">
+    return (<div className={hmvStyle.loginForm}>
+        <div className={hmvStyle.loginTitle}>Login</div>
         <form onSubmit={onLoginRequest}>
-            <>
-                <label>Username</label>
-                <input type="text" name="email" defaultValue="admin@admin.com" required />
-            </>
-            <>
-                <label>Password</label>
-                <input type="password" name="password" defaultValue="P4ssw0rd" required />
-            </>
-            <>
+            <div className={hmvStyle.inputContainer}>
+                <div>
+                    <label>Username</label>
+                    <input type="text" name="email" defaultValue="admin@admin.com" required />
+                </div>
+                <div>
+                    <label>Password</label>
+                    <input type="password" name="password" defaultValue="P4ssw0rd" required />
+                </div>
+            </div>
+            <div className={hmvStyle.controlContainer}>
                 <input type="submit" value="Log in" />
                 {typeof errorMessage === 'string' ? <div className="errorMessage">{errorMessage}</div> : null }
-            </>
+            </div>
         </form>
     </div>);
 }

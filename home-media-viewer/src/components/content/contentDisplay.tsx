@@ -48,7 +48,7 @@ const ContentDisplay = (props: ContentDisplayProps) => {
 
     return (
         <div className={hmvStyle.contentDisplayContainer}>
-            <div className={hmvStyle.closeButton} onClick={onCloseClicked}></div>
+            <div className={hmvStyle.closeButton} onClick={onCloseClicked}>X</div>
             <div className={hmvStyle.contentWrapper}>
                 {getContentElement(props.content)}
             </div>
