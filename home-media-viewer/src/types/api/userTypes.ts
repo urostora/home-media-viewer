@@ -23,3 +23,8 @@ export interface UserDataType extends EntityWithStatusType {
   name: string;
   email: string;
 }
+
+export interface UserAlbumConnectType {
+  userId?: string;
+  albumId?: string;
+}

@@ -59,11 +59,11 @@ const Login = (props: LoginProps) => {
         <form onSubmit={onLoginRequest}>
             <>
                 <label>Username</label>
-                <input type="text" name="email" value="admin@admin.com" required />
+                <input type="text" name="email" defaultValue="admin@admin.com" required />
             </>
             <>
                 <label>Password</label>
-                <input type="password" name="password" value="P4ssw0rd" required />
+                <input type="password" name="password" defaultValue="P4ssw0rd" required />
             </>
             <>
                 <input type="submit" value="Log in" />

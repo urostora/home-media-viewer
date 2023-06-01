@@ -1,5 +1,5 @@
 import { AlbumAddType, AlbumSearchType, AlbumUpdateType } from '@/types/api/albumTypes';
-import { Album, AlbumSourceType, Prisma, PrismaClient, Status } from '@prisma/client';
+import { Album, AlbumSourceType, Prisma, PrismaClient, Status, User } from '@prisma/client';
 import fs from 'fs';
 import pathModule from 'path';
 import { loadMetadata, syncFilesInAlbumAndFile } from './fileHelper';
@@ -293,4 +293,54 @@ export const processAlbumFilesMetadata = async (
       break;
     }
   }
+};
+
+export const addUserToAlbum = async (album: string | Album, user: string | User) => {
+  const albumEntity =
+    typeof album === 'string'
+      ? await prisma.album.findFirst({
+          where: { id: album, status: { in: ['Active', 'Disabled'] } },
+          include: { users: true },
+        })
+      : album;
+
+  if (albumEntity == null) {
+    throw Error(`Album not found with id ${album}`);
+  }
+
+  const userEntity =
+    typeof user === 'string'
+      ? await prisma.user.findFirst({ where: { id: user, status: { in: ['Active', 'Disabled'] } } })
+      : user;
+
+  if (userEntity == null) {
+    throw Error(`User not found with id ${user}`);
+  }
+
+  await prisma.album.update({ where: { id: albumEntity.id }, data: { users: { connect: { id: userEntity.id } } } });
+};
+
+export const removeUserFromAlbum = async (album: string | Album, user: string | User) => {
+  const albumEntity =
+    typeof album === 'string'
+      ? await prisma.album.findFirst({
+          where: { id: album, status: { in: ['Active', 'Disabled'] } },
+          include: { users: true },
+        })
+      : album;
+
+  if (albumEntity == null) {
+    throw Error(`Album not found with id ${album}`);
+  }
+
+  const userEntity =
+    typeof user === 'string'
+      ? await prisma.user.findFirst({ where: { id: user, status: { in: ['Active', 'Disabled'] } } })
+      : user;
+
+  if (userEntity == null) {
+    throw Error(`User not found with id ${user}`);
+  }
+
+  await prisma.album.update({ where: { id: albumEntity.id }, data: { users: { disconnect: { id: userEntity.id } } } });
 };
