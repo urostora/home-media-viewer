@@ -51,3 +51,7 @@ Prisma commands
 Update metadata
 
 `docker-compose exec app sh -c "npx ts-node -r tsconfig-paths/register ./src/backgroundProcesses/updateMetadata.ts"`
+
+## Production build
+
+`docker-compose --file docker-compose-prod.yml --env-file .env-prod up -d --build app`
