@@ -15,21 +15,16 @@ services:
       - home-media-network
 
   app:
-    image: "node:18-alpine"
     container_name: home-media-viewer-app
     build:
       dockerfile: ./docker/prod/app/Dockerfile
       context: .
       target: deploy
-    user: "node"
-    working_dir: /home/node/app
-    command: "npm run dev"
     depends_on:
       - db
     environment:
       APP_ALBUM_ROOT_PATH: ${APP_ALBUM_ROOT_PATH}
       DATABASE_URL: ${DATABASE_URL}
-      NODE_ENV: development
       LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
       TS_NODE_PROJECT: /home/node/app/tsconfig.json
       APP_SESSION_SECRET: ${APP_SESSION_SECRET}
