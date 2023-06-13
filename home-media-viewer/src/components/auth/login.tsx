@@ -62,11 +62,11 @@ const Login = (props: LoginProps) => {
             <div className={hmvStyle.inputContainer}>
                 <div>
                     <label>Username</label>
-                    <input type="text" name="email" defaultValue="admin@admin.com" required />
+                    <input type="text" name="email" required />
                 </div>
                 <div>
                     <label>Password</label>
-                    <input type="password" name="password" defaultValue="P4ssw0rd" required />
+                    <input type="password" name="password" required />
                 </div>
             </div>
             <div className={hmvStyle.controlContainer}>
