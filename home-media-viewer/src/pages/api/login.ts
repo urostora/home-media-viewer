@@ -32,11 +32,24 @@ export default withIronSessionApiRoute(async function loginRoute(req, res) {
     return;
   }
 
+  const sessionOptions = getIronSessionOptions();
+
   req.session.user = {
     id: user?.id,
     admin: user?.isAdmin ?? false,
   };
   await req.session.save();
   console.log(`User ${user.name} logged in`);
-  res.send(getApiResponse({ ok: true, data: { name: user.name, email: user.email, isAdmin: user.isAdmin } }));
+  res.send(
+    getApiResponse({
+      ok: true,
+      data: {
+        name: user.name,
+        email: user.email,
+        isAdmin: user.isAdmin,
+        sessionExpiresOn: new Date().getTime() + sessionOptions.cookieOptions.ttl * 1000,
+        sessionExpiresInSeconds: sessionOptions.cookieOptions.ttl * 1000,
+      },
+    }),
+  );
 }, getIronSessionOptions());

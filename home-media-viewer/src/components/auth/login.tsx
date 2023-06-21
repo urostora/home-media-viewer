@@ -11,14 +11,12 @@ interface LoginProps {
 
 const Login = (props: LoginProps) => {
     const [ errorMessage, setErrorMessage ] = useState<string | null>(null);
-    const [ isLoginInProgress, setIsLoginInProgress ] = useState<boolean>(false);
 
     const { onUserAuthenticated } = props;
 
     const onLoginRequest = async (event: FormEvent) => {
         event.preventDefault();
 
-        console.log(event.currentTarget);
         const data = new FormData(event.currentTarget as HTMLFormElement) as any;
 
         if (
@@ -43,6 +41,8 @@ const Login = (props: LoginProps) => {
                 setErrorMessage('Invalid email or password');
                 return;
             }
+
+            console.log('Call on user authenticated', result);
 
             onUserAuthenticated({
                 isLoggedIn: true,

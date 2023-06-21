@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import hmvStyle from '@/styles/hmv.module.scss';
 
 export type ContentFilterType = {
     dateFrom?: string;
@@ -43,27 +44,27 @@ const ContentFilter = (props: ContentFilterPropsType) => {
 
     console.log('Current filter:', currentFilter);
 
-    return (<>
-        <>
-            <span>From</span>
-            <input
-                type="datetime-local"
-                value={finalFilter?.dateFrom ?? ''}
-                onChange={dateFromChanged}
-            />
-        </>
-        <>
-            <span>To</span>
-            <input
-                type="datetime-local"
-                value={finalFilter?.dateTo ?? ''}
-                onChange={dateToChanged}
-            />
-        </>
-        <>
+    return (<div className={hmvStyle.contentFilterContainer}>
+        <div>
+            <span>Content date</span>
+            <div className={hmvStyle.intervalContainer}>
+                <input
+                    type="datetime-local"
+                    value={finalFilter?.dateFrom ?? ''}
+                    onChange={dateFromChanged}
+                />
+                &nbsp;-&nbsp;
+                <input
+                    type="datetime-local"
+                    value={finalFilter?.dateTo ?? ''}
+                    onChange={dateToChanged}
+                />
+            </div>
+        </div>
+        <div className={hmvStyle.commandContainer}>
             <input type="button" onClick={applyFilters} value="Apply filters" />
-        </>
-    </>);
+        </div>
+    </div>);
 }
 
 export default ContentFilter;

@@ -21,7 +21,7 @@ export const handleFileResponseByPath = (req: NextApiRequest, res: NextApiRespon
     // We replaced all the event handlers with a simple call to readStream.pipe()
     readStream.pipe(res);
   } else {
-    const CHUNK_SIZE = 10 ** 6; // 1MB
+    const CHUNK_SIZE = 4 * 1_000_000; // 4MB
     const start = Number(range.replace(/\D/g, ''));
 
     const end = Math.min(start + CHUNK_SIZE, stat.size - 1);

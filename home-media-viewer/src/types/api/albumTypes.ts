@@ -17,3 +17,8 @@ export interface AlbumAddType {
   type?: AlbumSourceType;
   name?: string;
 }
+
+export interface AlbumResultType {
+  id?: string;
+  name?: string;
+}

@@ -126,13 +126,11 @@ export const getFiles = async (params: FileSearchType) => {
     album: albumSearchParams,
   };
 
-  console.log(filter);
-
   const results = await prisma.$transaction([
     prisma.file.count({ where: filter }),
     prisma.file.findMany({
       where: filter,
-      take: params.take ?? 10,
+      take: params.take ?? undefined,
       skip: params.skip ?? 0,
       include: {
         metas: {
@@ -192,20 +190,18 @@ export const loadMetadata = async (file: File, fileAlbum?: Album): Promise<boole
 
     console.log('    Updating file data');
 
-    if (!file.isDirectory) {
-      const metadataStatus: MetadataProcessingStatus = ok ? 'Processed' : 'Error';
+    const metadataStatus: MetadataProcessingStatus = ok ? 'Processed' : 'Error';
 
-      await prisma.file.update({
-        where: { id: file.id },
-        data: {
-          metadataProcessedAt: new Date(),
-          metadataStatus,
-          metadataProcessingError: error,
-        },
-      });
+    await prisma.file.update({
+      where: { id: file.id },
+      data: {
+        metadataProcessedAt: new Date(),
+        metadataStatus,
+        metadataProcessingError: error,
+      },
+    });
 
-      console.log('    File data updated');
-    }
+    console.log('    File data updated');
   } else {
     await prisma.file.update({
       where: { id: file.id },

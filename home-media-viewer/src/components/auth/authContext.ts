@@ -6,6 +6,7 @@ export interface AuthData {
   email?: string;
   isAdmin?: boolean;
   sessionExpiresOn?: Date;
+  sessionExpiresInSeconds?: number;
 }
 
 export const AuthContext = createContext<AuthData>({ isLoggedIn: false });

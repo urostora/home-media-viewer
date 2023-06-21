@@ -87,8 +87,6 @@ const ContentThumbnail = (props: ContentThumbnailPropsType) => {
 
     const contentName = content.name + (content.extension.length > 0 ? `.${content.extension}` : '');
 
-    let coordinate
-
     return (
         <div className={hmvStyle.contentCardContainer} onClick={onCardClicked} >
             <div className={hmvStyle.contentName}>

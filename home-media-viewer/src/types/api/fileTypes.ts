@@ -10,7 +10,7 @@ import { AlbumSearchType } from './albumTypes';
 
 export interface FileSearchType extends StatusSearchType {
   album?: EntityType;
-  parentFileId?: string;
+  parentFileId?: string | null;
   name?: string;
   extension?: string;
   pathBeginsWith?: string;

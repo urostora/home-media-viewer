@@ -24,7 +24,7 @@ export interface GeneralMutationResponse extends GeneralResponse {
 }
 
 export interface GeneralSearchType {
-  take?: number;
+  take?: number | null;
   skip?: number;
 }
 
