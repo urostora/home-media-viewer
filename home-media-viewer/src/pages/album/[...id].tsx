@@ -4,6 +4,8 @@ import FilteredContentList from '@/components/content/filteredContentList';
 import { FileResultType, FileSearchType } from '@/types/api/fileTypes';
 import Link from 'next/link';
 
+import hmvStyle from '@/styles/hmv.module.scss';
+
 const AlbumRootPage = () => {
     const router = useRouter();
 
@@ -37,9 +39,11 @@ const AlbumRootPage = () => {
         : null;
 
     return (<>
-        <Link key="backToAlbum" href={'/album'} prefetch={false} >Back to album list</Link>
-        {backToAlbumLink}
-        {backLink}
+        <div className={hmvStyle.navigationBar}>
+            <Link key="backToAlbum" href={'/album'} prefetch={false} >Back to album list</Link>
+            {backToAlbumLink}
+            {backLink}
+        </div>
         <FilteredContentList
             albumId={albumId}
             parentFileId={parentFileId}
