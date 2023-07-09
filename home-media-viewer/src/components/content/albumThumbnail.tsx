@@ -17,7 +17,7 @@ const AlbumThumbnail = (props: AlbumThumbnailProps) => {
     }
 
     return (
-        <div className={hmvStyle.contentCardContainer} onClick={onCardClicked} >
+        <div className={`${hmvStyle.contentCardContainer} ${hmvStyle.albumCardContainer}`} onClick={onCardClicked} >
             <div className={hmvStyle.contentName}>
                 <>{content.name}</>
             </div>
