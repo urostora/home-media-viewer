@@ -7,6 +7,7 @@ import type { ReactElement } from 'react'
 import LayoutNotLoggedIn from '@/components/layout/layoutNotLoggedIn'
 
 const cookieNames = {
+  sessionToken: 'home-media-viewer-user-cookie',
   email: 'hmv-email',
   name: 'hmv-name',
   isadmin: 'hmv-isadmin',
@@ -37,11 +38,12 @@ const getAuthDataFromCookie = (): AuthData => {
     return { isLoggedIn: false };
   }
 
+  const sessionToken = getCookie(cookieNames.sessionToken);
   const email = getCookie(cookieNames.email);
   const name = getCookie(cookieNames.name);
   const isAdmin = getCookie(cookieNames.isadmin) === '1';
 
-  if (email == null || name == null) {
+  if (sessionToken == null || email == null || name == null) {
     return { isLoggedIn: false };
   }
 
