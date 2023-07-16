@@ -39,16 +39,15 @@ services:
     build:
       dockerfile: ./docker/dev/app/Dockerfile
       context: .
-    user: "node"
+    # user: "node"
     working_dir: /home/node/app
-    command: "npm run dev"
+    # command: "npm run dev"
     depends_on:
       - dependencies
       - dev-db
     environment:
       APP_ALBUM_ROOT_PATH: ${APP_ALBUM_ROOT_PATH}
       DATABASE_URL: ${DATABASE_URL}
-      NODE_ENV: development
       LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
       TS_NODE_PROJECT: /home/node/app/tsconfig.json
       APP_SESSION_SECRET: ${APP_SESSION_SECRET}

@@ -54,4 +54,8 @@ Update metadata
 
 ## Production build
 
-`docker-compose --file docker-compose-prod.yml --env-file .env-prod up -d --build app`
+`docker-compose --file docker-compose-prod.yml --env-file .env-prod build app`
+
+## Run production app
+
+`docker-compose --file docker-compose-prod.yml --env-file .env-prod up -d`

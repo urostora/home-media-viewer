@@ -19,15 +19,17 @@ services:
     build:
       dockerfile: ./docker/prod/app/Dockerfile
       context: .
-      target: deploy
+      target: app
     depends_on:
       - db
     environment:
       APP_ALBUM_ROOT_PATH: ${APP_ALBUM_ROOT_PATH}
       DATABASE_URL: ${DATABASE_URL}
       LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
-      TS_NODE_PROJECT: /home/node/app/tsconfig.json
       APP_SESSION_SECRET: ${APP_SESSION_SECRET}
+    # stdin_open: true
+    # tty: true
+    # user: node
     volumes:
       - ./static:${APP_ALBUM_ROOT_PATH}
       - home-media-storage:${APP_STORAGE_PATH}
