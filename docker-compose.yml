@@ -1,9 +1,7 @@
-version: '3'
+version: "3"
 services:
   dependencies:
     container_name: media-viewer-dev-node
-    # build: 
-    #   target: dependencies
     image: "node:18"
     user: "node"
     working_dir: /home/node/app
@@ -31,7 +29,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.50'
+          cpus: "0.50"
           memory: 800m
 
   app:
@@ -39,9 +37,6 @@ services:
     build:
       dockerfile: ./docker/dev/app/Dockerfile
       context: .
-    # user: "node"
-    working_dir: /home/node/app
-    # command: "npm run dev"
     depends_on:
       - dependencies
       - dev-db
@@ -62,7 +57,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '2'
+          cpus: "2"
           memory: 1500m
 
 networks:
