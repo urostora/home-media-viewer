@@ -3,6 +3,7 @@ import type { EditEntityWithStatusType, StatusSearchType, EntityWithStatusType }
 
 export interface AlbumSearchType extends StatusSearchType {
   name?: string;
+  basePathContains?: string;
   basePath?: string;
   sourceType?: AlbumSourceType;
   user?: string;

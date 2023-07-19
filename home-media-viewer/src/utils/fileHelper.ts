@@ -103,7 +103,7 @@ export const updateThumbnailDate = async (file: File, date?: Date) => {
   });
 };
 
-export const getFiles = async (params: FileSearchType) => {
+export const getFiles = async (params: FileSearchType, returnThumbnails: boolean = false) => {
   const albumSearchParams =
     typeof params?.user !== 'string'
       ? undefined
@@ -118,12 +118,20 @@ export const getFiles = async (params: FileSearchType) => {
   const filter: Prisma.FileWhereInput = {
     albumId: params?.album?.id,
     parentFileId: params?.parentFileId,
+    status: params?.status,
+    isDirectory: params?.isDirectory,
     name: typeof params?.name !== 'string' ? undefined : { contains: params.name },
     extension: params?.extension,
     modifiedAt: getDateTimeFilter(params?.fileDate),
     contentDate: getDateTimeFilter(params?.contentDate),
     metadataStatus: params.metadataStatus,
     album: albumSearchParams,
+    path:
+      typeof params?.pathBeginsWith !== 'string'
+        ? typeof params?.pathIsExactly !== 'string'
+          ? undefined
+          : { equals: params.pathIsExactly }
+        : { startsWith: params.pathBeginsWith },
   };
 
   const results = await prisma.$transaction([
@@ -150,13 +158,20 @@ export const getFiles = async (params: FileSearchType) => {
     }),
   ]);
 
-  const fileList = results[1].map((fileData) => {
-    const thumbnailData = getFileThumbnailInBase64(fileData);
-    return {
-      ...fileData,
-      thumbnail: thumbnailData,
-    };
-  });
+  const fileList = returnThumbnails
+    ? results[1].map((fileData) => {
+        const thumbnailData = getFileThumbnailInBase64(fileData);
+        return {
+          ...fileData,
+          thumbnail: thumbnailData,
+        };
+      })
+    : results[1].map((fileData) => {
+        return {
+          ...fileData,
+          thumbnail: '',
+        };
+      });
 
   return {
     count: results[0],

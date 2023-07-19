@@ -26,7 +26,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
           postData.user = req.session?.user?.id ?? '';
         }
 
-        const results = await getFiles(postData);
+        const results = await getFiles(postData, true);
         res.status(200).json(getApiResponse(results));
       } catch (e) {
         res.status(400).end(`${e}`);

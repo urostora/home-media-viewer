@@ -6,7 +6,7 @@ import type {
   DateFilter,
   EntityType,
 } from './generalTypes';
-import { AlbumSearchType } from './albumTypes';
+import { AlbumResultType, AlbumSearchType } from './albumTypes';
 
 export interface FileSearchType extends StatusSearchType {
   album?: EntityType;
@@ -14,9 +14,11 @@ export interface FileSearchType extends StatusSearchType {
   name?: string;
   extension?: string;
   pathBeginsWith?: string;
+  pathIsExactly?: string;
   fileDate?: DateFilter;
   contentDate?: DateFilter;
   metadataStatus?: MetadataProcessingStatus;
+  isDirectory?: boolean;
   user?: string;
 }
 
