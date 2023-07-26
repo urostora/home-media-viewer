@@ -1,21 +1,20 @@
-import { AlbumResultType } from "@/types/api/albumTypes";
-import { FileResultType } from "@/types/api/fileTypes";
-import { useState } from "react";
 
 
-export default function Browser() {
-    const [ currentAlbum, setCurrentAlbum ] = useState<AlbumResultType | null>(null);
-    const [ currentDirectory, setCurrentDirectory ] = useState<FileResultType | null>(null);
+import BrowserContentList from "./content/browserContentList";
+import PathNavigator from "./content/pathNavigator";
+import hmvStyle from '@/styles/hmv.module.scss';
 
-    const albumSelectedHandler = (album: AlbumResultType): void => {
-        setCurrentAlbum(album);
-        setCurrentDirectory(null);
-    };
+type BrowserProps = {
+    path?: string;
+}
 
-    // get content
-    if (currentAlbum === null) {
-        // no album selected, load albums first
-    }
-
-    return (<></>);
+export default function Browser(props: BrowserProps) {
+    const path: string = typeof props?.path === 'string'
+        ? props.path
+        : '';
+    
+    return (<div className={hmvStyle.browserContainer}>
+        <PathNavigator path={path} />
+        <BrowserContentList path={path} />
+    </div>);
 }

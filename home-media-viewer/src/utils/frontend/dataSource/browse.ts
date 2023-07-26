@@ -13,7 +13,11 @@ export const apiBrowse = async (relativePath: string = ''): Promise<BrowseResult
     throw Error(resultData.error ?? 'Could not load files');
   }
 
-  if (!Array.isArray(resultData?.data)) {
+  if (!resultData.data) {
+    throw Error(resultData.error ?? 'Response data not found');
+  }
+
+  if (!Array.isArray(resultData?.data?.content)) {
     throw Error(resultData.error ?? 'Result contains no file list');
   }
 

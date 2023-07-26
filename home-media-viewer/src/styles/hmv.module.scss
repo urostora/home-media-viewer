@@ -26,6 +26,11 @@ $appTextColorAlternative: #2d9649;
             font-size: x-large;
             align-self: center;
         }
+
+        .activeLinkItem {
+            background-color: $appTextColorAlternative;
+            color: $appBackgroundAlternative;
+        }
     }
 
     .titleArea {
@@ -211,4 +216,28 @@ $appTextColorAlternative: #2d9649;
 .commandContainer {
     width: 100% !important;
     max-width: 100% !important;
+}
+
+.browserContainer {
+    width: 100%;
+
+    .pathNavigator {
+        display: flex;
+        flex-flow: row nowrap;
+        padding: 5px;
+
+        a {
+            display: inline-block;
+            padding: 10px;
+            border: $appBorderColor 1px solid;
+            border-radius: 15px;
+            background-color: $appBackgroundAlternative;
+            color: $appTextColorAlternative;
+            margin: 5px 10px 5px 10px;
+        }
+    }
+
+    .browserContent {
+        
+    }
 }

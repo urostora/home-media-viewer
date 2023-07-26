@@ -20,7 +20,7 @@ export interface BrowseResultFile {
   path: string;
   pathRelativeToAlbum: string | null;
   isDirectory: boolean;
-  size: Number;
+  size: number;
   dateCreatedOn: string;
   dateModifiedOn: string;
   /** file object stored in database */

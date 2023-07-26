@@ -79,7 +79,7 @@ export default function Layout({ children }: { children: ReactElement }) {
 
             document.cookie = `${cookieNames.email}=${encodeURIComponent(ad?.email ?? '')}${agePart}`;
             document.cookie = `${cookieNames.name}=${encodeURIComponent(ad?.name ?? '')}${agePart}`;
-            document.cookie = `${cookieNames.isadmin}=${encodeURIComponent(ad?.isAdmin ?? '0')}${agePart}`;
+            document.cookie = `${cookieNames.isadmin}=${encodeURIComponent(ad?.isAdmin ? '1' : '0')}${agePart}`;
         } else {
             document.cookie = `${cookieNames.email}=; max-age=0`;
             document.cookie = `${cookieNames.name}=; max-age=0`;
