@@ -57,6 +57,13 @@ const getAuthDataFromCookie = (): AuthData => {
   return ret;
 }
 
+const clearAuthData = () => {
+  document.cookie = `${cookieNames.sessionToken}=; max-age=0`;
+  document.cookie = `${cookieNames.email}=; max-age=0`;
+  document.cookie = `${cookieNames.name}=; max-age=0`;
+  document.cookie = `${cookieNames.isadmin}=; max-age=0`;
+};
+
 export default function Layout({ children }: { children: ReactElement }) {
     const authDataFromCookies = getAuthDataFromCookie();
     console.log('AuthDataFromCookies', authDataFromCookies);
@@ -64,15 +71,28 @@ export default function Layout({ children }: { children: ReactElement }) {
     const [ isAuthProcessed, setIsAuthProcessed ] = useState<boolean>(false);
     const [ authData, setAuthData ] = useState<AuthData>({ isLoggedIn: false });
 
+    const logout = () => {
+      clearAuthData();
+      setIsAuthProcessed(false);
+      setAuthData({ isLoggedIn: false });
+    };
+
     useEffect(() => {
       setIsAuthProcessed(true);
-      setAuthData(getAuthDataFromCookie());
-    }, []);
+
+      const currentAuthData = getAuthDataFromCookie();
+      if (currentAuthData.isLoggedIn) {
+        currentAuthData.logout = logout;
+      }
+
+      setAuthData(currentAuthData);
+    }, [ isAuthProcessed ]);
 
     const userAuthenticated = (ad: AuthData) => {
         console.log('AuthenticationData', ad);
 
         if (ad.isLoggedIn) {
+            ad.logout = logout;
             setAuthData(ad);
 
             const agePart = `; max-age=${ad.sessionExpiresInSeconds}`;
@@ -81,9 +101,7 @@ export default function Layout({ children }: { children: ReactElement }) {
             document.cookie = `${cookieNames.name}=${encodeURIComponent(ad?.name ?? '')}${agePart}`;
             document.cookie = `${cookieNames.isadmin}=${encodeURIComponent(ad?.isAdmin ? '1' : '0')}${agePart}`;
         } else {
-            document.cookie = `${cookieNames.email}=; max-age=0`;
-            document.cookie = `${cookieNames.name}=; max-age=0`;
-            document.cookie = `${cookieNames.isadmin}=; max-age=0`;
+            clearAuthData();
         }
     };
 

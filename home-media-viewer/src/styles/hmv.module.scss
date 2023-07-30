@@ -241,3 +241,28 @@ $appTextColorAlternative: #2d9649;
         
     }
 }
+
+.userHeaderContainer {
+    padding: 10px;
+    border: $appBorderColor 1px solid;
+    border-radius: 15px;
+    background-color: $appBackgroundAlternative;
+    color: $appTextColorAlternative;
+    margin: 10px;
+    align-self: center;
+
+    .userName {
+        margin-right: 10px;
+        font-size: large;
+        font-weight: bold;
+    }
+
+    button {
+        border: $appBorderColor 1px solid;
+        border-radius: 5px;
+        padding: 5px;
+        background-color: $appBackgroundAlternative;
+        color: $appTextColorAlternative;
+        cursor: pointer;
+    }
+}
