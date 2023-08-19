@@ -1,5 +1,5 @@
 import { AlbumResultType, AlbumSearchType } from '@/types/api/albumTypes';
-import { GeneralEntityListResponse } from '@/types/api/generalTypes';
+import { GeneralEntityListResponse, GeneralResponse } from '@/types/api/generalTypes';
 
 export const apiLoadAlbums = async (args: AlbumSearchType): Promise<AlbumResultType[]> => {
   const fetchArgs: RequestInit = {
@@ -23,4 +23,32 @@ export const apiLoadAlbums = async (args: AlbumSearchType): Promise<AlbumResultT
   }
 
   return resultData.data;
+};
+
+export const apiAlbumAdd = async (path: string) => {
+  const fetchArgs: RequestInit = {
+    method: 'PUT',
+    body: JSON.stringify({ path }),
+  };
+
+  const fetchResult = await fetch('/api/album', fetchArgs);
+  const resultData: GeneralResponse = await fetchResult.json();
+
+  if (!resultData.ok) {
+    throw Error(resultData.error ?? 'Could not add albums');
+  }
+};
+
+export const apiAlbumDelete = async (id: string) => {
+  const fetchArgs: RequestInit = {
+    method: 'DELETE',
+    body: JSON.stringify({ id }),
+  };
+
+  const fetchResult = await fetch('/api/album', fetchArgs);
+  const resultData: GeneralResponse = await fetchResult.json();
+
+  if (!resultData.ok) {
+    throw Error(resultData.error ?? 'Could not add albums');
+  }
 };

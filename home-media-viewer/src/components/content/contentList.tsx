@@ -31,6 +31,8 @@ const ContentList = (props: ContentListPropsType) => {
         }
     }
 
+    
+
     const onDisplayedContentClosed = () => {
         setDisplayedContent(undefined);
     };

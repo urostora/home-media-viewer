@@ -1,7 +1,6 @@
 import { FileResultType } from "@/types/api/fileTypes"
 import hmvStyle from '@/styles/hmv.module.scss';
 import { ReactElement } from "react";
-import Image from "next/image";
 import { getContentUrl, getThumbnailUrl } from "@/utils/frontend/contentUtils";
 
 type ContentDisplayProps = {
@@ -40,17 +39,19 @@ const ContentDisplay = (props: ContentDisplayProps) => {
         return <></>;
     }
 
-    const onCloseClicked = () => {
-        if (typeof props.closeHandler === 'function') {
-            props.closeHandler();
-        }
-    };
-
     return (
         <div className={hmvStyle.contentDisplayContainer}>
-            <div className={hmvStyle.closeButton} onClick={onCloseClicked}>X</div>
+            <div className={hmvStyle.closeButton} onClick={props?.closeHandler}>X</div>
+            <div
+                className={`${hmvStyle.navigationArea} ${hmvStyle.previousContainer}`}
+                onClick={props?.previousHandler}>
+            </div>
             <div className={hmvStyle.contentWrapper}>
                 {getContentElement(props.content)}
+            </div>
+            <div
+                className={`${hmvStyle.navigationArea} ${hmvStyle.nextContainer}`}
+                onClick={props?.nextHandler}>
             </div>
         </div>
     );

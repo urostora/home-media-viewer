@@ -143,6 +143,22 @@ $appTextColorAlternative: #2d9649;
             height: 100%;
         }
     }
+
+    .navigationArea {
+        position: fixed;
+        top: 10vh;
+        bottom: 10vh;
+        z-index: 100;
+        width: 15vw;
+    }
+
+    .previousContainer {
+        left: 0px;
+    }
+
+    .nextContainer {
+        right: 0px;
+    }
 }
 
 .loginForm {
@@ -238,7 +254,9 @@ $appTextColorAlternative: #2d9649;
     }
 
     .browserContent {
-        
+        display: flex;
+        flex-flow: row wrap;
+        width: 100%;
     }
 }
 
@@ -264,5 +282,91 @@ $appTextColorAlternative: #2d9649;
         background-color: $appBackgroundAlternative;
         color: $appTextColorAlternative;
         cursor: pointer;
+    }
+}
+
+.browseContentCard {
+    display: flex;
+    flex-flow: column nowrap;
+    padding: 10px;
+    margin: 10px;
+    border: $appBorderColor 1px solid;
+    border-radius: 15px;
+    width: 350px;
+    height: 250px;
+
+    .name {
+        font-size: large;
+        font-weight: bold;
+        text-align: center;
+    }
+
+    .thumbnail {
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+    }
+
+    .hasThumbnail {
+        width: 100%;
+        height: 250px;
+    }
+
+    .details {
+        display: flex;
+        flex-direction: row nowrap;
+        justify-content: space-between;
+
+        font-size: large;
+        font-weight: bold;
+
+        .open {
+            overflow: visible;
+            z-index: 10;
+            background-color: $appBackgroundAlternative;
+        }
+
+        .menuOuter {
+            width: 30px;
+            height: 30px;
+            position: relative;
+
+            .menu {
+                border: $appBorderColor 1px solid;
+                border-radius: 15px;
+                background-color: $appBackgroundAlternative;
+                padding: 5px;
+                text-align: center;
+                cursor: pointer;
+
+                .menuContent {
+                    display: none;
+                }
+            }
+
+            .menu.open {
+                width: fit-content;
+                text-align: left;
+                position: absolute;
+                top: 0px;
+                right: 0px;
+
+                .menuContent {
+                    display: block;
+                    cursor: pointer;
+
+                    li {
+                        list-style-type: none;
+                        line-height: 1.3;
+                    }
+
+                    .operationInProgress {
+                        pointer-events: none;
+                        cursor: none;
+                        opacity: 0.5;
+                    }
+                }
+            }
+        }
     }
 }

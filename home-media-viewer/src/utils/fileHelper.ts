@@ -253,3 +253,14 @@ export const getFullPath = async (file: File, fileAlbum?: Album): Promise<string
 
   return `${album.basePath}/${file.path}`;
 };
+
+export const deleteFile = async (file: File): Promise<void> => {
+  if (file.status === 'Deleted') {
+    return;
+  }
+
+  await prisma.file.update({
+    where: { id: file.id },
+    data: { status: 'Deleted' },
+  });
+};

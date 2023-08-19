@@ -25,4 +25,5 @@ export interface BrowseResultFile {
   dateModifiedOn: string;
   /** file object stored in database */
   storedFile: FileResultType | null;
+  storedAlbum: AlbumResultType | null;
 }

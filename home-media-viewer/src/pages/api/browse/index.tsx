@@ -84,6 +84,14 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             const filePathRelativeToAlbum = albumBasePath === null ? null : filePathFull.substring(albumBasePath.length + 1);
             const filePathRelativeToContentDir = filePathFull.substring(baseDir.length + 1);
 
+            const storedAlbumList = fileStats.isDirectory() && allAlbums && allAlbums?.count > 0
+                ? allAlbums.data.filter(a => a.basePath === filePathFull)
+                : [];
+
+            const storedAlbum = storedAlbumList === null || storedAlbumList.length === 0
+                ? null
+                : storedAlbumList[0];
+
             const storedFilesMatchingName = storedFilesInDirectory === null
                 ? null
                 : storedFilesInDirectory.data.filter(f =>  name === `${f.name}${f.extension.length > 0 ? `.${f.extension}` : ''}`);
@@ -101,6 +109,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                 dateCreatedOn: fileStats.ctime,
                 dateModifiedOn: fileStats.mtime,
                 storedFile,
+                storedAlbum,
             };
         });
 

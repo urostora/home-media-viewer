@@ -1,9 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { Prisma, PrismaClient } from '@prisma/client';
-import { deleteAlbum, getAlbums, updateAlbum } from '@/utils/albumHelper';
+import { PrismaClient } from '@prisma/client';
+import { updateAlbum } from '@/utils/albumHelper';
+import { deleteFile } from '@/utils/fileHelper';
 import { getApiResponse, getEntityTypeRequestBodyObject, getRequestBodyObject } from '@/utils/apiHelpers';
 import { EntityType } from '@/types/api/generalTypes';
-import { AlbumSearchType, AlbumUpdateType } from '@/types/api/albumTypes';
+import { AlbumUpdateType } from '@/types/api/albumTypes';
 import { FileSearchType } from '@/types/api/fileTypes';
 import { getFiles } from '@/utils/fileHelper';
 import { withSessionRoute } from '@/utils/sessionRoute';
@@ -76,7 +77,18 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       const { id: idToDelete } = deleteData;
 
       try {
-        await deleteAlbum(idToDelete);
+        const file = await prisma.file.findFirst({
+          where: {
+            id: idToDelete,
+            status: { in: ['Active', 'Disabled'] },
+          },
+        });
+
+        if (file === null) {
+          throw new Error(`File not exists with id ${idToDelete}`);
+        }
+
+        await deleteFile(file);
         res.status(200).json(getApiResponse({ idToDelete }));
       } catch (e) {
         res.status(400).end(`${e}`);
@@ -84,7 +96,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
       break;
     default:
-      res.setHeader('Allow', ['POST']);
+      res.setHeader('Allow', ['POST', 'PUT', 'DELETE']);
       res.status(405).end(`Method ${method} Not Allowed`);
   }
 };
