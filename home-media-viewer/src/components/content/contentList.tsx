@@ -31,14 +31,72 @@ const ContentList = (props: ContentListPropsType) => {
         }
     }
 
-    
+    const getCurrentPosition = (currentContent: FileResultType | undefined): number | null => {
+        if (data === null || !currentContent) {
+            return null;
+        }
+
+        let position = data.indexOf(currentContent);
+        return position === -1 ? null : position;
+    };
 
     const onDisplayedContentClosed = () => {
         setDisplayedContent(undefined);
     };
 
+    const onPreviousContentClickedHandler = () => {
+        if (contentSelected === null) {
+            return;
+        }
+
+        const currentPosition = getCurrentPosition(displayedContent);
+
+        if (
+            currentPosition === null
+            || typeof data?.length !== 'number'
+            || data?.length <= currentPosition
+            || currentPosition <= 0
+        ) {
+            return;
+        }
+
+        const newContent = data[currentPosition - 1] as FileResultType;
+        if (!newContent || newContent?.isDirectory === true) {
+            return;
+        }
+
+        setDisplayedContent(newContent);
+    };
+
+    const onNextContentClickedHandler = () => {
+        if (contentSelected === null) {
+            return;
+        }
+
+        const currentPosition = getCurrentPosition(displayedContent);
+        if (
+            currentPosition === null
+            || typeof data?.length !== 'number'
+            || data?.length <= currentPosition + 1
+        ) {
+            return;
+        }
+
+        const newContent = data[currentPosition + 1] as FileResultType;
+        if (!newContent || newContent?.isDirectory === true) {
+            return;
+        }
+
+        setDisplayedContent(newContent);
+    };
+
     const displayedContentElement = displayedContent
-        ? <ContentDisplay content={displayedContent} closeHandler={onDisplayedContentClosed} />
+        ? <ContentDisplay
+            content={displayedContent}
+            closeHandler={onDisplayedContentClosed}
+            previousHandler={onPreviousContentClickedHandler}
+            nextHandler={onNextContentClickedHandler}
+            />
         : null;
 
     const fileElements = data.map(data => {

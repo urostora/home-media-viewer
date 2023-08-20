@@ -54,9 +54,11 @@ const ContentThumbnail = (props: ContentThumbnailPropsType) => {
       }
     }
 
-    const imageContent = content.thumbnail == null
+    const imageContent = content.isDirectory
+      ? <Image sizes='200' width={200} height={200} alt={content.name} style={{objectFit: 'contain'}} src="/directory.png" />
+      : (content.thumbnail == null
         ? null
-        : (<Image sizes='200' width={200} height={200} alt={content.name} style={{objectFit: 'contain'}} src={`data:image/jpeg;base64,${content.thumbnail}`} />)
+        : (<Image sizes='200' width={200} height={200} alt={content.name} style={{objectFit: 'contain'}} src={`data:image/jpeg;base64,${content.thumbnail}`} />));
 
     const metaMap = getMetaMap(content.metas);
 

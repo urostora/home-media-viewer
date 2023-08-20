@@ -68,11 +68,17 @@ const BrowserContentList = (props: BrowserContentListProps) => {
             currentPosition === null
             || typeof content?.content?.length !== 'number'
             || content?.content?.length <= currentPosition
+            || currentPosition <= 0
         ) {
             return;
         }
 
-        setContentSelected(content.content[currentPosition + 1]);
+        const newContent = content?.content[currentPosition - 1] as BrowseResultFile;
+        if (!newContent || newContent?.isDirectory === true) {
+            return;
+        }
+
+        setContentSelected(newContent);
     };
 
     const onNextContentClickedHandler = () => {
@@ -84,12 +90,17 @@ const BrowserContentList = (props: BrowserContentListProps) => {
         if (
             currentPosition === null
             || typeof content?.content?.length !== 'number'
-            || content?.content?.length <= currentPosition
+            || content?.content?.length <= currentPosition + 1
         ) {
             return;
         }
 
-        setContentSelected(content.content[currentPosition - 1]);
+        const newContent = content?.content[currentPosition + 1] as BrowseResultFile;
+        if (!newContent || newContent?.isDirectory === true) {
+            return;
+        }
+
+        setContentSelected(content.content[currentPosition + 1]);
     };
 
     const onContentSelectedHandler = (content: BrowseResultFile) => {
