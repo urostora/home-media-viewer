@@ -66,7 +66,6 @@ const clearAuthData = () => {
 
 export default function Layout({ children }: { children: ReactElement }) {
     const authDataFromCookies = getAuthDataFromCookie();
-    console.log('AuthDataFromCookies', authDataFromCookies);
 
     const [ isAuthProcessed, setIsAuthProcessed ] = useState<boolean>(false);
     const [ authData, setAuthData ] = useState<AuthData>({ isLoggedIn: false });

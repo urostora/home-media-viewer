@@ -30,7 +30,6 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             ? req.query['relativePath'][0]
             : req.query['relativePath']) ?? '';
 
-
         const fullPath = path.join(baseDir, relativePath);
 
         if (!fs.existsSync(fullPath)) {
@@ -124,7 +123,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         }
 
         res.status(200).json(getApiResponse(results));
-        
+        break;
     default:
       res.setHeader('Allow', [ 'GET' ]);
       res.status(405).end(`Method ${method} Not Allowed`);
