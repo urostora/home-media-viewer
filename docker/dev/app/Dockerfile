@@ -1,13 +1,19 @@
 FROM node:18-alpine
 
+# Cron setup to run background process scheduled
+COPY --chmod=0777 ./home-media-viewer/runBackgroundProcess.sh /home/node/app/
+RUN echo "* * * * * /home/node/app/runBackgroundProcess.sh >> /var/log/cron.log 2>&1" >> /var/spool/cron/crontabs/root
+RUN touch /var/log/cron.log
+
+# Prepare app
+WORKDIR /home/node/app
 ENV NODE_ENV=development
 
 RUN mkdir -p /mnt/storage
 RUN chown -R node:node /mnt/storage
 
-WORKDIR /home/node/app
-
-USER node
+USER root
 EXPOSE 3000
 ENV PORT 3000
-CMD ["npm", "run", "dev"]
+
+CMD crond && npm run dev;
