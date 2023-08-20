@@ -81,6 +81,7 @@ $appTextColorAlternative: #2d9649;
     flex-grow: 1;
     display: flex;
     flex-flow: column nowrap;
+    max-width: 30vw;
 
     .contentName {
         width: 100%;
