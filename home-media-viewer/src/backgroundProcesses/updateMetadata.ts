@@ -5,10 +5,12 @@ import { syncAlbumFiles } from '@/utils/albumHelper';
 
 const prisma = new PrismaClient();
 const threadCount = Math.max(1, os.cpus().length - 2);
+const processTimeout = Number.parseInt(process.env?.LONG_PROCESS_TIMEOUT_SEC ?? '50');
 
 const doJob = async () => {
-  console.log(`Processing metadata (${threadCount} threads available)`);
+  console.log(`Processing metadata (${threadCount} threads available, timeout ${processTimeout}s)`);
   const activeAlbums = await prisma.album.findMany({ where: { status: { in: ['Active'] } } });
+  const startedOn = Date.now();
 
   const parallelJobs: Promise<boolean>[] = [];
 
@@ -40,7 +42,15 @@ const doJob = async () => {
         parallelJobs.splice(0, parallelJobs.length);
       }
 
+      if (startedOn + processTimeout * 1000 < Date.now()) {
+        break;
+      }
+
       fileIndex++;
+    }
+
+    if (startedOn + processTimeout * 1000 < Date.now()) {
+      break;
     }
 
     if (parallelJobs.length > 0) {

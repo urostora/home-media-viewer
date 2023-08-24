@@ -5,6 +5,7 @@ import { MouseEventHandler, useState } from "react";
 import { apiFileDelete, apiFileRefreshMetadata } from "@/utils/frontend/dataSource/file";
 import { AlbumResultType } from "@/types/api/albumTypes";
 import album from "@/pages/api/album";
+import { apiAlbumAdd } from "@/utils/frontend/dataSource/album";
 
 type BrowseContentMenuProps = {
     content: BrowseResultFile,
@@ -42,7 +43,7 @@ const BrowseContentMenu = (props: BrowseContentMenuProps) => {
 
         try {
             setOpertationInProgress(OperationCode.addAlbum);
-            await apiFileRefreshMetadata(content.path);
+            await apiAlbumAdd(content.path);
         } catch (e) {
             // error
         }

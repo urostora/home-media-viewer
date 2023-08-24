@@ -46,6 +46,7 @@ services:
       LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
       TS_NODE_PROJECT: /home/node/app/tsconfig.json
       APP_SESSION_SECRET: ${APP_SESSION_SECRET}
+      HOSTNAME: ${HOSTNAME}
     volumes:
       - ./home-media-viewer:/home/node/app
       - ./static:${APP_ALBUM_ROOT_PATH}

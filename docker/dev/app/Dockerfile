@@ -2,7 +2,7 @@ FROM node:18-alpine
 
 # Cron setup to run background process scheduled
 COPY --chmod=0777 ./home-media-viewer/runBackgroundProcess.sh /home/node/app/
-RUN echo "* * * * * /home/node/app/runBackgroundProcess.sh >> /var/log/cron.log 2>&1" >> /var/spool/cron/crontabs/root
+RUN echo "*/5 * * * * /home/node/app/runBackgroundProcess.sh >> /var/log/cron.log 2>&1" >> /var/spool/cron/crontabs/root
 RUN touch /var/log/cron.log
 
 # Prepare app
