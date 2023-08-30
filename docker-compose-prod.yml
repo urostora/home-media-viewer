@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 services:
   db:
     container_name: home-media-viewer-db
@@ -27,6 +27,9 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
       APP_SESSION_SECRET: ${APP_SESSION_SECRET}
+      PROCESS_TOKEN: ${PROCESS_TOKEN}
+      TS_NODE_PROJECT: /home/node/app/tsconfig.json
+      HOSTNAME: ${HOSTNAME}
     # stdin_open: true
     # tty: true
     # user: node

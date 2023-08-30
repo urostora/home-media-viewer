@@ -16,7 +16,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       try {
         const albumData: EntityType | null = getEntityTypeRequestBodyObject(req, res);
         if (albumData == null) {
-          return;
+          throw new Error('Album not specified');
         }
 
         const { id: idToUpdate } = albumData;

@@ -49,7 +49,7 @@ export function getApiResponse(parameters: any = {}): GeneralResponse {
     date: `${now.getFullYear()}.${('0' + (now.getMonth() + 1)).slice(-2)}.${('0' + now.getDate()).slice(-2)} ${(
       '0' + now.getHours()
     ).slice(-2)}:${('0' + now.getMinutes()).slice(-2)}:${('0' + now.getSeconds()).slice(-2)}`,
-    ok: parameters.ok ?? true,
+    ok: (parameters?.ok ?? true) === true,
   };
 
   if (typeof parameters?.error === 'string') {
@@ -65,7 +65,7 @@ export function getApiResponse(parameters: any = {}): GeneralResponse {
     ret.count = parameters.count;
   }
 
-  if (parameters.data) {
+  if (parameters?.data) {
     ret.data = parameters.data;
   }
 
