@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { Prisma, PrismaClient } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 import {
   getRequestBodyObject,
@@ -12,7 +12,7 @@ import { addUser, deleteUser, updateUser } from '@/utils/userHelper';
 import { EntityType } from '@/types/api/generalTypes';
 import { apiOnlyWithAdminUsers } from '@/utils/auth/apiHoc';
 
-const prisma = new PrismaClient();
+import prisma from '@/utils/prisma/prismaImporter';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;

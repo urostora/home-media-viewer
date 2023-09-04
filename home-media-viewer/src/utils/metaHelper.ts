@@ -1,7 +1,7 @@
-import { FileMetadataType as FileMetadataType } from '@/types/api/fileTypes';
-import { Album, File, FileMetaType, Prisma, PrismaClient, Status } from '@prisma/client';
 
-const prisma = new PrismaClient();
+import { File } from '@prisma/client';
+
+import prisma from '@/utils/prisma/prismaImporter';
 
 export const addIntMeta = async (file: File, metaKey: string, value: number) => {
   const meta = await prisma.fileMeta.upsert({

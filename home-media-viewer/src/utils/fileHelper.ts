@@ -1,4 +1,4 @@
-import { Album, File, MetadataProcessingStatus, PrismaClient, Prisma, Status } from '@prisma/client';
+import { Album, File, MetadataProcessingStatus, Prisma } from '@prisma/client';
 import fs from 'fs';
 import path from 'path';
 import { getFileProcessor } from '@/utils/fileProcessor/processorFactory';
@@ -6,7 +6,7 @@ import { FileSearchType } from '@/types/api/fileTypes';
 import { getDateTimeFilter } from '@/utils/utils';
 import { getFileThumbnailInBase64 } from '@/utils/thumbnailHelper';
 
-const prisma = new PrismaClient();
+import prisma from '@/utils/prisma/prismaImporter';
 
 export const syncFilesInAlbumAndFile = async (album: Album, parentFile?: File) => {
   let directoryPath = album.basePath;

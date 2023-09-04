@@ -1,10 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { PrismaClient } from '@prisma/client';
-import { getApiResponse, getApiResponseEntityList } from '@/utils/apiHelpers';
-import { apiOnlyWithAdminUsers } from '@/utils/auth/apiHoc';
+import { getApiResponse } from '@/utils/apiHelpers';
 import { withSessionRoute } from '@/utils/sessionRoute';
 
-const prisma = new PrismaClient();
+import prisma from '@/utils/prisma/prismaImporter';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const { query, method } = req;

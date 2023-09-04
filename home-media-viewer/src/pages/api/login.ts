@@ -3,10 +3,9 @@ import { getApiResponse } from '@/utils/apiHelpers';
 import { getRequestBodyObject } from '@/utils/apiHelpers';
 import { getIronSessionOptions } from '@/utils/sessionHelper';
 import { verifyPassword } from '@/utils/userHelper';
-import { PrismaClient } from '@prisma/client';
 import { withIronSessionApiRoute } from 'iron-session/next';
 
-const prisma = new PrismaClient();
+import prisma from '@/utils/prisma/prismaImporter';
 
 export default withIronSessionApiRoute(async function loginRoute(req, res) {
   const loginData: LoginRequestType | null = getRequestBodyObject(req, res) as LoginRequestType;

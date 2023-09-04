@@ -1,23 +1,12 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { Prisma, PrismaClient } from '@prisma/client';
 
 import path from 'path';
 import * as fs from 'node:fs';
 
-import {
-  getRequestBodyObject,
-  getEntityTypeRequestBodyObject,
-  getApiResponse,
-  getApiResponseEntityList,
-} from '@/utils/apiHelpers';
-import { UserEditType, UserSearchType } from '@/types/api/userTypes';
-import { addUser, deleteUser, updateUser } from '@/utils/userHelper';
-import { EntityType } from '@/types/api/generalTypes';
+import { getApiResponse } from '@/utils/apiHelpers';
 import { apiOnlyWithAdminUsers } from '@/utils/auth/apiHoc';
 import { getFiles } from '@/utils/fileHelper';
 import { getAlbums } from '@/utils/albumHelper';
-
-const prisma = new PrismaClient();
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;

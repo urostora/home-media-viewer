@@ -1,5 +1,4 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { PrismaClient } from '@prisma/client';
 import { updateAlbum } from '@/utils/albumHelper';
 import { deleteFile } from '@/utils/fileHelper';
 import { getApiResponse, getEntityTypeRequestBodyObject, getRequestBodyObject } from '@/utils/apiHelpers';
@@ -9,7 +8,7 @@ import { FileSearchType } from '@/types/api/fileTypes';
 import { getFiles } from '@/utils/fileHelper';
 import { withSessionRoute } from '@/utils/sessionRoute';
 
-const prisma = new PrismaClient();
+import prisma from '@/utils/prisma/prismaImporter';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
