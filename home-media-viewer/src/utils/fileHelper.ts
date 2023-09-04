@@ -1,4 +1,4 @@
-import { Album, File, MetadataProcessingStatus, PrismaClient, Prisma, Status } from '@prisma/client';
+import { Album, File, MetadataProcessingStatus, Prisma } from '@prisma/client';
 import fs from 'fs';
 import path from 'path';
 import { getFileProcessor } from '@/utils/fileProcessor/processorFactory';
@@ -6,7 +6,7 @@ import { FileSearchType } from '@/types/api/fileTypes';
 import { getDateTimeFilter } from '@/utils/utils';
 import { getFileThumbnailInBase64 } from '@/utils/thumbnailHelper';
 
-const prisma = new PrismaClient();
+import prisma from '@/utils/prisma/prismaImporter';
 
 export const syncFilesInAlbumAndFile = async (album: Album, parentFile?: File) => {
   let directoryPath = album.basePath;
@@ -23,26 +23,22 @@ export const syncFilesInAlbumAndFile = async (album: Album, parentFile?: File) =
     throw new Error(`Element at path ${path} is not a directory`);
   }
 
-  console.log(`Syncronize directory ${directoryPath}`);
+  // console.log(`Syncronize directory ${directoryPath}`);
 
   const dbFiles = await prisma.file.findMany({ where: { albumId: album.id, parentFile: parentFile ?? null } });
   const dbFileNames = dbFiles.map((f: File) => f.name + (f.extension.length > 0 ? `.${f.extension}` : ''));
   const dirFiles = fs.readdirSync(directoryPath);
 
-  console.log('Files in directory', dirFiles);
-  console.log('Stored files in db', dbFileNames);
+  // console.log('Files in directory', dirFiles);
+  // console.log('Stored files in db', dbFileNames);
 
   const filesToDelete = dbFiles.filter((f: File) => {
     const fullName = f.name + (f.extension.length > 0 ? `.${f.extension}` : '');
-    console.log(`  Check if album file (${fullName}) exists in directory`);
+    // console.log(`  Check if album file (${fullName}) exists in directory`);
     return !dirFiles.includes(fullName);
   });
 
   const filesToAdd = dirFiles.filter((name) => !dbFileNames.includes(name));
-
-  if (filesToAdd.length > 0) {
-    console.log('Files to add:', filesToAdd);
-  }
 
   filesToDelete.forEach(async (f: File) => {
     console.log(`  Delete file ${f.path}`);
@@ -138,7 +134,7 @@ export const getFiles = async (params: FileSearchType, returnThumbnails: boolean
     prisma.file.count({ where: filter }),
     prisma.file.findMany({
       where: filter,
-      take: params.take ?? undefined,
+      take: params?.take === 0 ? undefined : (params.take ?? undefined),
       skip: params.skip ?? 0,
       include: {
         metas: {
@@ -194,16 +190,20 @@ export const loadMetadata = async (file: File, fileAlbum?: Album): Promise<boole
   let error: string = '';
   if (typeof metadataProcessor === 'function') {
     try {
-      console.log(`    Processing metadata for file ${file.path}`);
+      if (!file.isDirectory) {
+        console.log(`    Processing metadata for file ${file.path}`);
+      }
+
       ok = await metadataProcessor(file, fileAlbum);
-      console.log('    Metadata processed');
+
+      if (!file.isDirectory) {
+        console.log('      Metadata processed');
+      }
     } catch (e) {
       ok = false;
       error = `${e}`;
       console.log('Metadata processor error', e);
     }
-
-    console.log('    Updating file data');
 
     const metadataStatus: MetadataProcessingStatus = ok ? 'Processed' : 'Error';
 
@@ -215,8 +215,6 @@ export const loadMetadata = async (file: File, fileAlbum?: Album): Promise<boole
         metadataProcessingError: error,
       },
     });
-
-    console.log('    File data updated');
   } else {
     await prisma.file.update({
       where: { id: file.id },

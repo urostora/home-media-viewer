@@ -1,8 +1,14 @@
 import { getApiResponse } from '@/utils/apiHelpers';
 import updateMetadataProcess from '@/utils/processes/updateMetadataProcess';
 import { NextApiRequest, NextApiResponse } from 'next';
+import os from 'os';
 
 const processToken = process.env?.PROCESS_TOKEN ?? null;
+const longProcessTimeout = typeof process.env?.LONG_PROCESS_TIMEOUT_SEC === 'string' && process.env?.LONG_PROCESS_TIMEOUT_SEC.length > 0
+  ? Math.floor(Number.parseInt(process.env.LONG_PROCESS_TIMEOUT_SEC) / 2)
+  : undefined;
+
+const threadCount = Math.floor(os.availableParallelism());
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
@@ -20,7 +26,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       }
 
       try {
-        await updateMetadataProcess.update();
+        await updateMetadataProcess.update(longProcessTimeout, threadCount);
 
         res.status(200).json(getApiResponse({ ok: true }));
       } catch (e) {

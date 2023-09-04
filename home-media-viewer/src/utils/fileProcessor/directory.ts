@@ -1,8 +1,8 @@
-import { Album, File, PrismaClient } from '@prisma/client';
+import { Album, File } from '@prisma/client';
 import { FileProcessor } from './processorFactory';
 import { syncFilesInAlbumAndFile } from '../fileHelper';
 
-const prisma = new PrismaClient();
+import prisma from '@/utils/prisma/prismaImporter';
 
 export const directoryFileProcessor: FileProcessor = async (file: File, fileAlbum?: Album) => {
   if (!file.isDirectory) {

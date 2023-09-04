@@ -1,10 +1,10 @@
 import { AlbumAddType, AlbumSearchType, AlbumUpdateType } from '@/types/api/albumTypes';
-import { Album, AlbumSourceType, Prisma, PrismaClient, Status, User } from '@prisma/client';
+import { Album, AlbumSourceType, Prisma, Status, User } from '@prisma/client';
 import fs from 'fs';
 import pathModule from 'path';
 import { loadMetadata, syncFilesInAlbumAndFile } from './fileHelper';
 
-const prisma = new PrismaClient();
+import prisma from '@/utils/prisma/prismaImporter';
 
 let isAppExiting = false;
 
@@ -40,7 +40,7 @@ export const getAlbums = async (params: AlbumSearchType) => {
     prisma.album.count({ where: filter }),
     prisma.album.findMany({
       where: filter,
-      take: params.take ?? 10,
+      take: params.take === 0 ? undefined : (params.take ?? 10),
       skip: params.skip ?? 0,
       select: {
         id: true,
@@ -49,6 +49,9 @@ export const getAlbums = async (params: AlbumSearchType) => {
         sourceType: true,
         basePath: true,
       },
+      orderBy: {
+        name: 'asc'
+      }
     }),
   ]);
 

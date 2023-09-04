@@ -102,14 +102,12 @@ const imageFileProcessor: FileProcessor = async (file: File, fileAlbum?: Album):
     thumbnailSizes.forEach(async (size) => {
       const thumbnailPath = getFileThumbnailPath(file, size);
 
-      console.log(`Creating thumbnail size: ${size}`);
       const image = await jimp.read(path);
       image
-        // .resize(thumbnailWidth, thumbnailHeight)
         .scaleToFit(size, size)
         .quality(size < 400 ? 50 : 75)
         .write(thumbnailPath);
-      console.log(`  Saved to path ${thumbnailPath}`);
+      console.log(`  Thumbnail size ${size} saved to path ${thumbnailPath}`);
     });
 
     await updateThumbnailDate(file);

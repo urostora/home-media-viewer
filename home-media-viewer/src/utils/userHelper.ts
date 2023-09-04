@@ -1,8 +1,8 @@
-import { UserAddType, UserEditType } from '@/types/api/userTypes';
-import { Prisma, PrismaClient, Status, User } from '@prisma/client';
+import { UserEditType } from '@/types/api/userTypes';
+import { Prisma, Status, User } from '@prisma/client';
 import bcrypt from 'bcrypt';
 
-const prisma = new PrismaClient();
+import prisma from '@/utils/prisma/prismaImporter';
 
 export const getHashedPassword = async (password: string) => await bcrypt.hash(password, 10);
 

@@ -1,23 +1,12 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { Prisma, PrismaClient } from '@prisma/client';
 
 import path from 'path';
 import * as fs from 'node:fs';
 
-import {
-  getRequestBodyObject,
-  getEntityTypeRequestBodyObject,
-  getApiResponse,
-  getApiResponseEntityList,
-} from '@/utils/apiHelpers';
-import { UserEditType, UserSearchType } from '@/types/api/userTypes';
-import { addUser, deleteUser, updateUser } from '@/utils/userHelper';
-import { EntityType } from '@/types/api/generalTypes';
+import { getApiResponse } from '@/utils/apiHelpers';
 import { apiOnlyWithAdminUsers } from '@/utils/auth/apiHoc';
 import { getFiles } from '@/utils/fileHelper';
 import { getAlbums } from '@/utils/albumHelper';
-
-const prisma = new PrismaClient();
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
@@ -44,7 +33,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         }
 
         // check if current directory is an album root
-        const allAlbums = await getAlbums({ });
+        const allAlbums = await getAlbums({ take: 0 });
         const albumExactlyResult = allAlbums.data.filter(a => a.basePath === fullPath);
         const albumContainsResult = albumExactlyResult.length === 0
             ? allAlbums.data.filter(a => fullPath.startsWith(a.basePath))
@@ -63,7 +52,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             : await getFiles({
                 album: albumContains,
                 pathIsExactly: fullPath.substring(albumContains.basePath.length + 1),
-                isDirectory: true
+                isDirectory: true,
+                take: 0,
             });
 
         const storedDirectoryObject = storedDirectoryObjectResult === null || storedDirectoryObjectResult.count === 0
@@ -83,7 +73,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             const filePathRelativeToAlbum = albumBasePath === null ? null : filePathFull.substring(albumBasePath.length + 1);
             const filePathRelativeToContentDir = filePathFull.substring(baseDir.length + 1);
 
-            const storedAlbumList = fileStats.isDirectory() && allAlbums && allAlbums?.count > 0
+            const storedAlbumList = fileStats.isDirectory() && allAlbums && allAlbums?.data && allAlbums?.data?.length > 0
                 ? allAlbums.data.filter(a => a.basePath === filePathFull)
                 : [];
 

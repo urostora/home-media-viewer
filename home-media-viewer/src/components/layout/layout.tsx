@@ -88,8 +88,6 @@ export default function Layout({ children }: { children: ReactElement }) {
     }, [ isAuthProcessed ]);
 
     const userAuthenticated = (ad: AuthData) => {
-        console.log('AuthenticationData', ad);
-
         if (ad.isLoggedIn) {
             ad.logout = logout;
             setAuthData(ad);

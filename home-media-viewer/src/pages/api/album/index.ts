@@ -1,12 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { Prisma, PrismaClient } from '@prisma/client';
-import { addAlbum, deleteAlbum, getAlbums, updateAlbum } from '@/utils/albumHelper';
+import { addAlbum, deleteAlbum, getAlbums } from '@/utils/albumHelper';
 import { getApiResponse, getEntityTypeRequestBodyObject, getRequestBodyObject } from '@/utils/apiHelpers';
 import { EntityType } from '@/types/api/generalTypes';
-import { AlbumAddType, AlbumSearchType, AlbumUpdateType } from '@/types/api/albumTypes';
+import { AlbumAddType, AlbumSearchType } from '@/types/api/albumTypes';
 import { withSessionRoute } from '@/utils/sessionRoute';
-
-const prisma = new PrismaClient();
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
