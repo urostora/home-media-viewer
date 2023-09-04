@@ -1,8 +1,7 @@
-import { PrismaClient } from '@prisma/client';
 import { syncAlbumFiles } from '@/utils/albumHelper';
 import { loadMetadata } from '@/utils/fileHelper';
 
-const prisma = new PrismaClient();
+import prisma from '@/utils/prisma/prismaImporter';
 
 const updateMetadataProcess = {
   update: async (processTimeout: number = 50, threadCount: number = 2, albumToProcess: string | null = null) => {

@@ -1,9 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { PrismaClient } from '@prisma/client';
 import { getFileIdThumbnailPath } from '@/utils/thumbnailHelper';
 import { handleFileResponseByPath } from '@/utils/responseHelper';
-
-const prisma = new PrismaClient();
 
 const handler = (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;

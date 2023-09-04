@@ -1,10 +1,10 @@
 import { AlbumAddType, AlbumSearchType, AlbumUpdateType } from '@/types/api/albumTypes';
-import { Album, AlbumSourceType, Prisma, PrismaClient, Status, User } from '@prisma/client';
+import { Album, AlbumSourceType, Prisma, Status, User } from '@prisma/client';
 import fs from 'fs';
 import pathModule from 'path';
 import { loadMetadata, syncFilesInAlbumAndFile } from './fileHelper';
 
-const prisma = new PrismaClient();
+import prisma from '@/utils/prisma/prismaImporter';
 
 let isAppExiting = false;
 

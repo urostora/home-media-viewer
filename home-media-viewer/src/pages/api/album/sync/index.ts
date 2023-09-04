@@ -1,10 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { Prisma, PrismaClient } from '@prisma/client';
 import { syncAlbums } from '@/utils/albumHelper';
 import { getApiResponse } from '@/utils/apiHelpers';
 import { apiOnlyWithAdminUsers } from '@/utils/auth/apiHoc';
-
-const prisma = new PrismaClient();
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;

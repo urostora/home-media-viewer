@@ -1,10 +1,9 @@
 import { getApiResponse } from '@/utils/apiHelpers';
 import { getIronSessionOptions } from '@/utils/sessionHelper';
 import { withSessionRoute } from '@/utils/sessionRoute';
-import { PrismaClient } from '@prisma/client';
 import { NextApiRequest, NextApiResponse } from 'next';
 
-const prisma = new PrismaClient();
+import prisma from '@/utils/prisma/prismaImporter';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const isAuthenticated = req?.session?.user?.id != null;
