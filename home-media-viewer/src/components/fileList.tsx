@@ -82,8 +82,6 @@ export default function FileList() {
     else if (!data) contentList = <p>No files available</p>
     else contentList = <ContentList data={data} contentSelected={onCardSelected} />
 
-    console.log(data);
-
     if (typeof errorMessage === 'string') {
         return <p className='errorMessage'>{errorMessage}</p>;
     }

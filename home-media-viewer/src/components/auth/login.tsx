@@ -42,8 +42,6 @@ const Login = (props: LoginProps) => {
                 return;
             }
 
-            console.log('Call on user authenticated', result);
-
             onUserAuthenticated({
                 isLoggedIn: true,
                 ...result

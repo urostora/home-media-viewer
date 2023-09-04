@@ -5,7 +5,6 @@ import prisma from '@/utils/prisma/prismaImporter';
 
 const updateMetadataProcess = {
   update: async (processTimeout: number = 50, threadCount: number = 2, albumToProcess: string | null = null) => {
-    console.log(`Processing metadata (${threadCount} threads available, timeout ${processTimeout}s)`);
     const activeAlbums = await prisma.album.findMany({ where: { status: { in: ['Active'] } } });
     const startedOn = Date.now();
 
@@ -16,42 +15,32 @@ const updateMetadataProcess = {
         continue;
       }
 
-      console.log(`Processing album ${album.name} (${album.id})`);
-
-      console.log('  Sync root files');
       await syncAlbumFiles(album.id);
-
-      console.log('  Getting directories or files with unprocessed metadata');
 
       const filesUnprocessed = await prisma.file.findMany({
         where: { AND: [{ album, status: 'Active' }, { OR: [{ metadataStatus: 'New' }, { isDirectory: true }] }] },
       });
-      console.log(`  ${filesUnprocessed.length} unprocessed files found`);
+
+      if (filesUnprocessed.length === 0) {
+        continue;
+      }
+
+      // console.log(`  ${filesUnprocessed.length} unprocessed files found in album ${album.name}`);
 
       let fileIndex = 0;
       for (const file of filesUnprocessed) {
-        console.log(
-          `  (${fileIndex}/${filesUnprocessed.length}) processing ${file.isDirectory ? 'directory' : 'file'} ${
-            file.path
-          } (${file.id})`,
-        );
-
         parallelJobs.push(loadMetadata(file, album));
 
         if (parallelJobs.length >= threadCount) {
           await Promise.all(parallelJobs);
           parallelJobs.splice(0, parallelJobs.length);
-        }
 
-        if (startedOn + processTimeout * 1000 < Date.now()) {
-          break;
+          if (startedOn + processTimeout * 1000 < Date.now()) {
+            break;
+          }
         }
 
         fileIndex++;
-      }
-
-      if (startedOn + processTimeout * 1000 < Date.now()) {
-        break;
       }
 
       if (parallelJobs.length > 0) {
@@ -59,8 +48,17 @@ const updateMetadataProcess = {
         parallelJobs.splice(0, parallelJobs.length);
       }
 
-      console.log(`  Album FINISHED`);
+      if (startedOn + processTimeout * 1000 < Date.now()) {
+        const timedOutAfter = Math.floor((Date.now() - startedOn) / 1000);
+        console.log(`UpdateMetadataProcess timed out after ${timedOutAfter}s`)
+        break;
+      }
+
+      // console.log(`  Album ${album.name} processing finished`);
     }
+
+    const processingTimeInSec = Math.floor((Date.now() - startedOn) / 1000);
+    console.log(`[${(new Date()).toLocaleDateString()}] updateMetadataProcess finished in ${processingTimeInSec}s with ${threadCount} threads`);
   },
 };
 

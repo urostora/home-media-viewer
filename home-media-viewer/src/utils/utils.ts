@@ -36,7 +36,6 @@ export const getDateTimeFilter = (obj?: DateFilter): Prisma.DateTimeFilter | und
   }
 
   if (typeof obj?.equals === 'string') {
-    console.log('equals');
     const equalsDate = getDateObject(obj?.equals);
     if (equalsDate != null) {
       return { equals: equalsDate };
