@@ -138,7 +138,7 @@ export const getFiles = async (params: FileSearchType, returnThumbnails: boolean
     prisma.file.count({ where: filter }),
     prisma.file.findMany({
       where: filter,
-      take: params.take ?? undefined,
+      take: params?.take === 0 ? undefined : (params.take ?? undefined),
       skip: params.skip ?? 0,
       include: {
         metas: {

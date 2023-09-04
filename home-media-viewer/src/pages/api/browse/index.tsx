@@ -33,7 +33,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         }
 
         // check if current directory is an album root
-        const allAlbums = await getAlbums({ });
+        const allAlbums = await getAlbums({ take: 0 });
         const albumExactlyResult = allAlbums.data.filter(a => a.basePath === fullPath);
         const albumContainsResult = albumExactlyResult.length === 0
             ? allAlbums.data.filter(a => fullPath.startsWith(a.basePath))
@@ -52,7 +52,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             : await getFiles({
                 album: albumContains,
                 pathIsExactly: fullPath.substring(albumContains.basePath.length + 1),
-                isDirectory: true
+                isDirectory: true,
+                take: 0,
             });
 
         const storedDirectoryObject = storedDirectoryObjectResult === null || storedDirectoryObjectResult.count === 0
@@ -72,7 +73,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             const filePathRelativeToAlbum = albumBasePath === null ? null : filePathFull.substring(albumBasePath.length + 1);
             const filePathRelativeToContentDir = filePathFull.substring(baseDir.length + 1);
 
-            const storedAlbumList = fileStats.isDirectory() && allAlbums && allAlbums?.count > 0
+            const storedAlbumList = fileStats.isDirectory() && allAlbums && allAlbums?.data && allAlbums?.data?.length > 0
                 ? allAlbums.data.filter(a => a.basePath === filePathFull)
                 : [];
 
