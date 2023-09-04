@@ -40,7 +40,7 @@ export const getAlbums = async (params: AlbumSearchType) => {
     prisma.album.count({ where: filter }),
     prisma.album.findMany({
       where: filter,
-      take: params.take ?? 10,
+      take: params.take === 0 ? undefined : (params.take ?? 10),
       skip: params.skip ?? 0,
       select: {
         id: true,
@@ -49,6 +49,9 @@ export const getAlbums = async (params: AlbumSearchType) => {
         sourceType: true,
         basePath: true,
       },
+      orderBy: {
+        name: 'asc'
+      }
     }),
   ]);
 

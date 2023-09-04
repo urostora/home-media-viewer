@@ -14,7 +14,7 @@ export default function AlbumList( props: AlbumListPropsType ) {
     const { onAlbumSelected } = props;
 
     useEffect(() => {
-        apiLoadAlbums({})
+        apiLoadAlbums({ take: 0 })
         .then((result: AlbumResultType[]) => {
             setAlbumData(result);
         });
