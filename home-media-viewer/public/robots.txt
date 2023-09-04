@@ -1,0 +1,2 @@
+User-agent: * # any robot
+Disallow: / # disallow all
