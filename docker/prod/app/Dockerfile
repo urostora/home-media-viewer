@@ -42,6 +42,7 @@ COPY --from=builder --chown=node:node /home/node/app/.next ./.next
 COPY --from=builder --chown=node:node /home/node/app/node_modules ./node_modules
 COPY --from=builder --chown=node:node /home/node/app/public ./public
 COPY --chown=node:node ./home-media-viewer/package.json .
+COPY --chown=node:node ./home-media-viewer/prisma ./prisma
 
 RUN mkdir -p /mnt/storage
 RUN chown -R node:node /mnt/storage
