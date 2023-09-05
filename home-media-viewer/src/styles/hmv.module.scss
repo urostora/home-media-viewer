@@ -62,6 +62,14 @@ $appTextColorAlternative: #2d9649;
     }
 }
 
+.roundBorderedContainer {
+    margin: 10px;
+    border-radius: 15px;
+    border: 1px solid $appBorderColor;
+    background-color: $appBackgroundAlternative;
+    padding: 10px;
+}
+
 .contentsContainer {
     display: flex;
     flex-flow: row wrap;
@@ -369,5 +377,36 @@ $appTextColorAlternative: #2d9649;
                 }
             }
         }
+    }
+}
+
+.albumDetails {
+    font-size: large;
+
+    .title {
+        font-size: larger;
+        margin-bottom: 10px;
+    }
+
+    .caption {
+        display: inline-block;
+        color: black;
+        width: 100px;
+    }
+
+    .value {
+        font-weight: bold;
+    }
+
+    .new {
+        color: yellow;
+    }
+
+    .processed {
+        color: green;
+    }
+
+    .failed {
+        color: red;
     }
 }

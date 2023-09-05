@@ -29,7 +29,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         },
       };
 
-  const data = await prisma.album.findFirst({
+  const data: any = await prisma.album.findFirst({
     where: {
       id: id,
       users: usersQuery,
@@ -43,6 +43,26 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       connectionString: true,
     },
   });
+
+  if (data != null) {
+    // get file processing informations
+    const fileStatus = await prisma.file.groupBy({
+      where: {
+        albumId: data.id
+      },
+      by: ['metadataStatus'],
+      _count: {
+        id: true,
+      },
+    });
+
+    data.fileStatus = fileStatus.map(fs => {
+      return {
+        metadataStatus: fs.metadataStatus,
+        fileCount: fs._count.id
+      }
+    });
+  }
 
   res.status(200).json(getApiResponse({ ok: data !== null, data }));
 };
