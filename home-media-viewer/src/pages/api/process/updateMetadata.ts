@@ -8,7 +8,7 @@ const longProcessTimeout = typeof process.env?.LONG_PROCESS_TIMEOUT_SEC === 'str
   ? Math.floor(Number.parseInt(process.env.LONG_PROCESS_TIMEOUT_SEC) / 2)
   : undefined;
 
-const threadCount = Math.floor(os.availableParallelism());
+const threadCount = Math.floor(os.availableParallelism() / 2);
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
