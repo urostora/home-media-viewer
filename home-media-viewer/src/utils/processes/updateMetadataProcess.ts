@@ -10,12 +10,22 @@ const updateMetadataProcess = {
 
     const parallelJobs: Promise<boolean>[] = [];
 
+    console.log(`[${(new Date()).toLocaleDateString('hu-HU')} ${(new Date()).toLocaleTimeString('hu-HU')}] updateMetadataProcess started with ${threadCount} threads, time limit is ${processTimeout}`);
+
     for (const album of activeAlbums) {
       if (typeof albumToProcess === 'string' && albumToProcess !== album.id) {
         continue;
       }
 
       await syncAlbumFiles(album.id);
+    }
+
+    console.log('  Album files syncronized, loading metadata');
+
+    for (const album of activeAlbums) {
+      if (typeof albumToProcess === 'string' && albumToProcess !== album.id) {
+        continue;
+      }
 
       const filesUnprocessed = await prisma.file.findMany({
         where: { AND: [{ album, status: 'Active' }, { OR: [{ metadataStatus: 'New' }, { isDirectory: true }] }] },
@@ -58,7 +68,7 @@ const updateMetadataProcess = {
     }
 
     const processingTimeInSec = Math.floor((Date.now() - startedOn) / 1000);
-    console.log(`[${(new Date()).toLocaleDateString()}] updateMetadataProcess finished in ${processingTimeInSec}s with ${threadCount} threads`);
+    console.log(`[${(new Date()).toLocaleDateString('hu-HU')} ${(new Date()).toLocaleTimeString('hu-HU')}] updateMetadataProcess finished in ${processingTimeInSec}s`);
   },
 };
 
