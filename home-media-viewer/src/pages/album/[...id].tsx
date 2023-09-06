@@ -57,7 +57,7 @@ const AlbumRootPage = () => {
                 <button onClick={onDisplayDetailsToggleClicked}>{displayDetails ? 'Hide details' : 'Display details'}</button>
             </div>
         </div>
-        <AlbumDetails albumId={albumId} />
+        {displayDetails ? <AlbumDetails albumId={albumId} /> : null}
         <FilteredContentList
             albumId={albumId}
             parentFileId={parentFileId ?? null}
