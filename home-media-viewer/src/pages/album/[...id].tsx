@@ -5,6 +5,7 @@ import { FileResultType, FileSearchType } from '@/types/api/fileTypes';
 import Link from 'next/link';
 
 import hmvStyle from '@/styles/hmv.module.scss';
+import AlbumDetails from '@/components/content/albumDetails';
 
 const AlbumRootPage = () => {
     const router = useRouter();
@@ -44,6 +45,7 @@ const AlbumRootPage = () => {
             {backToAlbumLink}
             {backLink}
         </div>
+        <AlbumDetails albumId={albumId} />
         <FilteredContentList
             albumId={albumId}
             parentFileId={parentFileId}

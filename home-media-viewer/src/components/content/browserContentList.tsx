@@ -6,6 +6,7 @@ import { BrowseResult, BrowseResultFile } from '@/types/api/browseTypes';
 import { apiBrowse } from '@/utils/frontend/dataSource/browse';
 import BrowseContentCard from './browseContentCard';
 import ContentDisplay from './contentDisplay';
+import AlbumDetails from './albumDetails';
 
 type BrowserContentListProps = {
     path: string;
@@ -127,6 +128,10 @@ const BrowserContentList = (props: BrowserContentListProps) => {
             nextHandler={onNextContentClickedHandler}
         />;
 
+    const albumDetails = content?.albumContains ?? content?.albumExactly
+        ? <AlbumDetails albumId={(content?.albumContains ?? content?.albumExactly ?? {})?.id} />
+        : null;
+
     const contentElements = content?.content.map(c => {
         return <BrowseContentCard
             key={c.name}
@@ -136,11 +141,14 @@ const BrowserContentList = (props: BrowserContentListProps) => {
         />;
     });
 
-    return <div className={hmvStyle.browserContent}>
+    return <div>
+        {albumDetails}
+        <div className={hmvStyle.browserContent}>
             {Array.isArray(contentElements) && contentElements.length > 0
                 ? contentElements
                 : <>Directory is empty</>}
             {displayContent}
+        </div>
     </div>;
 };
 
