@@ -5,6 +5,7 @@ const TitleArea = (props: { title?: string }) => {
     return (
         <div className={hmvStyle.titleArea}>
             <Link className={hmvStyle.title} href="/">{props?.title ?? 'Home media viewer'}</Link>
+            <Link className={`${hmvStyle.title} ${hmvStyle.titleMobile}`} href="/">{props?.title ?? 'HMV'}</Link>
         </div>);
 }
 
