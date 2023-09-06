@@ -13,11 +13,12 @@ const AlbumDetails = (props: AlbumDetailsProps): ReactElement => {
     const { albumId } = props;
 
     const [ albumData, setAlbumData ] = useState<AlbumDetailsType | null>(null);
-    const [ isLoading, setIsLoading ] = useState<boolean>(false);
+    const [ isLoading, setIsLoading ] = useState<boolean>(true);
     const [ error, setError ] = useState<string | null>(null);
 
     useEffect(() => {
         if (typeof albumId !== 'string') {
+            setIsLoading(false);
             return;
         }
 
