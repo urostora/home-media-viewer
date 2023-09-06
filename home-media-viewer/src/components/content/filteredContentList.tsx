@@ -7,10 +7,11 @@ export type FilteredContentListPropsType = {
     albumId?: string,
     parentFileId?: string | null,
     onContentSelected?(content: FileResultType): void,
+    displayDetails?: boolean,
 }
 
 const FilteredContentList = (props: FilteredContentListPropsType) => {
-    const { albumId, parentFileId, onContentSelected } = props;
+    const { albumId, parentFileId, onContentSelected, displayDetails = false } = props;
 
     const [ isFetchInProgress, setIsFetchInProgress ] = useState<boolean>(false);
     const [ content, setContent ] = useState<FileResultType[] | null>(null);
@@ -43,7 +44,7 @@ const FilteredContentList = (props: FilteredContentListPropsType) => {
         return <>Error while loading content</>;
     }
 
-    return <ContentList data={content} contentSelected={onContentSelected} />;
+    return <ContentList data={content} contentSelected={onContentSelected} displayDetails={displayDetails} />;
 }
 
 export default FilteredContentList;

@@ -10,10 +10,11 @@ export type ContentListPropsType = {
     contentSelected?(content: FileResultType | AlbumResultType): void,
     data: FileResultType[] | AlbumResultType[],
     displaySelectedContent?: boolean,
+    displayDetails?: boolean,
 }
 
 const ContentList = (props: ContentListPropsType) => {
-    const { data, contentSelected, displaySelectedContent = true } = props;
+    const { data, contentSelected, displaySelectedContent = true, displayDetails = false } = props;
 
     const [ displayedContent, setDisplayedContent ] = useState<FileResultType>();
 
@@ -101,7 +102,13 @@ const ContentList = (props: ContentListPropsType) => {
 
     const fileElements = data.map(data => {
         if (typeof (data as FileResultType)?.albumId === 'string' ) {
-            return <ContentThumbnail key={data.id} data-id={data.id} content={data as FileResultType} contentSelected={onContentSelectedHandler} />;
+            return <ContentThumbnail
+                key={data.id}
+                data-id={data.id}
+                content={data as FileResultType}
+                contentSelected={onContentSelectedHandler}
+                displayDetails={displayDetails}
+            />;
         } else if (typeof (data as AlbumResultType)?.id === 'string') {
             return <AlbumThumbnail key={data.id} content={data} contentSelected={onContentSelectedHandler} />;
         }

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useRouter } from 'next/router'
 
 import FilteredContentList from '@/components/content/filteredContentList';
@@ -9,6 +10,8 @@ import AlbumDetails from '@/components/content/albumDetails';
 
 const AlbumRootPage = () => {
     const router = useRouter();
+
+    const [ displayDetails, setDisplayDetails ] = useState<boolean>(false);
 
     const albumId: string | undefined = Array.isArray(router?.query?.id)
         ? router.query.id[0]
@@ -31,6 +34,10 @@ const AlbumRootPage = () => {
         router.push(`/album/${content.albumId}/${content.id}`);
     };
 
+    const onDisplayDetailsToggleClicked = () => {
+        setDisplayDetails(!displayDetails);
+    };
+
     const backToAlbumLink = parentFileId
         ? <Link key="backToAlbum" href={`/album/${albumId}`} prefetch={false} >Back to album</Link>
         : null;
@@ -41,15 +48,21 @@ const AlbumRootPage = () => {
 
     return (<>
         <div className={hmvStyle.navigationBar}>
-            <Link key="backToAlbum" href={'/album'} prefetch={false} >Back to album list</Link>
-            {backToAlbumLink}
-            {backLink}
+            <div className={hmvStyle.leftSide}>
+                <Link key="backToAlbum" href={'/album'} prefetch={false} >Back to album list</Link>
+                {backToAlbumLink}
+                {backLink}
+            </div>
+            <div className={hmvStyle.rightSide}>
+                <button onClick={onDisplayDetailsToggleClicked}>{displayDetails ? 'Hide details' : 'Display details'}</button>
+            </div>
         </div>
         <AlbumDetails albumId={albumId} />
         <FilteredContentList
             albumId={albumId}
             parentFileId={parentFileId ?? null}
             onContentSelected={onContentSelectedHandler}
+            displayDetails={displayDetails}
             />
     </>);
 };
