@@ -48,7 +48,7 @@ const AlbumRootPage = () => {
         <AlbumDetails albumId={albumId} />
         <FilteredContentList
             albumId={albumId}
-            parentFileId={parentFileId}
+            parentFileId={parentFileId ?? null}
             onContentSelected={onContentSelectedHandler}
             />
     </>);
