@@ -16,10 +16,17 @@ const AlbumThumbnail = (props: AlbumThumbnailProps) => {
       }
     }
 
+    const imageContent = Array.isArray(content.files) && content.files.length > 0 && typeof content.files[0].thumbnailImage === 'string'
+        ? <img src={`data:image/jpeg;base64,${content.files[0].thumbnailImage}`} />
+        : <></>;
+
     return (
         <div className={`${hmvStyle.contentCardContainer} ${hmvStyle.albumCardContainer}`} onClick={onCardClicked} >
             <div className={hmvStyle.contentName}>
                 <>{content.name}</>
+            </div>
+            <div className={hmvStyle.imageContainer}>
+                {imageContent}
             </div>
         </div>
     );
