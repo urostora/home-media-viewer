@@ -1,7 +1,7 @@
-import FileList from '@/components/fileList'
+import AlbumList from '@/components/albumList';
 
 const Page = () => {
-  return <FileList />;
+  return <AlbumList />;
 };
 
 export default Page;
