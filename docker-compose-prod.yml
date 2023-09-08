@@ -30,9 +30,7 @@ services:
       PROCESS_TOKEN: ${PROCESS_TOKEN}
       TS_NODE_PROJECT: /home/node/app/tsconfig.json
       HOSTNAME: ${HOSTNAME}
-    # stdin_open: true
-    # tty: true
-    # user: node
+      IS_BACKGROUND_PROCESS_ENABLED: ${IS_BACKGROUND_PROCESS_ENABLED}
     volumes:
       - ./static:${APP_ALBUM_ROOT_PATH}
       - home-media-storage:${APP_STORAGE_PATH}

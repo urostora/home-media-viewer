@@ -20,9 +20,15 @@ export interface AlbumAddType {
   name?: string;
 }
 
+export interface AlbumFile {
+  id: string;
+  thumbnailImage?: string;
+}
+
 export interface AlbumResultType {
   id?: string;
   name?: string;
+  files?: AlbumFile[];
 }
 
 export interface AlbumDetailsFileStatusType {

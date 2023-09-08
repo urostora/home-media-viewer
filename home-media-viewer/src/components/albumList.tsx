@@ -1,5 +1,4 @@
 import { AlbumResultType } from "@/types/api/albumTypes";
-import { FileResultType } from "@/types/api/fileTypes";
 import { apiLoadAlbums } from "@/utils/frontend/dataSource/album";
 import { useEffect, useState } from "react";
 import ContentList from "./content/contentList";

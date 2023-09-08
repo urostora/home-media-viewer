@@ -1,4 +1,4 @@
-import { File } from '@prisma/client';
+import { EntityType } from '@/types/api/generalTypes';
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 
 const getThumbnailBaseDirectory = (): string => {
@@ -29,7 +29,7 @@ export const getThumbnailDirectory = (fileId: string): string => {
   return ret;
 };
 
-export const getFileThumbnailDirectory = (file: File): string => {
+export const getFileThumbnailDirectory = (file: EntityType): string => {
   return getThumbnailDirectory(file.id);
 };
 
@@ -41,11 +41,11 @@ export const getFileIdThumbnailPath = (fileId: string, size: number): string => 
   return ret;
 };
 
-export const getFileThumbnailPath = (file: File, size: number): string => {
+export const getFileThumbnailPath = (file: EntityType, size: number): string => {
   return getFileIdThumbnailPath(file.id, size);
 };
 
-export const getFileThumbnailInBase64 = (file: File): string | null => {
+export const getFileThumbnailInBase64 = (file: EntityType): string | null => {
   const path = getFileThumbnailPath(file, thumbnailSize.small);
 
   if (existsSync(path)) {

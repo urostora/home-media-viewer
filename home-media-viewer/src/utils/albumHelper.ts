@@ -1,10 +1,11 @@
-import { AlbumAddType, AlbumSearchType, AlbumUpdateType } from '@/types/api/albumTypes';
+import { AlbumAddType, AlbumResultType, AlbumSearchType, AlbumUpdateType } from '@/types/api/albumTypes';
 import { Album, AlbumSourceType, Prisma, Status, User } from '@prisma/client';
 import fs from 'fs';
 import pathModule from 'path';
 import { loadMetadata, syncFilesInAlbumAndFile } from './fileHelper';
 
 import prisma from '@/utils/prisma/prismaImporter';
+import { getFileThumbnailInBase64 } from './thumbnailHelper';
 
 let isAppExiting = false;
 
@@ -48,12 +49,33 @@ export const getAlbums = async (params: AlbumSearchType) => {
         name: true,
         sourceType: true,
         basePath: true,
+        files: {
+          where: {
+            status: 'Active',
+            metadataStatus: 'Processed',
+            isDirectory: false,
+          },
+          take: 1,
+          select: {
+            id: true,
+          }
+        }
       },
       orderBy: {
         name: 'asc'
       }
     }),
   ]);
+
+  results[1].forEach((res: AlbumResultType) => {
+    if (Array.isArray(res?.files) && res.files.length > 0) {
+      const thumbnail = getFileThumbnailInBase64(res.files[0]);
+
+      if (thumbnail !== null) {
+        res.files[0].thumbnailImage = thumbnail;
+      }
+    }
+  });
 
   return {
     data: results[1],
