@@ -15,12 +15,12 @@ export const syncFilesInAlbumAndFile = async (album: Album, parentFile?: File) =
   }
 
   if (!fs.existsSync(directoryPath)) {
-    throw new Error(`Directory not exists at path ${path}`);
+    throw new Error(`Directory not exists at path ${directoryPath}`);
   }
 
   const dirStat = fs.statSync(directoryPath);
   if (!dirStat.isDirectory()) {
-    throw new Error(`Element at path ${path} is not a directory`);
+    throw new Error(`Element at path ${directoryPath} is not a directory`);
   }
 
   // console.log(`Syncronize directory ${directoryPath}`);
