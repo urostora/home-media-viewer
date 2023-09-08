@@ -10,14 +10,18 @@ const updateMetadataProcess = {
 
     const parallelJobs: Promise<boolean>[] = [];
 
-    console.log(`[${(new Date()).toLocaleDateString('hu-HU')} ${(new Date()).toLocaleTimeString('hu-HU')}] updateMetadataProcess started with ${threadCount} threads, time limit is ${processTimeout}`);
+    console.log(`[${(new Date()).toLocaleDateString('hu-HU')} ${(new Date()).toLocaleTimeString('hu-HU')}] updateMetadataProcess started with ${threadCount} threads, time limit is ${processTimeout} (${activeAlbums.length} albums found)`);
 
     for (const album of activeAlbums) {
       if (typeof albumToProcess === 'string' && albumToProcess !== album.id) {
         continue;
       }
 
-      await syncAlbumFiles(album.id);
+      try {
+        await syncAlbumFiles(album.id);
+      } catch(e) {
+        console.error(`  ERROR while syncing album ${album.name} (${album.id}) files: ${e}`);
+      }
     }
 
     console.log('  Album files syncronized, loading metadata');
@@ -28,21 +32,26 @@ const updateMetadataProcess = {
       }
 
       const filesUnprocessed = await prisma.file.findMany({
-        where: { AND: [{ album, status: 'Active' }, { OR: [{ metadataStatus: 'New' }, { isDirectory: true }] }] },
+        where: { AND: [{ albumId: album.id, status: 'Active' }, { OR: [{ metadataStatus: 'New' }, { isDirectory: true }] }] },
       });
 
       if (filesUnprocessed.length === 0) {
         continue;
       }
 
-      // console.log(`  ${filesUnprocessed.length} unprocessed files found in album ${album.name}`);
+      console.log(`  ${filesUnprocessed.length} unprocessed files found in album ${album.name} (${album.id})`);
 
       let fileIndex = 0;
       for (const file of filesUnprocessed) {
         parallelJobs.push(loadMetadata(file, album));
 
         if (parallelJobs.length >= threadCount) {
-          await Promise.all(parallelJobs);
+          try {
+            await Promise.all(parallelJobs);
+          } catch(e) {
+            console.error(`  ERROR whole loading metadata: ${e}`);
+          }
+
           parallelJobs.splice(0, parallelJobs.length);
 
           if (startedOn + processTimeout * 1000 < Date.now()) {
@@ -54,7 +63,12 @@ const updateMetadataProcess = {
       }
 
       if (parallelJobs.length > 0) {
-        await Promise.all(parallelJobs);
+        try {
+          await Promise.all(parallelJobs);
+        } catch(e) {
+          console.error(`  ERROR whole loading metadata: ${e}`);
+        }
+        
         parallelJobs.splice(0, parallelJobs.length);
       }
 
