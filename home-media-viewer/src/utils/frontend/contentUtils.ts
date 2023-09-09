@@ -5,3 +5,13 @@ export const getThumbnailUrl = (fileId: string, thumbnailSize: number = 200): st
 export const getContentUrl = (fileId: string) => {
   return `/api/file/content/${fileId}`;
 };
+
+export const isVideoByExtension = (extension: string): boolean => {
+  return ['mp4', 'avi', 'mov', 'mkv', 'mpg', 'mpeg']
+      .includes(extension.toLowerCase());
+};
+
+export const isImageByExtension = (extension: string): boolean => {
+  return ['jpg', 'jpeg', 'gif', 'png']
+      .includes(extension.toLowerCase());
+}

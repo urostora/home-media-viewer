@@ -3,6 +3,7 @@ import Image from "next/image";
 import hmvStyle from '@/styles/hmv.module.scss';
 import { MetaType, contentSizeToString, durationInSecToString } from "@/utils/metaUtils";
 import { ReactElement } from "react";
+import { isVideoByExtension } from "@/utils/frontend/contentUtils";
 
 export type ContentThumbnailPropsType = {
     contentSelected?(content: FileResultType): void,
@@ -55,17 +56,19 @@ const ContentThumbnail = (props: ContentThumbnailPropsType) => {
       }
     }
 
+    const isVideo = typeof content?.extension === 'string'
+        ? isVideoByExtension(content.extension)
+        : false;
+
     const imageContent = content.isDirectory
       ? <img alt={content.name} src="/directory.png" />
       : (content.thumbnail == null
         ? null
         : (<img alt={content.name} src={`data:image/jpeg;base64,${content.thumbnail}`} />));
 
-    // const imageContent = content.isDirectory
-    //   ? <Image sizes='200' width={200} height={200} alt={content.name} style={{objectFit: 'contain'}} src="/directory.png" />
-    //   : (content.thumbnail == null
-    //     ? null
-    //     : (<Image sizes='200' width={200} height={200} alt={content.name} style={{objectFit: 'contain'}} src={`data:image/jpeg;base64,${content.thumbnail}`} />));
+    const videoIcon = isVideo
+      ? <img src="/play.svg" className={hmvStyle.videoIcon} />
+      : null;
 
     let contentDetails = null;
 
@@ -116,6 +119,7 @@ const ContentThumbnail = (props: ContentThumbnailPropsType) => {
                 {contentDetails}
                 <div className={hmvStyle.imageContainer}>
                     {imageContent}
+                    {videoIcon}
                 </div>
             </div>
         </div>
