@@ -21,7 +21,7 @@ const MainMenu = () => {
                     <Link href="/album">Albums</Link>
                 </div>
                 <div className={`${hmvStyle.linkItem} ${(url.includes('/file') ? hmvStyle.activeLinkItem : null)}`}>
-                    <Link href="/file">All content</Link>
+                    <Link href="/search">Search</Link>
                 </div>
                 {
                     authContext?.isAdmin === true

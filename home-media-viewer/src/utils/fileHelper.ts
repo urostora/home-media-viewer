@@ -117,7 +117,13 @@ export const getFiles = async (params: FileSearchType, returnThumbnails: boolean
     status: params?.status,
     isDirectory: params?.isDirectory,
     name: typeof params?.name !== 'string' ? undefined : { contains: params.name },
-    extension: params?.extension,
+    extension: params?.extension ?? (
+      params?.contentType === undefined || params.contentType === 'all'
+        ? undefined
+        : (params.contentType === 'video'
+            ? { in: [ 'mpeg', 'avi', 'mp4', 'mkv', 'mov' ]}
+            : { in: [ 'jpg', 'jpeg', 'png' ]})
+    ),
     modifiedAt: getDateTimeFilter(params?.fileDate),
     contentDate: getDateTimeFilter(params?.contentDate),
     metadataStatus: params.metadataStatus,

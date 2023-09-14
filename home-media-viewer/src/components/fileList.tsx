@@ -1,16 +1,23 @@
 import { FileResultType, FileSearchType } from '@/types/api/fileTypes';
 import { Status } from '@/types/api/generalTypes';
 import { apiLoadFiles } from '@/utils/frontend/dataSource/file';
-import Image from 'next/image';
+import dynamic from "next/dynamic";
 import { useState, useEffect } from 'react'
-import ContentFilter, { ContentFilterType } from './content/contentFilter';
-import ContentThumbnail from './content/contentThumbnail';
-import hmvStyle from '@/styles/hmv.module.scss';
+import { ContentFilterType } from './content/contentFilter';
 import ContentList from './content/contentList';
 import ContentDisplay from './content/contentDisplay';
 
+const ContentFilter = dynamic(
+    () => {
+      return import("@/components/content/contentFilter.tsx");
+    },
+    {
+        ssr: false,
+    }
+  );
+
 export default function FileList() {
-    const [ currentFilter, setCurrentFilter ] = useState<ContentFilterType>({ dateFrom: '2000-01-01 00:00:00'});
+    const [ currentFilter, setCurrentFilter ] = useState<ContentFilterType>({ dateFrom: '2000-01-01 00:00:00', contentType: 'all' });
     const [ data, setData ] = useState<FileResultType[] | null>(null);
     const [ isLoading, setLoading ] = useState<boolean>(false);
     const [ errorMessage, setErrorMessage ] = useState<string | null>(null);
@@ -28,6 +35,7 @@ export default function FileList() {
         const filter: FileSearchType = {
             ...getFileFilter(),
             contentDate: { from: contentFilter.dateFrom, to: contentFilter.dateTo },
+            contentType: contentFilter.contentType,
         };
 
         setData(null);

@@ -60,6 +60,11 @@ $appTextColorAlternative: #2d9649;
     }
 }
 
+.pageBody {
+    flex-grow: 1;
+    width: 100%;
+}
+
 .navigationBar {
     display: flex;
     flex-flow: row nowrap;
@@ -263,28 +268,74 @@ $appTextColorAlternative: #2d9649;
 
 .contentFilterContainer {
     width: 100%;
-    display: flex;
-    flex-flow: row wrap;
     padding: 10px;
+    color: $appTextColorAlternative;
 
-    > div {
-        flex-grow: 1;
-        max-width: 400px;
-        min-width: 250px;
-        padding: 5px;
+    .filterHeader {
+        font-size: 20px;
 
-        > span {
-            min-width: 100px;
+        .filterOpenToggle {
+            font-size: 30px;
+            display: inline-block;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+    }
+
+    .filterBody {
+        display: none;
+        padding: 10px;
+        
+        .filterSection {
+            padding: 10px;
+
+            input[type='radio'] {
+                margin-right: 5px;
+            }
         }
 
-        > input {
-            min-width: 200px;
+        .filterTitle {
+            padding-left: 10px;
+            font-weight: bold;
+            margin-bottom: 5px;
         }
 
-        .intervalContainer {
+        > div {
+            flex-grow: 1;
+            max-width: 400px;
+            min-width: 250px;
+            padding: 5px;
+
+            > span {
+                min-width: 100px;
+            }
+
+            > input {
+                min-width: 200px;
+            }
+
+            .intervalContainer {
+                width: 100%;
+                min-width: 100% !important;
+            }
+        }
+
+        .filterMap {
+            height: 400px;
             width: 100%;
-            min-width: 100% !important;
+            overflow: hidden;
         }
+    }
+
+    .filterBody.isOpen {
+        display: flex;
+        flex-flow: column wrap;
+    }
+
+    input[type="text"], input[type="date"] {
+        border: 1px solid $appBorderColor;
+        border-radius: 5px;
+        padding: 3px;
     }
 }
 
@@ -470,6 +521,26 @@ $appTextColorAlternative: #2d9649;
     height: 70px !important;
     margin-left: -35px;
     margin-top: -35px;
+}
+
+select.roundedElement {
+    border-color: $appBorderColor;
+    color: $appTextColorAlternative;
+    border-radius: 15px;
+    padding: 10px;
+}
+
+.roundBorderedButtonElement {
+    padding: 5px;
+    border-radius: 15px;
+    border: 1px solid $appBorderColor;
+    background-color: $appBackgroundAlternative;
+    color: $appTextColorAlternative;
+}
+
+.roundBorderedButtonElement:hover {
+    background-color: $appTextColorAlternative;
+    color: $appBackgroundAlternative;
 }
 
 @media (max-width: 799px) {
