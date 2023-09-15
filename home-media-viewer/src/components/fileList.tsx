@@ -1,20 +1,11 @@
 import { FileResultType, FileSearchType } from '@/types/api/fileTypes';
 import { Status } from '@/types/api/generalTypes';
 import { apiLoadFiles } from '@/utils/frontend/dataSource/file';
-// import dynamic from "next/dynamic";
 import { useState, useEffect, useCallback } from 'react'
 import ContentFilter, { ContentFilterType } from './content/contentFilter';
 import ContentList from './content/contentList';
 import ContentDisplay from './content/contentDisplay';
 
-// const ContentFilter = dynamic(
-//     () => {
-//       return import("@/components/content/contentFilter.tsx");
-//     },
-//     {
-//         ssr: false,
-//     }
-//   );
 
 const TAKE_VALUE = 50;
 
@@ -47,7 +38,7 @@ export default function FileList() {
             if (Array.isArray(result) && result.length > 0) {
                 const firstElementId = result[0].id;
 
-                // set new data
+                // update data when content not exists already
                 setData(oldData => {
                     const isExistingData = Array.isArray(oldData)
                         ? oldData.filter(d => d.id === firstElementId).length > 0
@@ -91,7 +82,7 @@ export default function FileList() {
     }
 
     useEffect(() => {
-        const onScrollEventHandler = // useCallback(
+        const onScrollEventHandler =
             () => {
                 const body = document.body;
                 const html = document.documentElement;
@@ -103,28 +94,10 @@ export default function FileList() {
                     setIsScrolledToTheEnd(true);
                 }
             }
-            // , []);
         ;
 
         fetchData(getFileFilter());
 
-        // setLoading(true);
-
-        // apiLoadFiles(getFileFilter())
-        //     .then(result => {
-        //         setData(result);
-        //         setLoading(false);
-        //         setSkipValue(oldValue => oldValue + TAKE_VALUE);
-
-        //         if (result.length < TAKE_VALUE) {
-        //             setIsLastData(true);
-        //         }
-        //     })
-        //     .catch(e => {
-        //         setData(oldData => Array.isArray(oldData) ? [ ...oldData ] : []);
-        //         setLoading(false);
-        //         setErrorMessage(e ? `${e}` : 'Could not load file list');
-        //     });
 
         if (document) {
             document.addEventListener('scroll', onScrollEventHandler);
