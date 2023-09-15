@@ -49,7 +49,9 @@ RUN chown -R node:node /mnt/storage
 
 USER root
 
-EXPOSE 3000
 ENV PORT 3000
+
+EXPOSE 3000
+VOLUME /mnt/storage
 
 CMD crond && npm start
