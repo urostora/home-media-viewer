@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/router'
 
 import FilteredContentList from '@/components/content/filteredContentList';
-import { FileResultType, FileSearchType } from '@/types/api/fileTypes';
+import { FileResultType } from '@/types/api/fileTypes';
 import Link from 'next/link';
 
 import hmvStyle from '@/styles/hmv.module.scss';
@@ -12,6 +12,7 @@ const AlbumRootPage = () => {
     const router = useRouter();
 
     const [ displayDetails, setDisplayDetails ] = useState<boolean>(false);
+    const [ contentType, setContentType ] = useState<string>('all');
 
     const albumId: string | undefined = Array.isArray(router?.query?.id)
         ? router.query.id[0]
@@ -38,6 +39,12 @@ const AlbumRootPage = () => {
         setDisplayDetails(!displayDetails);
     };
 
+    const onContentTypeChanged = (e: React.FormEvent<HTMLSelectElement>) => {
+        const newValue = e.currentTarget.value;
+
+        setContentType(newValue);
+    };
+
     const backToAlbumLink = parentFileId
         ? <Link key="backToAlbum" href={`/album/${albumId}`} prefetch={false} >Back to album</Link>
         : null;
@@ -54,6 +61,11 @@ const AlbumRootPage = () => {
                 {backLink}
             </div>
             <div className={hmvStyle.rightSide}>
+                <select className={hmvStyle.roundedElement} onChange={onContentTypeChanged}>
+                    <option value="all" selected={contentType === 'all'}>All content type</option>
+                    <option value="image" selected={contentType === 'image'}>Only images</option>
+                    <option value="video" selected={contentType === 'video'}>Only videos</option>
+                </select>
                 <button onClick={onDisplayDetailsToggleClicked}>{displayDetails ? 'Hide details' : 'Display details'}</button>
             </div>
         </div>
@@ -61,6 +73,7 @@ const AlbumRootPage = () => {
         <FilteredContentList
             albumId={albumId}
             parentFileId={parentFileId ?? null}
+            contentType={contentType}
             onContentSelected={onContentSelectedHandler}
             displayDetails={displayDetails}
             />

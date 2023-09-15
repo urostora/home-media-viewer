@@ -39,7 +39,9 @@ const updateMetadataProcess = {
         continue;
       }
 
-      console.log(`  ${filesUnprocessed.length} unprocessed files found in album ${album.name} (${album.id})`);
+      if (filesUnprocessed.filter(f => !f.isDirectory).length > 0) {
+        console.log(`  ${filesUnprocessed.length} unprocessed files found in album ${album.name} (${album.id})`);
+      }
 
       let fileIndex = 0;
       for (const file of filesUnprocessed) {
@@ -49,7 +51,7 @@ const updateMetadataProcess = {
           try {
             await Promise.all(parallelJobs);
           } catch(e) {
-            console.error(`  ERROR whole loading metadata: ${e}`);
+            console.error(`  ERROR while loading metadata: ${e}`);
           }
 
           parallelJobs.splice(0, parallelJobs.length);

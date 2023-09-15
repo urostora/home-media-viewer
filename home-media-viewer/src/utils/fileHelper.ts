@@ -15,12 +15,12 @@ export const syncFilesInAlbumAndFile = async (album: Album, parentFile?: File) =
   }
 
   if (!fs.existsSync(directoryPath)) {
-    throw new Error(`Directory not exists at path ${path}`);
+    throw new Error(`Directory not exists at path ${directoryPath}`);
   }
 
   const dirStat = fs.statSync(directoryPath);
   if (!dirStat.isDirectory()) {
-    throw new Error(`Element at path ${path} is not a directory`);
+    throw new Error(`Element at path ${directoryPath} is not a directory`);
   }
 
   // console.log(`Syncronize directory ${directoryPath}`);
@@ -117,7 +117,13 @@ export const getFiles = async (params: FileSearchType, returnThumbnails: boolean
     status: params?.status,
     isDirectory: params?.isDirectory,
     name: typeof params?.name !== 'string' ? undefined : { contains: params.name },
-    extension: params?.extension,
+    extension: params?.extension ?? (
+      params?.contentType === undefined || params.contentType === 'all'
+        ? undefined
+        : (params.contentType === 'video'
+            ? { in: [ 'mpeg', 'avi', 'mp4', 'mkv', 'mov' ]}
+            : { in: [ 'jpg', 'jpeg', 'png' ]})
+    ),
     modifiedAt: getDateTimeFilter(params?.fileDate),
     contentDate: getDateTimeFilter(params?.contentDate),
     metadataStatus: params.metadataStatus,

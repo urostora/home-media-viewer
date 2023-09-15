@@ -4,6 +4,7 @@ import hmvStyle from '@/styles/hmv.module.scss';
 import { contentSizeToString } from "@/utils/metaUtils";
 import BrowseContentMenu from "./browserContentMenu";
 import { AlbumResultType } from "@/types/api/albumTypes";
+import { isVideoByExtension } from '@/utils/frontend/contentUtils'
 
 type BrowseContentCardProps = {
     content: BrowseResultFile,
@@ -19,6 +20,9 @@ const BrowseContentCard = (props: BrowseContentCardProps) => {
     const details = content.isDirectory ? '' : contentSizeToString(content.size ?? 0);
 
     const isDirectory = content?.isDirectory === true;
+    const isVideo = typeof content?.storedFile?.extension === 'string'
+        ? isVideoByExtension(content.storedFile.extension)
+        : false;
     const thumbnailContent = content?.storedFile?.thumbnail;
     const thumbnailStyle = {
         backgroundImage: isDirectory
@@ -28,6 +32,10 @@ const BrowseContentCard = (props: BrowseContentCardProps) => {
                 : 'inherit'),
     }
     const hasThumbnailStyle = typeof thumbnailContent === 'string' || isDirectory ? hmvStyle.hasThumbnail : '';
+
+    const videoIcon = isVideo
+        ? <img src="/play.svg" className={hmvStyle.videoIcon} />
+        : null;
 
     const onContentClickedHandler = (event: React.MouseEvent<HTMLDivElement>) => {
         if (typeof contentSelected === 'function') {
@@ -45,7 +53,9 @@ const BrowseContentCard = (props: BrowseContentCardProps) => {
             className={`${hmvStyle.thumbnail} ${hasThumbnailStyle}`}
             style={thumbnailStyle}
             onClick={containerClickedHandler}
-        ></div>
+        >
+            {videoIcon}
+        </div>
         <div className={hmvStyle.details}>
             <span>{details}</span>
             <BrowseContentMenu content={content} album={album} />

@@ -29,7 +29,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "2.50"
+          cpus: "1.50"
           memory: 800m
 
   app:
@@ -60,8 +60,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "4"
-          memory: 1500m
+          cpus: "2"
+          memory: 800m
 
 networks:
   home-media-dev-network:

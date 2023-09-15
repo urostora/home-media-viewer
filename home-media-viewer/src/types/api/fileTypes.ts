@@ -6,12 +6,12 @@ import type {
   DateFilter,
   EntityType,
 } from './generalTypes';
-import { AlbumResultType, AlbumSearchType } from './albumTypes';
 
 export interface FileSearchType extends StatusSearchType {
   album?: EntityType;
   parentFileId?: string | null;
   name?: string;
+  contentType?: string;
   extension?: string;
   pathBeginsWith?: string;
   pathIsExactly?: string;

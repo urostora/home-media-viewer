@@ -20,8 +20,8 @@ const MainMenu = () => {
                 <div className={`${hmvStyle.linkItem} ${(url.includes('/album') ? hmvStyle.activeLinkItem : null)}`}>
                     <Link href="/album">Albums</Link>
                 </div>
-                <div className={`${hmvStyle.linkItem} ${(url.includes('/file') ? hmvStyle.activeLinkItem : null)}`}>
-                    <Link href="/file">All content</Link>
+                <div className={`${hmvStyle.linkItem} ${(url.includes('/search') ? hmvStyle.activeLinkItem : null)}`}>
+                    <Link href="/search">Search</Link>
                 </div>
                 {
                     authContext?.isAdmin === true
