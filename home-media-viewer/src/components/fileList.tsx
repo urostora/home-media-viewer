@@ -1,7 +1,7 @@
 import { FileResultType, FileSearchType } from '@/types/api/fileTypes';
 import { Status } from '@/types/api/generalTypes';
 import { apiLoadFiles } from '@/utils/frontend/dataSource/file';
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import ContentFilter, { ContentFilterType } from './content/contentFilter';
 import ContentList from './content/contentList';
 import ContentDisplay from './content/contentDisplay';
@@ -10,7 +10,7 @@ import ContentDisplay from './content/contentDisplay';
 const TAKE_VALUE = 50;
 
 export default function FileList() {
-    const [ currentFilter, setCurrentFilter ] = useState<ContentFilterType>({ dateFrom: '2000-01-01 00:00:00', contentType: 'all' });
+    const [ currentFilter, setCurrentFilter ] = useState<ContentFilterType>({ dateFrom: '2000-01-01', contentType: 'all' });
     const [ data, setData ] = useState<FileResultType[] | null>(null);
     const [ isLoading, setLoading ] = useState<boolean>(false);
     const [ isLastData, setIsLastData ] = useState<boolean>(false);
@@ -46,7 +46,7 @@ export default function FileList() {
 
                     return isExistingData
                         ? oldData
-                        : Array.isArray(oldData) ? [...oldData, ...result] : result
+                        : Array.isArray(oldData) ? [...oldData, ...result] : result;
                 });
 
                 if (result.length < TAKE_VALUE) {
@@ -70,6 +70,8 @@ export default function FileList() {
 
         const filter: FileSearchType = {
             ...getFileFilter(),
+            contentDate: { from: currentFilter.dateFrom, to: currentFilter.dateTo },
+            contentType: currentFilter.contentType,
             skip: data?.length ?? 0,
         };
 
@@ -96,7 +98,11 @@ export default function FileList() {
             }
         ;
 
-        fetchData(getFileFilter());
+        fetchData({
+            ...getFileFilter(),
+            contentDate: { from: currentFilter.dateFrom, to: currentFilter.dateTo },
+            contentType: currentFilter.contentType,
+        });
 
 
         if (document) {
@@ -114,6 +120,7 @@ export default function FileList() {
 
         setCurrentFilter(contentFilter);
         setData(null);
+        setIsLastData(false);
 
         const filter: FileSearchType = {
             ...getFileFilter(),
