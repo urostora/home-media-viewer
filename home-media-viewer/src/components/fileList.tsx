@@ -157,14 +157,14 @@ export default function FileList() {
     else if (data != null) contentList = <ContentList data={data} contentSelected={onCardSelected} />
     else contentList = null;
 
-    if (typeof errorMessage === 'string') {
-        return <p className='errorMessage'>{errorMessage}</p>;
-    }
-
     return (<div>
         <ContentFilter key={1} currentFilter={currentFilter} onFilterChanged={onContentFilterChanged} />
         {contentList}
         { isLoading ? <>Loading data...</> : null }
         {getContentDisplay(contentSelected)}
+        {typeof errorMessage === 'string'
+            ? <p className='errorMessage'>{errorMessage}</p>
+            : null
+        }
     </div>);
 }
