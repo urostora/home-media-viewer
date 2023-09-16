@@ -12,8 +12,10 @@ ENV NODE_ENV=development
 RUN mkdir -p /mnt/storage
 RUN chown -R node:node /mnt/storage
 
-USER root
 EXPOSE 3000
+VOLUME /mnt/storage
+
+USER root
 ENV PORT 3000
 
 CMD crond && npm run dev;

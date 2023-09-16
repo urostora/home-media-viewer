@@ -267,9 +267,11 @@ $appTextColorAlternative: #2d9649;
 }
 
 .contentFilterContainer {
-    width: 100%;
     padding: 10px;
     color: $appTextColorAlternative;
+    border: $appBorderColor solid 1px;
+    border-radius: 15px;
+    margin: 15px;
 
     .filterHeader {
         font-size: 20px;
