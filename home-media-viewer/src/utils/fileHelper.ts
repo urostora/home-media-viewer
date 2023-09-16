@@ -121,8 +121,8 @@ export const getFiles = async (params: FileSearchType, returnThumbnails: boolean
       params?.contentType === undefined || params.contentType === 'all'
         ? undefined
         : (params.contentType === 'video'
-            ? { in: [ 'mpeg', 'avi', 'mp4', 'mkv', 'mov' ]}
-            : { in: [ 'jpg', 'jpeg', 'png' ]})
+            ? { in: [ 'mpeg', 'avi', 'mp4', 'mkv', 'mov', 'MPEG', 'AVI', 'MP4', 'MKV', 'MOV' ] }
+            : { in: [ 'jpg', 'jpeg', 'png', 'JPG', 'JPEG', 'PNG' ] })
     ),
     modifiedAt: getDateTimeFilter(params?.fileDate),
     contentDate: getDateTimeFilter(params?.contentDate),
