@@ -8,6 +8,7 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL}
       SHADOW_DATABASE_URL: ${SHADOW_DATABASE_URL}
+      TS_NODE_PROJECT: /home/node/app/tsconfig.json
     volumes:
       - ./home-media-viewer:/home/node/app
     networks:
@@ -32,7 +33,19 @@ services:
           cpus: "1.50"
           memory: 800m
 
-  app:
+  dev-rabbit:
+    image: rabbitmq:3.12-management
+    container_name: media-viewer-dev-rabbit
+    hostname: media-viewer-dev-rabbit
+    volumes:
+      - home-media-dev-rabbit:/var/lib/rabbitmq
+    networks:
+      - home-media-dev-network
+    ports:
+      - 23672:5672
+      - 23673:15672
+
+  dev-app:
     container_name: media-viewer-dev-app
     build:
       dockerfile: ./docker/dev/app/Dockerfile
@@ -40,6 +53,7 @@ services:
     depends_on:
       - dependencies
       - dev-db
+      - dev-rabbit
     environment:
       APP_ALBUM_ROOT_PATH: ${APP_ALBUM_ROOT_PATH}
       DATABASE_URL: ${DATABASE_URL}
@@ -49,6 +63,8 @@ services:
       APP_SESSION_SECRET: ${APP_SESSION_SECRET}
       HOSTNAME: ${HOSTNAME}
       IS_BACKGROUND_PROCESS_ENABLED: ${IS_BACKGROUND_PROCESS_ENABLED}
+      RABBIT_HOST: ${RABBIT_HOST}
+      RABBIT_AMQP_PORT: ${RABBIT_AMQP_PORT}
     volumes:
       - ./home-media-viewer:/home/node/app
       - ./static:${APP_ALBUM_ROOT_PATH}
@@ -68,3 +84,5 @@ networks:
 
 volumes:
   home-media-dev-storage:
+
+  home-media-dev-rabbit:

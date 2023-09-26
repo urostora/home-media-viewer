@@ -5,6 +5,7 @@ import { deleteMetadata, loadMetadata } from '@/utils/fileHelper';
 import { apiOnlyWithAdminUsers } from '@/utils/auth/apiHoc';
 
 import prisma from '@/utils/prisma/prismaImporter';
+import { addFileToMetadataProcessingQueue } from '@/utils/jobQueue/metadataProcessingQueue';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
@@ -31,7 +32,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
           throw new Error(`File not exists with id ${idToUpdate}`);
         }
 
-        const ok = await loadMetadata(file);
+        addFileToMetadataProcessingQueue(file);
+
+        const ok = true;
 
         res.status(200).json(getApiResponse({ ok, id: idToUpdate }));
       } catch (e) {
