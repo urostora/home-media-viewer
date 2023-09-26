@@ -27,7 +27,7 @@ const PathNavigator = (props: PathNavigatorProps) => {
 
         const text = `/${element}`;
         const hrefPostfix = allParts.slice(0, index + 1).join('/');
-        const fullHref = `${rootPath}/${hrefPostfix}`;
+        const fullHref = `${rootPath}/${hrefPostfix}`.replace('//', '/');
 
         return <Link key={hrefPostfix} href={fullHref}>{text}</Link>;
     });
