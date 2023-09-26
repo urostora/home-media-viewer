@@ -189,6 +189,23 @@ export const getPureExtension = (extension?: string): string => {
   return extension.startsWith('.') ? extension.substring(1) : extension;
 };
 
+export const loadMetadataById = async (fileId: string) => {
+  const file = await prisma.file.findFirst({
+    where: {
+      id: fileId
+    },
+    include: {
+      album: true,
+    }
+  });
+
+  if (file === null) {
+    throw Error(`File not found with id ${fileId}`);
+  }
+
+  loadMetadata(file, file.album)
+};
+
 export const loadMetadata = async (file: File, fileAlbum?: Album): Promise<boolean> => {
   const metadataProcessor = getFileProcessor(file);
 
