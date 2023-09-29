@@ -589,6 +589,7 @@ select.roundedElement {
             flex-direction: column !important;
             background-color: $appBackgroundColor;
             z-index: 100;
+            position: inherit;
         }
     }
 }

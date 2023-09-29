@@ -1,6 +1,6 @@
 import { useState } from "react";
 import hmvStyle from '@/styles/hmv.module.scss';
-import { MapContainer, TileLayer } from 'react-leaflet'; // map is not working yet
+// import { MapContainer, TileLayer } from 'react-leaflet'; // map is not working yet
 
 export type ContentFilterType = {
     dateFrom?: string;

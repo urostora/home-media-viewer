@@ -121,8 +121,8 @@ export const getFiles = async (params: FileSearchType, returnThumbnails: boolean
       params?.contentType === undefined || params.contentType === 'all'
         ? undefined
         : (params.contentType === 'video'
-            ? { in: [ 'mpeg', 'avi', 'mp4', 'mkv', 'mov' ]}
-            : { in: [ 'jpg', 'jpeg', 'png' ]})
+            ? { in: [ 'mpeg', 'avi', 'mp4', 'mkv', 'mov', 'MPEG', 'AVI', 'MP4', 'MKV', 'MOV' ] }
+            : { in: [ 'jpg', 'jpeg', 'png', 'JPG', 'JPEG', 'PNG' ] })
     ),
     modifiedAt: getDateTimeFilter(params?.fileDate),
     contentDate: getDateTimeFilter(params?.contentDate),
@@ -187,6 +187,23 @@ export const getPureExtension = (extension?: string): string => {
   }
 
   return extension.startsWith('.') ? extension.substring(1) : extension;
+};
+
+export const loadMetadataById = async (fileId: string) => {
+  const file = await prisma.file.findFirst({
+    where: {
+      id: fileId
+    },
+    include: {
+      album: true,
+    }
+  });
+
+  if (file === null) {
+    throw Error(`File not found with id ${fileId}`);
+  }
+
+  loadMetadata(file, file.album)
 };
 
 export const loadMetadata = async (file: File, fileAlbum?: Album): Promise<boolean> => {
