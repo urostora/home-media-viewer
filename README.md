@@ -52,6 +52,10 @@ Update metadata
 
 `docker-compose exec app sh -c "npx ts-node -r tsconfig-paths/register ./src/backgroundProcesses/updateMetadata.ts"`
 
+## Run tests
+
+`docker-compose run --rm dependencies bash -c "npm run test"`
+
 ## Production build
 
 `docker-compose --file docker-compose-prod.yml --env-file .env-prod build app`
