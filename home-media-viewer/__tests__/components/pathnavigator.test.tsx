@@ -2,21 +2,26 @@ import { render, screen } from '@testing-library/react'
 import '@testing-library/jest-dom'
 
 import PathNavigator from "@/components/content/pathNavigator";
+import { assert } from 'node:console';
 
 describe('PathNavigator', () => {
-    it('Render Path navigator with 3 parts', () => {
+    it('Render Path navigator with 3 part path', () => {
       const path = [ 'dir1', 'dir2', 'dir3' ];
 
       render(<PathNavigator path={path.join('/')} />);
 
-      // screen.debug()
+      expect(screen.getByText('/')).toHaveAttribute('href', '/browse' );
 
-      const rootLink = screen.getByText('/');
-      // expect(rootLink).toBeInTheDocument();
-   
-      path.forEach(p => {
-        const dir1link = screen.getByText(`/${p}`);
-        // expect(dir1link).toBeInTheDocument();
-      });
+      expect(screen.getByText('/dir1')).toHaveAttribute('href', '/browse/dir1');
+      expect(screen.getByText('/dir2')).toHaveAttribute('href', '/browse/dir1/dir2');
+      expect(screen.getByText('/dir3')).toHaveAttribute('href', '/browse/dir1/dir2/dir3');
+    })
+
+    it('Render Path navigator with empty path', () => {
+      render(<PathNavigator path="" />);
+
+      const anchorElements = document.querySelectorAll('a');
+      // no links rendered
+      expect(anchorElements.length).toEqual(0);
     })
   })
