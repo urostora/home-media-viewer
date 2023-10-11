@@ -56,6 +56,10 @@ Update metadata
 
 `docker-compose run --rm dependencies bash -c "npm run test"`
 
+### Run specific test
+
+`docker-compose run --rm dependencies bash -c "npx jest -t 'AlbumDetails'"`
+
 ## Production build
 
 `docker-compose --file docker-compose-prod.yml --env-file .env-prod build app`

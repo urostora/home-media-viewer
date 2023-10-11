@@ -2,7 +2,6 @@ import { render, screen } from '@testing-library/react'
 import '@testing-library/jest-dom'
 
 import PathNavigator from "@/components/content/pathNavigator";
-import { assert } from 'node:console';
 
 describe('PathNavigator', () => {
     it('Render Path navigator with 3 part path', () => {
