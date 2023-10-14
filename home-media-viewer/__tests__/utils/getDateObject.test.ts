@@ -34,7 +34,7 @@ describe('utils/utils', () => {
     })
     
     it('getDateObject with 8 digit separated by .', () => {
-        const dateString = '2023-08-31';
+        const dateString = '2023.08.31';
 
         const result = getDateObject(dateString);
 
@@ -97,7 +97,7 @@ describe('utils/utils', () => {
         expect(result?.getMilliseconds()).toBe(0);
     })
     
-    it('getDateObject with 14 digit and separators', () => {
+    it('getDateObject with 14 digit and random separators', () => {
         const dateString = '2023.08/31T11:22;33';
 
         const result = getDateObject(dateString);
@@ -113,7 +113,7 @@ describe('utils/utils', () => {
         expect(result?.getMilliseconds()).toBe(0);
     })
     
-    it('getDateObject with one digit parts and separators', () => {
+    it('getDateObject with one digit parts and random separators', () => {
         const dateString = '2023.1/2 3 4|5';
 
         const result = getDateObject(dateString);
