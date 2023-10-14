@@ -54,6 +54,10 @@ Update metadata
 
 ## Run tests
 
+`docker-compose exec app npx jest`
+
+### Run test on a separate container
+
 `docker-compose run --rm dependencies bash -c "npm run test"`
 
 ### Run specific test
