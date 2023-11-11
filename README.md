@@ -64,6 +64,28 @@ Update metadata
 
 `docker-compose run --rm dependencies bash -c "npx jest -t 'AlbumDetails'"`
 
+## Test environment
+
+### build
+
+#### app
+
+`docker-compose --file docker-compose-test.yml --env-file .env-test build app`
+
+#### migration
+
+`docker-compose --file docker-compose-test.yml --env-file .env-test build migration`
+
+### Database commands
+
+#### Update database
+
+`docker-compose --file docker-compose-test.yml --env-file .env-test run --rm migration bash -c "npx prisma migrate deploy"`
+
+#### Set initial data (seed)
+
+`docker-compose --file docker-compose-test.yml --env-file .env-test run --rm migration bash -c "npx prisma db seed"`
+
 ## Production build
 
 `docker-compose --file docker-compose-prod.yml --env-file .env-prod build app`

@@ -48,7 +48,7 @@ export const checkUserData = async (data: UserEditType, currentId: string | null
     statusFilter = status;
   }
 
-  statusFilter = Prisma.validator<Status[]>()(statusFilter);
+  // statusFilter = Prisma.validator<Status[]>()(statusFilter);
 
   // check if user exists with same name or email
   if (uniqueFilters.length > 0) {
