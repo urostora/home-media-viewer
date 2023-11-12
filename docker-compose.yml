@@ -32,6 +32,27 @@ services:
           cpus: "1.50"
           memory: 800m
 
+  testrunner:
+    container_name: home-media-viewer-dev-testrunner
+    hostname: home-media-viewer-dev-testrunner
+    build:
+      dockerfile: ./docker/dev/testrunner/Dockerfile
+      context: .
+      target: testrunner
+    environment:
+      APP_ALBUM_ROOT_PATH: ${APP_ALBUM_ROOT_PATH}
+      DATABASE_URL: ${DATABASE_URL}
+      LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
+      APP_SESSION_SECRET: ${APP_SESSION_SECRET}
+      PROCESS_TOKEN: ${PROCESS_TOKEN}
+      TS_NODE_PROJECT: /home/node/app/tsconfig.json
+      HOSTNAME: ${HOSTNAME}
+      IS_BACKGROUND_PROCESS_ENABLED: ${IS_BACKGROUND_PROCESS_ENABLED}
+    volumes:
+      - ./home-media-viewer:/home/node/app
+    networks:
+      - home-media-dev-network
+
   app:
     container_name: media-viewer-dev-app
     build:

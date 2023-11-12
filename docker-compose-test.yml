@@ -36,6 +36,25 @@ services:
     networks:
       - home-media-test-network
 
+  testrunner:
+    container_name: home-media-viewer-test-testrunner
+    hostname: home-media-viewer-test-testrunner
+    build:
+      dockerfile: ./docker/test/testrunner/Dockerfile
+      context: .
+      target: testrunner
+    environment:
+      APP_ALBUM_ROOT_PATH: ${APP_ALBUM_ROOT_PATH}
+      DATABASE_URL: ${DATABASE_URL}
+      LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
+      APP_SESSION_SECRET: ${APP_SESSION_SECRET}
+      PROCESS_TOKEN: ${PROCESS_TOKEN}
+      TS_NODE_PROJECT: /home/node/app/tsconfig.json
+      HOSTNAME: ${HOSTNAME}
+      IS_BACKGROUND_PROCESS_ENABLED: ${IS_BACKGROUND_PROCESS_ENABLED}
+    networks:
+      - home-media-test-network
+
   app:
     container_name: home-media-viewer-test-app
     hostname: home-media-viewer-test-app

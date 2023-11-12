@@ -64,6 +64,12 @@ Update metadata
 
 `docker-compose run --rm dependencies bash -c "npx jest -t 'AlbumDetails'"`
 
+## Developer environment
+
+### Run tests on dev environment
+
+`docker-compose run --rm testrunner bash -c "npm run test"`
+
 ## Test environment
 
 ### build

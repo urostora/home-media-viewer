@@ -1,0 +1,17 @@
+FROM node:18 as dependencies
+
+WORKDIR /home/node/app
+COPY ./home-media-viewer .
+RUN npm install
+RUN npx prisma generate
+
+
+FROM node:18 as testrunner
+
+ENV TS_NODE_PROJECT /home/node/app/tsconfig.json
+
+WORKDIR /home/node/app
+
+# COPY --from=dependencies /home/node/app/node_modules ./node_modules
+
+VOLUME /home/node/app
