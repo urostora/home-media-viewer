@@ -12,5 +12,5 @@ ENV TS_NODE_PROJECT /home/node/app/tsconfig.json
 
 WORKDIR /home/node/app
 
-COPY --from=dependencies /home/node/app/node_modules ./node_modules
 COPY ./home-media-viewer .
+COPY --from=dependencies /home/node/app/node_modules ./node_modules

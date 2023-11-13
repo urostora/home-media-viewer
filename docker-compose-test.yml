@@ -43,6 +43,8 @@ services:
       dockerfile: ./docker/test/testrunner/Dockerfile
       context: .
       target: testrunner
+    depends_on:
+      - app
     environment:
       APP_ALBUM_ROOT_PATH: ${APP_ALBUM_ROOT_PATH}
       DATABASE_URL: ${DATABASE_URL}
@@ -51,7 +53,8 @@ services:
       PROCESS_TOKEN: ${PROCESS_TOKEN}
       TS_NODE_PROJECT: /home/node/app/tsconfig.json
       HOSTNAME: ${HOSTNAME}
-      IS_BACKGROUND_PROCESS_ENABLED: ${IS_BACKGROUND_PROCESS_ENABLED}
+      IS_BACKGROUND_PROCESS_ENABLED: 0
+      APP_URL: http://home-media-viewer-test-app:3000
     networks:
       - home-media-test-network
 
