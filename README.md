@@ -66,9 +66,15 @@ Update metadata
 
 ## Developer environment
 
-### Run tests on dev environment
+### Run tests on developer environment
+
+#### Run all tests on developer environment
 
 `docker-compose run --rm testrunner bash -c "npm run test"`
+
+#### Run specific test on developer environment
+
+`docker-compose run --rm testrunner bash -c "npx jest -t 'Google'"`
 
 ## Test environment
 
