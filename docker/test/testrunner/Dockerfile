@@ -8,6 +8,7 @@ RUN npx prisma generate
 
 FROM node:18 as testrunner
 
+
 ENV TS_NODE_PROJECT /home/node/app/tsconfig.json
 
 RUN apt-get update && apt-get install gnupg wget -y && \
@@ -19,7 +20,9 @@ RUN apt-get update && apt-get install gnupg wget -y && \
 
 WORKDIR /home/node/app
 
-COPY ./home-media-viewer .
-COPY --from=dependencies /home/node/app/node_modules ./node_modules
+RUN chown -R node:node /home/node
+
+COPY --chown=node:node ./home-media-viewer .
+COPY --from=dependencies --chown=node:node /home/node/app/node_modules ./node_modules
 
 USER node
