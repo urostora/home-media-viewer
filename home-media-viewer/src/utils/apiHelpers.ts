@@ -3,6 +3,7 @@ import {
   GeneralEntityListResponse,
   GeneralMutationResponse,
   GeneralResponse,
+  GeneralResponseWithData,
 } from '@/types/api/generalTypes';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
@@ -70,6 +71,10 @@ export function getApiResponse(parameters: any = {}): GeneralResponse {
   }
 
   return ret;
+}
+
+export function getApiResponseWithData<T>(data: T): GeneralResponseWithData<T> {
+  return getApiResponse({ data });
 }
 
 export function getApiResponseEntityList(

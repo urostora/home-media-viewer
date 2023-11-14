@@ -34,11 +34,11 @@ services:
 
   app:
     container_name: media-viewer-dev-app
+    hostname: media-viewer-dev-app
     build:
       dockerfile: ./docker/dev/app/Dockerfile
       context: .
     depends_on:
-      - dependencies
       - dev-db
     environment:
       APP_ALBUM_ROOT_PATH: ${APP_ALBUM_ROOT_PATH}
@@ -62,6 +62,28 @@ services:
         limits:
           cpus: "2"
           memory: 800m
+
+  testrunner:
+    container_name: media-viewer-dev-testrunner
+    hostname: media-viewer-dev-testrunner
+    build:
+      dockerfile: ./docker/dev/testrunner/Dockerfile
+      context: .
+      target: testrunner
+    depends_on:
+      - app
+    environment:
+      APP_ALBUM_ROOT_PATH: ${APP_ALBUM_ROOT_PATH}
+      DATABASE_URL: ${DATABASE_URL}
+      LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
+      APP_SESSION_SECRET: ${APP_SESSION_SECRET}
+      PROCESS_TOKEN: ${PROCESS_TOKEN}
+      TS_NODE_PROJECT: /home/node/app/tsconfig.json
+      APP_URL: http://media-viewer-dev-app:3000
+    volumes:
+      - ./home-media-viewer:/home/node/app
+    networks:
+      - home-media-dev-network
 
 networks:
   home-media-dev-network:

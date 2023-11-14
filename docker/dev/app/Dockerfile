@@ -12,8 +12,11 @@ ENV NODE_ENV=development
 RUN mkdir -p /mnt/storage
 RUN chown -R node:node /mnt/storage
 
+# COPY ./home-media-viewer/* .
+
 EXPOSE 3000
 VOLUME /mnt/storage
+VOLUME /home/node/app
 
 USER root
 ENV PORT 3000
