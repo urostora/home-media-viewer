@@ -10,7 +10,7 @@ export const verifyPassword = async (password: string, hashedPassword: string) =
   bcrypt.compare(password, hashedPassword);
 
 export const isPasswordStrong = (password: string) => {
-  const regex = /^(?!.*\s)(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[~`!@#$%^&*()--+={}\[\]|\\:;"'<>,.?/_₹]).{8,16}$/;
+  const regex = /^(?!.*\s)(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[~`!@#$%^&*()--+={}\[\]|\\:;"'<>,.?/_₹]).{8,}$/;
   return regex.test(password);
 };
 
@@ -124,7 +124,8 @@ export const updateUser = async (data: UserEditType) => {
   }
 
   if (typeof password === 'string') {
-    updateData.password = password;
+    const hashedPassword = await getHashedPassword(password);
+    updateData.password = hashedPassword;
   }
 
   if (typeof status === 'string') {
