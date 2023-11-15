@@ -2,6 +2,7 @@ version: "3"
 services:
   db:
     container_name: home-media-viewer-db
+    hostname: home-media-viewer-db
     image: "mariadb:10"
     environment:
       MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
@@ -36,6 +37,19 @@ services:
       - home-media-storage:${APP_STORAGE_PATH}
     ports:
       - ${WEB_PORT}:3000
+    networks:
+      - home-media-network
+
+  migration:
+    container_name: home-media-viewer-migration
+    hostname: home-media-viewer-migration
+    build:
+      dockerfile: ./docker/prod/migration/Dockerfile
+      context: .
+      target: migration
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      TS_NODE_PROJECT: /home/node/app/tsconfig.json
     networks:
       - home-media-network
 

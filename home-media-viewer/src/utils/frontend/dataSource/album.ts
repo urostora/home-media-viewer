@@ -55,10 +55,19 @@ export const apiAlbumDelete = async (id: string) => {
 
 export const apiAlbumDetails = async (id: string): Promise<AlbumDetailsType | undefined> => {
   const fetchResult = await fetch(`/api/album/${id}`);
-  const resultData: GeneralResponseWithData<AlbumDetailsType> = await fetchResult.json();
+  if (fetchResult.status !== 200) {
+    throw Error(`Album fetch status is ${fetchResult.status} (${fetchResult.statusText})`);
+  }
+
+  const resultText = await fetchResult.text();
+  const resultData: GeneralResponseWithData<AlbumDetailsType> = JSON.parse(resultText);
+
+  if (typeof resultData?.data?.name !== 'string') {
+    throw Error(`Could not parse result (status: ${fetchResult.status}, ${fetchResult.statusText}): ${resultText}`);
+  }
 
   if (!resultData.ok) {
-    throw Error(resultData.error ?? 'Could not add albums');
+    throw Error(resultData.error ?? 'Could not load album details');
   }
 
   return resultData.data;

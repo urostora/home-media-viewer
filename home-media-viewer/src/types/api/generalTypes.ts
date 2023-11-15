@@ -3,13 +3,10 @@ export interface GeneralResponse {
   ok: boolean;
   error?: string;
   count?: number;
+  id?: string;
 }
 
-export interface GeneralResponseWithData<T> {
-  date: string;
-  ok: boolean;
-  error?: string;
-  count?: number;
+export interface GeneralResponseWithData<T> extends GeneralResponse {
   data?: T;
 }
 

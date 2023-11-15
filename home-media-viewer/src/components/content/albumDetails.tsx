@@ -76,12 +76,13 @@ const AlbumDetails = (props: AlbumDetailsProps): ReactElement => {
 
     if (fileStatusData?.all ?? 0 > 0) {
         let fileStatusDetailString = '';
-
         if (fileStatusData?.new ?? 0 > 0) {
             fileStatusDetailString += `, New: ${fileStatusData?.new}`;
-        } else if (fileStatusData?.processed ?? 0 > 0) {
+        }
+        if (fileStatusData?.processed ?? 0 > 0) {
             fileStatusDetailString += `, Processed: ${fileStatusData?.processed}`;
-        } else if (fileStatusData?.failed ?? 0 > 0) {
+        }
+        if (fileStatusData?.failed ?? 0 > 0) {
             fileStatusDetailString += `, Failed: ${fileStatusData?.failed}`;
         }
 

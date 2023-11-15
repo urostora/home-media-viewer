@@ -1,0 +1,92 @@
+version: "3"
+services:
+  db:
+    container_name: home-media-viewer-test-db
+    hostname: home-media-viewer-test-db
+    image: "mariadb:10"
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+      MARIADB_DATABASE: ${MARIADB_DATABASE}
+      MARIADB_USER: ${MARIADB_USER}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
+      MARIADB_AUTO_UPGRADE: 1
+    ports:
+      - ${MARIADB_PORT_ON_HOST}:3306
+    networks:
+      - home-media-test-network
+    volumes:
+      - home-media-test-db-storage:/var/lib/mysql
+  
+  migration:
+    container_name: home-media-viewer-test-migration
+    hostname: home-media-viewer-test-migration
+    build:
+      dockerfile: ./docker/test/migration/Dockerfile
+      context: .
+      target: migration
+    environment:
+      APP_ALBUM_ROOT_PATH: ${APP_ALBUM_ROOT_PATH}
+      DATABASE_URL: ${DATABASE_URL}
+      LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
+      APP_SESSION_SECRET: ${APP_SESSION_SECRET}
+      PROCESS_TOKEN: ${PROCESS_TOKEN}
+      TS_NODE_PROJECT: /home/node/app/tsconfig.json
+      HOSTNAME: ${HOSTNAME}
+      IS_BACKGROUND_PROCESS_ENABLED: ${IS_BACKGROUND_PROCESS_ENABLED}
+    networks:
+      - home-media-test-network
+
+  testrunner:
+    container_name: home-media-viewer-test-testrunner
+    hostname: home-media-viewer-test-testrunner
+    build:
+      dockerfile: ./docker/test/testrunner/Dockerfile
+      context: .
+      target: testrunner
+    depends_on:
+      - app
+    environment:
+      APP_ALBUM_ROOT_PATH: ${APP_ALBUM_ROOT_PATH}
+      DATABASE_URL: ${DATABASE_URL}
+      LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
+      APP_SESSION_SECRET: ${APP_SESSION_SECRET}
+      PROCESS_TOKEN: ${PROCESS_TOKEN}
+      TS_NODE_PROJECT: /home/node/app/tsconfig.json
+      HOSTNAME: ${HOSTNAME}
+      IS_BACKGROUND_PROCESS_ENABLED: 0
+      APP_URL: http://home-media-viewer-test-app:3000
+    networks:
+      - home-media-test-network
+
+  app:
+    container_name: home-media-viewer-test-app
+    hostname: home-media-viewer-test-app
+    build:
+      dockerfile: ./docker/test/app/Dockerfile
+      context: .
+      target: app
+    depends_on:
+      - db
+    environment:
+      APP_ALBUM_ROOT_PATH: ${APP_ALBUM_ROOT_PATH}
+      DATABASE_URL: ${DATABASE_URL}
+      LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
+      APP_SESSION_SECRET: ${APP_SESSION_SECRET}
+      PROCESS_TOKEN: ${PROCESS_TOKEN}
+      TS_NODE_PROJECT: /home/node/app/tsconfig.json
+      HOSTNAME: ${HOSTNAME}
+      IS_BACKGROUND_PROCESS_ENABLED: ${IS_BACKGROUND_PROCESS_ENABLED}
+    volumes:
+      - home-media-test-storage:${APP_STORAGE_PATH}
+    ports:
+      - ${WEB_PORT}:3000
+    networks:
+      - home-media-test-network
+
+networks:
+  home-media-test-network:
+
+volumes:
+  home-media-test-storage:
+
+  home-media-test-db-storage:
