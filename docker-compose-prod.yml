@@ -12,6 +12,8 @@ services:
       MARIADB_AUTO_UPGRADE: 1
     ports:
       - ${MARIADB_PORT_ON_HOST}:3306
+    volumes:
+      - home-media-db-storage:/var/lib/mysql
     networks:
       - home-media-network
 
@@ -58,3 +60,5 @@ networks:
 
 volumes:
   home-media-storage:
+
+  home-media-db-storage:
