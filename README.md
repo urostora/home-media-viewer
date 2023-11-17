@@ -1,6 +1,19 @@
-# Home media server
+# Home Media Viewer
 
-Docker-based project provides web access to media files in our storage.
+[![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)[![NodeJS](https://img.shields.io/badge/node.js-6DA55F?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/en)[![Next JS](https://img.shields.io/badge/Next-black?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)[![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)](https://react.dev/)[![Prisma](https://img.shields.io/badge/Prisma-3982CE?style=for-the-badge&logo=Prisma&logoColor=white)](https://www.prisma.io/)[![MariaDB](https://img.shields.io/badge/MariaDB-003545?style=for-the-badge&logo=mariadb&logoColor=white)](https://mariadb.org/)[![Jest](https://img.shields.io/badge/-jest-%23C21325?style=for-the-badge&logo=jest&logoColor=white)](https://jestjs.io/)
+
+A fully Docker-based NodeJs project provides web access to media files (images and videos) attached to the container. The application creates thumbnail images for the media content and extracts related metadata from them.
+
+## Architecture
+
+- Web
+  - Next.Js/based app with React front-end
+- Background process
+  - Uses the same container as the web application
+  - Indexes new and changed contents
+- Database
+  - MariaDB
+  - Accessed through the Prisma ORM library
 
 ## Usage
 
@@ -8,15 +21,79 @@ Docker-based project provides web access to media files in our storage.
 
 This project requires only Docker to run.
 
-### Run developer environment
+### Media content
 
-#### Before first use run these
+Media content should be arranged into directories, like the following (albums can be deeper too):
+
+```text
+root <=== this directory should be mount to the container
+ |-album1
+ |  |- directory1
+ |  |   |- image111.jpg
+ |  |- image11.jpg
+ |  |- video11.mp4
+ |- album2
+     |- image2.jpg
+     |- video2.mkv
+...
+```
+
+### Container setup
+
+Database files, media content and index file storage should be attached as a volume to the container:
+
+```yml
+# example
+services:
+    dev-db:
+        # ...
+        volumes:
+            - home-media-dev-db-storage:/var/lib/mysql
+    # ...
+    app:
+        # ...
+        volumes:
+            - ./static:${APP_ALBUM_ROOT_PATH}:ro # mount media content, target is /mnt/albums by default
+            - home-media-dev-index-storage:${APP_STORAGE_PATH} # it's /mnt/storage by default
+# ...
+
+volumes:
+  home-media-dev-index-storage:
+
+  home-media-dev-db-storage:
+```
+
+### Developer environment
+
+#### Before first use
+
+- Set environment variables in .env file
+
+```text
+# Web application port on host
+WEB_PORT=23080
+...
+# Administrator user credentials - used by the db seed process
+ADMIN_EMAIL=admin@admin.com
+ADMIN_PASSWORD=P4ssw0rd
+...
+# when HOSTNAME is set, app uses secure cookie (HTTPS connection required - used in production)
+HOSTNAME=
+```
+
+- Load dependencies
 
 `docker-compose run --rm dependencies bash -c "npm install"`
 
+- ORM (Prisma) setup
+
 `docker-compose run --rm dependencies bash -c "npx prisma generate"`
 
+- Start containers
+
 `docker-compose up -d`
+
+- Init database
 
 `docker-compose run --rm dependencies bash -c "npx prisma migrate reset --force"`
 
@@ -24,13 +101,42 @@ This project requires only Docker to run.
 
 `docker-compose up -d`
 
-#### Open urls
+#### Using developer web app
 
-[Web access](http://localhost:23000/)
+[Web access](http://localhost:23080/)
 
-[API access](http://localhost:23000/api/hello)
+1. Log in with credentials set in environment file
+2. Open "Browse" site
+3. Choose "Add album" in context menu
+4. Background process indexes files in albums
+   1. This can take a few minutes
 
-### Run commands on "dependencies" helper container
+#### Containers
+
+- **db**
+  - MariaDB database
+- **app**
+  - Web and API services
+- **background**
+  - Runs background processing jobs
+- **testrunner**
+  - test suite can be run in this container
+  - `docker-compose run --rm dependencies bash -c "npm run test"`
+- **dependencies**
+  - Run custom node commands, like
+    - Node version `docker-compose run --rm dependencies bash -c "node --version"`
+    - npm install `docker-compose run --rm dependencies bash -c "npm install"`
+    - Prisma commands
+      - Generate schema classes
+        `docker-compose run --rm dependencies bash -c "npx prisma generate"`
+      - Create migrate script from schema changes
+        `docker-compose run --rm dependencies bash -c "npx prisma migrate dev --name=init"`
+      - Apply schema changes
+        `docker-compose run --rm dependencies bash -c "npx prisma migrate deploy"`
+
+##### Dependencies
+
+This container is used to run casual node commands in the development process
 
 Node version
 `docker-compose run --rm dependencies bash -c "node --version"`
@@ -46,29 +152,11 @@ Prisma commands
 
 `docker-compose run --rm dependencies bash -c "npx prisma db push"`
 
-## Background processes
+## Testing
 
-Update metadata
+Tests are 
 
-`docker-compose exec app sh -c "npx ts-node -r tsconfig-paths/register ./src/backgroundProcesses/updateMetadata.ts"`
-
-## Run tests
-
-`docker-compose exec app npx jest`
-
-### Run test on a separate container
-
-`docker-compose run --rm dependencies bash -c "npm run test"`
-
-### Run specific test
-
-`docker-compose run --rm dependencies bash -c "npx jest -t 'AlbumDetails'"`
-
-## Developer environment
-
-### Run tests on developer environment
-
-#### Run all tests on developer environment
+### Run all tests on developer environment
 
 `docker-compose run --rm testrunner bash -c "npm run test"`
 
