@@ -18,8 +18,13 @@ services:
       - home-media-network
 
   background:
-    container_name: home-media-viewer-process
-    hostname: home-media-viewer-process
+    image: urostora/home-media-viewer/background
+    container_name: home-media-viewer-background
+    hostname: home-media-viewer-background
+    build:
+      dockerfile: ./docker/prod/app/Dockerfile
+      context: .
+      target: app
     user: "0"
     depends_on:
       - db
@@ -34,13 +39,15 @@ services:
       HOSTNAME: ${HOSTNAME}
       IS_BACKGROUND_PROCESS_ENABLED: 1
     volumes:
-      - ./static:${APP_ALBUM_ROOT_PATH}
+      - ./test/files:${APP_ALBUM_ROOT_PATH}:ro
       - home-media-storage:${APP_STORAGE_PATH}
     networks:
       - home-media-network
 
   app:
+    image: urostora/home-media-viewer/app
     container_name: home-media-viewer-app
+    hostname: home-media-viewer-app
     build:
       dockerfile: ./docker/prod/app/Dockerfile
       context: .
@@ -57,7 +64,7 @@ services:
       HOSTNAME: ${HOSTNAME}
       IS_BACKGROUND_PROCESS_ENABLED: 0
     volumes:
-      - ./static:${APP_ALBUM_ROOT_PATH}
+      - ./test/files:${APP_ALBUM_ROOT_PATH}:ro
       - home-media-storage:${APP_STORAGE_PATH}
     ports:
       - ${WEB_PORT}:3000
@@ -65,6 +72,7 @@ services:
       - home-media-network
 
   migration:
+    image: urostora/home-media-viewer/migration
     container_name: home-media-viewer-migration
     hostname: home-media-viewer-migration
     build:
@@ -75,7 +83,6 @@ services:
       - db
     environment:
       DATABASE_URL: ${DATABASE_URL}
-      TS_NODE_PROJECT: /home/node/app/tsconfig.json
     networks:
       - home-media-network
 
