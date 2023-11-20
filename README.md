@@ -152,9 +152,7 @@ Prisma commands
 
 `docker-compose run --rm dependencies bash -c "npx prisma db push"`
 
-## Testing
-
-Tests are 
+#### Testing
 
 ### Run all tests on developer environment
 
@@ -166,30 +164,57 @@ Tests are
 
 ## Test environment
 
-### build
+Test environment contains a production app and a test runner container.
+To use this environment, set docker-compose parameters to the following:
 
-#### app
+`--file docker-compose-test.yml --env-file .env-test`.
 
-`docker-compose --file docker-compose-test.yml --env-file .env-test build app`
+App container contains the test data suite from `./test/files` directory.
 
-#### migration
+### Containers in test environment
 
-`docker-compose --file docker-compose-test.yml --env-file .env-test build migration`
+- app
+- db
+- migration
+  - Runs database update / seed scripts
+- testrunner
+  - Prepares app to run UI tests
+  - Runs test suite
 
-### Database commands
+### Start containers
 
-#### Update database
+`docker-compose --file docker-compose-test.yml --env-file .env-test up -d`
 
-`docker-compose --file docker-compose-test.yml --env-file .env-test run --rm migration bash -c "npx prisma migrate deploy"`
+### Init test data
 
-#### Set initial data (seed)
+- Initialize database
+  - Update (create) tables
+  `docker-compose --file docker-compose-test.yml --env-file .env-test run --rm migration bash -c "npx prisma migrate deploy"`
+  - Set initial data (seed)
+  `docker-compose --file docker-compose-test.yml --env-file .env-test run --rm migration bash -c "npx prisma db seed"`
+- Process test data suite
+  `docker-compose --file docker-compose-test.yml --env-file .env-test run --rm testrunner bash -c "./scripts/initTestData.sh"`
 
-`docker-compose --file docker-compose-test.yml --env-file .env-test run --rm migration bash -c "npx prisma db seed"`
+### Run tests
 
-## Production build
+`docker-compose --file docker-compose-test.yml --env-file .env-test run --rm testrunner bash -c "npm run test"`
 
+### Reset test environment
+
+To clear database and index file content, do the following:
+
+- reset (clear and re-seed) the database
+  - `docker-compose --file docker-compose-test.yml --env-file .env-test run --rm migration bash -c "npx prisma migrate reset --force"`
+- remove thumbnail files
+  - `docker-compose --file docker-compose-test.yml --env-file .env-test exec app sh -c "rm -R /mnt/storage/*"`
+
+After that the test datasuite can be reprocessed.
+
+## Production environment
+
+Before initiating running production app, change keys and passwords in the environment file (.env-prod).
+
+- build app
 `docker-compose --file docker-compose-prod.yml --env-file .env-prod build app`
-
-## Run production app
-
+- Run production app
 `docker-compose --file docker-compose-prod.yml --env-file .env-prod up -d`
