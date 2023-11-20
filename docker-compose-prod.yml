@@ -49,6 +49,8 @@ services:
       dockerfile: ./docker/prod/migration/Dockerfile
       context: .
       target: migration
+    depends_on:
+      - db
     environment:
       DATABASE_URL: ${DATABASE_URL}
       TS_NODE_PROJECT: /home/node/app/tsconfig.json

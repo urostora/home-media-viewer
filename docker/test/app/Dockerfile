@@ -53,7 +53,13 @@ COPY ./home-media-viewer/prisma ./prisma
 
 RUN mkdir -p /mnt/storage
 RUN chown -R node:node /mnt/storage
-COPY --chown=node:node ./test/files/* /mnt/storage
+
+######################################################
+# Comment out the following if test suite was changed
+######################################################
+# ARG CACHEBUST=1
+
+COPY --chown=node:node ./test/files /mnt/albums
 
 USER root
 
