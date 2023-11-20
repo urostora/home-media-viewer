@@ -24,15 +24,18 @@ services:
       dockerfile: ./docker/test/migration/Dockerfile
       context: .
       target: migration
+    depends_on:
+      - db
     environment:
       APP_ALBUM_ROOT_PATH: ${APP_ALBUM_ROOT_PATH}
       DATABASE_URL: ${DATABASE_URL}
       LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
       APP_SESSION_SECRET: ${APP_SESSION_SECRET}
       PROCESS_TOKEN: ${PROCESS_TOKEN}
-      TS_NODE_PROJECT: /home/node/app/tsconfig.json
       HOSTNAME: ${HOSTNAME}
-      IS_BACKGROUND_PROCESS_ENABLED: ${IS_BACKGROUND_PROCESS_ENABLED}
+      IS_BACKGROUND_PROCESS_ENABLED: 0
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
     networks:
       - home-media-test-network
 
@@ -45,16 +48,41 @@ services:
       target: testrunner
     depends_on:
       - app
+      - background
     environment:
       APP_ALBUM_ROOT_PATH: ${APP_ALBUM_ROOT_PATH}
       DATABASE_URL: ${DATABASE_URL}
       LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
       APP_SESSION_SECRET: ${APP_SESSION_SECRET}
       PROCESS_TOKEN: ${PROCESS_TOKEN}
-      TS_NODE_PROJECT: /home/node/app/tsconfig.json
       HOSTNAME: ${HOSTNAME}
       IS_BACKGROUND_PROCESS_ENABLED: 0
       APP_URL: http://home-media-viewer-test-app:3000
+      BACKGROND_URL: http://home-media-viewer-test-background:3000
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+    networks:
+      - home-media-test-network
+
+  background:
+    container_name: home-media-viewer-test-background
+    hostname: home-media-viewer-test-background
+    build:
+      dockerfile: ./docker/test/app/Dockerfile
+      context: .
+      target: app
+    depends_on:
+      - db
+    environment:
+      APP_ALBUM_ROOT_PATH: ${APP_ALBUM_ROOT_PATH}
+      DATABASE_URL: ${DATABASE_URL}
+      LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
+      APP_SESSION_SECRET: ${APP_SESSION_SECRET}
+      PROCESS_TOKEN: ${PROCESS_TOKEN}
+      HOSTNAME: ${HOSTNAME}
+      IS_BACKGROUND_PROCESS_ENABLED: 1
+    volumes:
+      - home-media-test-storage:${APP_STORAGE_PATH}
     networks:
       - home-media-test-network
 
@@ -73,9 +101,8 @@ services:
       LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
       APP_SESSION_SECRET: ${APP_SESSION_SECRET}
       PROCESS_TOKEN: ${PROCESS_TOKEN}
-      TS_NODE_PROJECT: /home/node/app/tsconfig.json
       HOSTNAME: ${HOSTNAME}
-      IS_BACKGROUND_PROCESS_ENABLED: ${IS_BACKGROUND_PROCESS_ENABLED}
+      IS_BACKGROUND_PROCESS_ENABLED: 0
     volumes:
       - home-media-test-storage:${APP_STORAGE_PATH}
     ports:

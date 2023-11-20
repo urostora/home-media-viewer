@@ -12,11 +12,42 @@ services:
       MARIADB_AUTO_UPGRADE: 1
     ports:
       - ${MARIADB_PORT_ON_HOST}:3306
+    volumes:
+      - home-media-db-storage:/var/lib/mysql
+    networks:
+      - home-media-network
+
+  background:
+    image: urostora/home-media-viewer/background
+    container_name: home-media-viewer-background
+    hostname: home-media-viewer-background
+    build:
+      dockerfile: ./docker/prod/app/Dockerfile
+      context: .
+      target: app
+    user: "0"
+    depends_on:
+      - db
+    restart: always
+    environment:
+      APP_ALBUM_ROOT_PATH: ${APP_ALBUM_ROOT_PATH}
+      DATABASE_URL: ${DATABASE_URL}
+      LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
+      TS_NODE_PROJECT: /home/node/app/tsconfig.json
+      APP_SESSION_SECRET: ${APP_SESSION_SECRET}
+      PROCESS_TOKEN: ${PROCESS_TOKEN}
+      HOSTNAME: ${HOSTNAME}
+      IS_BACKGROUND_PROCESS_ENABLED: 1
+    volumes:
+      - ./test/files:${APP_ALBUM_ROOT_PATH}:ro
+      - home-media-storage:${APP_STORAGE_PATH}
     networks:
       - home-media-network
 
   app:
+    image: urostora/home-media-viewer/app
     container_name: home-media-viewer-app
+    hostname: home-media-viewer-app
     build:
       dockerfile: ./docker/prod/app/Dockerfile
       context: .
@@ -31,9 +62,9 @@ services:
       PROCESS_TOKEN: ${PROCESS_TOKEN}
       TS_NODE_PROJECT: /home/node/app/tsconfig.json
       HOSTNAME: ${HOSTNAME}
-      IS_BACKGROUND_PROCESS_ENABLED: ${IS_BACKGROUND_PROCESS_ENABLED}
+      IS_BACKGROUND_PROCESS_ENABLED: 0
     volumes:
-      - ./static:${APP_ALBUM_ROOT_PATH}
+      - ./test/files:${APP_ALBUM_ROOT_PATH}:ro
       - home-media-storage:${APP_STORAGE_PATH}
     ports:
       - ${WEB_PORT}:3000
@@ -41,15 +72,17 @@ services:
       - home-media-network
 
   migration:
+    image: urostora/home-media-viewer/migration
     container_name: home-media-viewer-migration
     hostname: home-media-viewer-migration
     build:
       dockerfile: ./docker/prod/migration/Dockerfile
       context: .
       target: migration
+    depends_on:
+      - db
     environment:
       DATABASE_URL: ${DATABASE_URL}
-      TS_NODE_PROJECT: /home/node/app/tsconfig.json
     networks:
       - home-media-network
 
@@ -58,3 +91,5 @@ networks:
 
 volumes:
   home-media-storage:
+
+  home-media-db-storage:

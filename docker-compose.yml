@@ -13,8 +13,9 @@ services:
     networks:
       - home-media-dev-network
 
-  dev-db:
+  db:
     container_name: media-viewer-dev-db
+    hostname: media-viewer-dev-db
     image: "mariadb:10"
     environment:
       MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
@@ -24,6 +25,8 @@ services:
       MARIADB_AUTO_UPGRADE: 1
     ports:
       - ${MARIADB_PORT_ON_HOST}:3306
+    volumes:
+      - home-media-dev-db:/var/lib/mysql
     networks:
       - home-media-dev-network
     deploy:
@@ -39,7 +42,7 @@ services:
       dockerfile: ./docker/dev/app/Dockerfile
       context: .
     depends_on:
-      - dev-db
+      - db
     environment:
       APP_ALBUM_ROOT_PATH: ${APP_ALBUM_ROOT_PATH}
       DATABASE_URL: ${DATABASE_URL}
@@ -48,13 +51,42 @@ services:
       TS_NODE_PROJECT: /home/node/app/tsconfig.json
       APP_SESSION_SECRET: ${APP_SESSION_SECRET}
       HOSTNAME: ${HOSTNAME}
-      IS_BACKGROUND_PROCESS_ENABLED: ${IS_BACKGROUND_PROCESS_ENABLED}
+      IS_BACKGROUND_PROCESS_ENABLED: 0
     volumes:
       - ./home-media-viewer:/home/node/app
       - ./static:${APP_ALBUM_ROOT_PATH}
       - home-media-dev-storage:${APP_STORAGE_PATH}
     ports:
       - ${WEB_PORT}:3000
+    networks:
+      - home-media-dev-network
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 800m
+
+  background:
+    container_name: media-viewer-dev-background
+    hostname: media-viewer-dev-background
+    build:
+      dockerfile: ./docker/dev/app/Dockerfile
+      context: .
+    depends_on:
+      - db
+    environment:
+      APP_ALBUM_ROOT_PATH: ${APP_ALBUM_ROOT_PATH}
+      DATABASE_URL: ${DATABASE_URL}
+      LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
+      PROCESS_TOKEN: ${PROCESS_TOKEN}
+      TS_NODE_PROJECT: /home/node/app/tsconfig.json
+      APP_SESSION_SECRET: ${APP_SESSION_SECRET}
+      HOSTNAME: ${HOSTNAME}
+      IS_BACKGROUND_PROCESS_ENABLED: 1
+    volumes:
+      - ./home-media-viewer:/home/node/app
+      - ./static:${APP_ALBUM_ROOT_PATH}
+      - home-media-dev-storage:${APP_STORAGE_PATH}
     networks:
       - home-media-dev-network
     deploy:
@@ -90,3 +122,5 @@ networks:
 
 volumes:
   home-media-dev-storage:
+
+  home-media-dev-db:
