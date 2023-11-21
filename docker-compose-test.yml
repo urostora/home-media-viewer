@@ -3,7 +3,7 @@ services:
   db:
     container_name: home-media-viewer-test-db
     hostname: home-media-viewer-test-db
-    image: "mariadb:10"
+    image: "mariadb:11"
     environment:
       MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
       MARIADB_DATABASE: ${MARIADB_DATABASE}

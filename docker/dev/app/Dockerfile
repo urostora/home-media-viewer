@@ -1,4 +1,4 @@
-FROM node:18-alpine
+FROM node:20
 
 # Cron setup to run background process scheduled
 COPY --chmod=0777 ./home-media-viewer/runBackgroundProcess.sh /home/node/app/
