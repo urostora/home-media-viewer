@@ -48,7 +48,6 @@ services:
       target: testrunner
     depends_on:
       - app
-      - background
     environment:
       APP_ALBUM_ROOT_PATH: ${APP_ALBUM_ROOT_PATH}
       DATABASE_URL: ${DATABASE_URL}
