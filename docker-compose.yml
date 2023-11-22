@@ -2,8 +2,7 @@ version: "3"
 services:
   dependencies:
     container_name: media-viewer-dev-node
-    image: "node:18"
-    user: "node"
+    image: "node:20-alpine"
     working_dir: /home/node/app
     environment:
       DATABASE_URL: ${DATABASE_URL}
@@ -16,7 +15,7 @@ services:
   db:
     container_name: media-viewer-dev-db
     hostname: media-viewer-dev-db
-    image: "mariadb:10"
+    image: "mariadb:11"
     environment:
       MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
       MARIADB_DATABASE: ${MARIADB_DATABASE}
@@ -51,42 +50,14 @@ services:
       TS_NODE_PROJECT: /home/node/app/tsconfig.json
       APP_SESSION_SECRET: ${APP_SESSION_SECRET}
       HOSTNAME: ${HOSTNAME}
-      IS_BACKGROUND_PROCESS_ENABLED: 0
+      IS_BACKGROUND_PROCESS_ENABLED: ${IS_BACKGROUND_PROCESS_ENABLED}
     volumes:
       - ./home-media-viewer:/home/node/app
       - ./static:${APP_ALBUM_ROOT_PATH}
+    #  - ./test/files:${APP_ALBUM_ROOT_PATH}
       - home-media-dev-storage:${APP_STORAGE_PATH}
     ports:
       - ${WEB_PORT}:3000
-    networks:
-      - home-media-dev-network
-    deploy:
-      resources:
-        limits:
-          cpus: "2"
-          memory: 800m
-
-  background:
-    container_name: media-viewer-dev-background
-    hostname: media-viewer-dev-background
-    build:
-      dockerfile: ./docker/dev/app/Dockerfile
-      context: .
-    depends_on:
-      - db
-    environment:
-      APP_ALBUM_ROOT_PATH: ${APP_ALBUM_ROOT_PATH}
-      DATABASE_URL: ${DATABASE_URL}
-      LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
-      PROCESS_TOKEN: ${PROCESS_TOKEN}
-      TS_NODE_PROJECT: /home/node/app/tsconfig.json
-      APP_SESSION_SECRET: ${APP_SESSION_SECRET}
-      HOSTNAME: ${HOSTNAME}
-      IS_BACKGROUND_PROCESS_ENABLED: 1
-    volumes:
-      - ./home-media-viewer:/home/node/app
-      - ./static:${APP_ALBUM_ROOT_PATH}
-      - home-media-dev-storage:${APP_STORAGE_PATH}
     networks:
       - home-media-dev-network
     deploy:

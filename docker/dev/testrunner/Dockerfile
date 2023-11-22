@@ -1,4 +1,4 @@
-FROM node:18 as dependencies
+FROM node:20 as dependencies
 
 WORKDIR /home/node/app
 COPY ./home-media-viewer .
@@ -6,7 +6,7 @@ RUN npm install
 RUN npx prisma generate
 
 
-FROM node:18 as testrunner
+FROM node:20 as testrunner
 
 RUN apt-get update && apt-get install gnupg wget -y && \
   wget --quiet --output-document=- https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor > /etc/apt/trusted.gpg.d/google-archive.gpg && \
