@@ -2,7 +2,7 @@ version: "3"
 services:
   dependencies:
     container_name: media-viewer-dev-node
-    image: "node:20-alpine"
+    image: "node:20"
     working_dir: /home/node/app
     environment:
       DATABASE_URL: ${DATABASE_URL}
