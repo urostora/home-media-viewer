@@ -4,6 +4,7 @@ export interface GeneralResponse {
   error?: string;
   count?: number;
   id?: string;
+  debug?: any;
 }
 
 export interface GeneralResponseWithData<T> extends GeneralResponse {

@@ -31,7 +31,6 @@ export default function FileList() {
         setLoading(true);
 
         try {
-            console.log('Fetch data with filter', filter);
             const result = await apiLoadFiles(filter);
 
             // look for existing data
@@ -66,8 +65,6 @@ export default function FileList() {
             return;
         }
 
-        console.log(`Loading next page from element ${data?.length ?? 0}`);
-
         const filter: FileSearchType = {
             ...getFileFilter(),
             contentDate: { from: currentFilter.dateFrom, to: currentFilter.dateTo },
@@ -92,7 +89,6 @@ export default function FileList() {
                 const scrolledToEnd = body.clientHeight - (html.scrollTop + html.clientHeight) <= 0;
 
                 if (scrolledToEnd) {
-                    console.log(`Scrolled to end, skip value: ${data?.length ?? 0}`);
                     setIsScrolledToTheEnd(true);
                 }
             }
@@ -133,7 +129,6 @@ export default function FileList() {
     };
 
     const onCardSelected = (content: FileResultType) => {
-        console.log(`Content selected: ${content.path}`);
         setContentSelected(content);
     }
 
@@ -148,8 +143,6 @@ export default function FileList() {
 
         return <ContentDisplay content={content} closeHandler={onContentDisplayClosed} />;
     }
-
-    console.log({ dataLength: data?.length ?? 0, isLastData });
 
     let contentList = null;
 

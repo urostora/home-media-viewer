@@ -47,7 +47,10 @@ model Album {
   connectionString String          @db.Text
   basePath         String          @db.Text
   users            User[]
-  files            File[]
+  files            File[]          @relation("AlbumFiles")
+  parentAlbumId    String?
+  parent           Album?          @relation("AlbumChildren", fields: [parentAlbumId], references: [id])
+  childAlbums      Album[]         @relation("AlbumChildren")
 }
 
 model File {
@@ -67,8 +70,7 @@ model File {
   metadataProcessingError String?                  @db.Text
   thumbnailStatus         MetadataProcessingStatus @default(New)
   thumbnailProcessedAt    DateTime?
-  albumId                 String
-  album                   Album                    @relation(fields: [albumId], references: [id])
+  albums                  Album[]                  @relation("AlbumFiles")
   metas                   FileMeta[]
   parentFileId            String?
   parentFile              File?                    @relation("DirectoryContent", fields: [parentFileId], references: [id])

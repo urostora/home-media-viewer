@@ -11,7 +11,6 @@ export const middleware = async (req: NextRequest) => {
 
   if (user == null) {
     // no user logged in
-    console.log('Middleware: No user');
     return NextResponse.json(getApiResponse({ ok: false, error: 'Forbidden' }), { status: 403 });
   }
 

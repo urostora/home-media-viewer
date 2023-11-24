@@ -48,7 +48,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     // get file processing informations
     const fileStatus = await prisma.file.groupBy({
       where: {
-        albumId: data.id
+        albums: {
+          some: {
+            id: data.id,
+          }
+        }
       },
       by: ['metadataStatus'],
       _count: {

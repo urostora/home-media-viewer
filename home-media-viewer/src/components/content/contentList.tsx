@@ -101,7 +101,7 @@ const ContentList = (props: ContentListPropsType) => {
         : null;
 
     const fileElements = data.map(data => {
-        if (typeof (data as FileResultType)?.albumId === 'string' ) {
+        if (typeof (data as FileResultType)?.metadataStatus === 'string' ) {
             return <ContentThumbnail
                 key={data.id}
                 data-id={data.id}

@@ -12,8 +12,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     case 'POST':
       // search albums
       try {
-        const postData: AlbumSearchType | null = getRequestBodyObject(req, res);
+        const postData = getRequestBodyObject<AlbumSearchType>(req, res);
         if (postData == null) {
+          res.status(400).end('Empty request');
           return;
         }
 
@@ -48,8 +49,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       } else {
         // edit album
         try {
-          const id = await addAlbum(putData);
-          res.status(200).json(getApiResponse({ id }));
+          const album = await addAlbum(putData);
+          res.status(200).json(getApiResponse({ id: album.id }));
         } catch (e) {
           res.status(400).end(`${e}`);
         }

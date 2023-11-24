@@ -7,7 +7,7 @@ import {
 } from '@/types/api/generalTypes';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
-export function getRequestBodyObject(req: NextApiRequest, res?: NextApiResponse): object | null {
+export function getRequestBodyObject<T>(req: NextApiRequest, res?: NextApiResponse): T | null {
   let ret: object | null = null;
   if (typeof req.body === 'string') {
     try {
@@ -25,7 +25,7 @@ export function getRequestBodyObject(req: NextApiRequest, res?: NextApiResponse)
     res.status(400).end(`Could not parse JSON body: ${req.body}`);
   }
 
-  return ret;
+  return ret as T;
 }
 
 export function getEntityTypeRequestBodyObject(req: NextApiRequest, res?: NextApiResponse): EntityType | null {
@@ -64,6 +64,10 @@ export function getApiResponse(parameters: any = {}): GeneralResponse {
 
   if (typeof parameters?.count === 'number') {
     ret.count = parameters.count;
+  }
+
+  if (parameters?.debug) {
+    ret.debug = parameters.debug;
   }
 
   if (parameters?.data) {

@@ -1,4 +1,4 @@
-import { Album, File } from '@prisma/client';
+import { File } from '@prisma/client';
 import { FileProcessor } from './processorFactory';
 import { getFullPath, updateContentDate, updateThumbnailDate } from '../fileHelper';
 
@@ -11,8 +11,8 @@ import { getDateObject } from '../utils';
 import { spawnSync } from 'child_process';
 import { getFileThumbnailPath, thumbnailSizes } from '../thumbnailHelper';
 
-const videoFileProcessor: FileProcessor = async (file: File, fileAlbum?: Album): Promise<boolean> => {
-  const path = await getFullPath(file, fileAlbum);
+const videoFileProcessor: FileProcessor = async (file: File): Promise<boolean> => {
+  const path = await getFullPath(file);
 
   if (!fs.existsSync(path)) {
     throw new Error(`File not found at path ${path}`);

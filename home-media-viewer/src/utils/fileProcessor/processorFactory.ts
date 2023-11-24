@@ -4,7 +4,7 @@ import { directoryFileProcessor } from './directory';
 import { fillProcessorList as fillImageProcessors } from './image';
 import { fillProcessorList as fillVideoProcessors } from './video';
 
-export type FileProcessor = (file: File, fileAlbum?: Album) => Promise<boolean>;
+export type FileProcessor = (file: File) => Promise<boolean>;
 
 const defaultFileProcessor: FileProcessor = noneFileProcessor;
 const processors: { [key: string]: FileProcessor } = {};

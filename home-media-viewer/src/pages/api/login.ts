@@ -20,6 +20,7 @@ export default withIronSessionApiRoute(async function loginRoute(req, res) {
   if (user == null) {
     // unknown user
     await req.session.destroy();
+    console.warn(`Login failed - user not found ${loginData.email}`);
     res.setHeader('Reason', 1).send(getApiResponse({ ok: false, error: 'Invalid email or password' }));
     return;
   }
@@ -28,6 +29,7 @@ export default withIronSessionApiRoute(async function loginRoute(req, res) {
     // invalid password
     await req.session.destroy();
     res.setHeader('Reason', 2).send(getApiResponse({ ok: false, error: 'Invalid email or password' }));
+    console.warn(`Login failed -  ${user.email}`);
     return;
   }
 

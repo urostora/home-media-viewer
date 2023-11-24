@@ -1,4 +1,4 @@
-import { Album, File, Prisma } from '@prisma/client';
+import { File } from '@prisma/client';
 import { FileProcessor } from './processorFactory';
 import { getFullPath, updateContentDate, updateThumbnailDate } from '../fileHelper';
 
@@ -9,8 +9,8 @@ import { getDateObject } from '../utils';
 import { getFileThumbnailPath, thumbnailSizes } from '../thumbnailHelper';
 import jimp from 'jimp';
 
-const imageFileProcessor: FileProcessor = async (file: File, fileAlbum?: Album): Promise<boolean> => {
-  const path = await getFullPath(file, fileAlbum);
+const imageFileProcessor: FileProcessor = async (file: File): Promise<boolean> => {
+  const path = await getFullPath(file);
 
   if (!fs.existsSync(path)) {
     throw new Error(`File not found at path ${path}`);

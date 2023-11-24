@@ -2,7 +2,7 @@ import { AlbumAddType, AlbumResultType, AlbumSearchType, AlbumUpdateType } from 
 import { Album, AlbumSourceType, Prisma, Status, User } from '@prisma/client';
 import fs from 'fs';
 import pathModule from 'path';
-import { loadMetadata, syncFilesInAlbumAndFile } from './fileHelper';
+import { ALBUM_PATH, loadMetadata, syncFilesInAlbumAndFile } from './fileHelper';
 
 import prisma from '@/utils/prisma/prismaImporter';
 import { getFileThumbnailInBase64 } from './thumbnailHelper';
@@ -130,7 +130,7 @@ export const checkAlbumData = async (data: AlbumUpdateType, currentId: string | 
   }
 };
 
-export const syncAlbums = async () => {
+export const syncAlbums = async (id: string | undefined = undefined) => {
   const baseDirectory = process.env.APP_ALBUM_ROOT_PATH;
   if (typeof baseDirectory !== 'string') {
     throw new Error('Base directory is not set in env variable "APP_ALBUM_ROOT_PATH"');
@@ -140,7 +140,7 @@ export const syncAlbums = async () => {
     throw new Error(`Base directory not exists at path ${baseDirectory}`);
   }
 
-  const activeAlbums = await prisma.album.findMany({ where: { status: { in: ['Active', 'Disabled'] } } });
+  const activeAlbums = await prisma.album.findMany({ where: { id, status: { in: ['Active', 'Disabled'] } } });
   const directories = fs.readdirSync(baseDirectory).filter((path) => {
     const stat = fs.statSync(`${baseDirectory}/${path}`);
     return stat.isDirectory();
@@ -192,12 +192,43 @@ export const syncAlbums = async () => {
   };
 };
 
-export const addAlbum = async (data: AlbumAddType): Promise<string> => {
+export const getAlbumsContainingPath = async (path: string): Promise<Album[]> => {
+  // get all albums containing this directory
+  const pathList = path.split('/').reduce(
+    (carry: string[], part: string) => {
+      if (carry.length === 0) {
+        carry.push(part);
+      } else {
+        carry.push(`${carry[carry.length - 1]}/${part}`);
+      }
+
+      return carry;
+    },
+    []
+  );
+
+  const albumsContainingThisDirectory = await prisma.album
+    .findMany({ where: { basePath: { in: pathList }}});
+
+  return albumsContainingThisDirectory.sort((a, b) => {
+    if (a.basePath.length < b.basePath.length) {
+      return -1;
+    } else if (a.basePath.length < b.basePath.length) {
+      return 1;
+    }
+
+    return 0;
+  });
+}
+
+export const addAlbum = async (data: AlbumAddType): Promise<Album> => {
   if (typeof data?.path !== 'string') {
     throw Error('Parameter "path" must be a non-empty string');
   }
 
   const finalPath = data.path.startsWith('/') ? data.path : `${process.env.APP_ALBUM_ROOT_PATH}/${data.path}`;
+  const relativePath = finalPath.substring(ALBUM_PATH.length + 1);
+
   let directoryName = '';
   try {
     const stat = fs.statSync(finalPath);
@@ -216,6 +247,9 @@ export const addAlbum = async (data: AlbumAddType): Promise<string> => {
     throw Error(`Album with "path" (${finalPath}) already exists`);
   }
 
+  // get parent album
+  const albumsContainingThisDirectory = await getAlbumsContainingPath(finalPath);
+
   const albumName = typeof data?.name === 'string' ? data.name : directoryName;
 
   const albumWithSameName = await prisma.album.findFirst({ where: { name: albumName } });
@@ -229,10 +263,20 @@ export const addAlbum = async (data: AlbumAddType): Promise<string> => {
       basePath: finalPath,
       connectionString: `file://${finalPath}`,
       sourceType: AlbumSourceType.File,
+      parentAlbumId: albumsContainingThisDirectory.length === 0
+        ? null
+        : albumsContainingThisDirectory[albumsContainingThisDirectory.length - 1].id
     },
   });
 
-  return newAlbum.id;
+  // attach all files in path to the created album
+  const filesInAlbum = await prisma.file.findMany({ where: { path: { startsWith: `${relativePath}/` }} });
+
+  for (const file of filesInAlbum) {
+    await prisma.file.update({ where: { id: file.id }, data: { albums: { connect: { id: newAlbum.id }}}});
+  }
+
+  return newAlbum;
 };
 
 export const updateAlbum = async (data: AlbumUpdateType) => {
@@ -308,7 +352,7 @@ export const processAlbumFilesMetadata = async (
 
   const filesUnprocessed = await prisma.file.findMany({
     where: {
-      album,
+      albums: { some: album },
       metadataStatus: 'New',
     },
   });
@@ -316,7 +360,7 @@ export const processAlbumFilesMetadata = async (
   // this may be a long process
   for (const f of filesUnprocessed) {
     console.log(`Create metadata to file ${f.path}`);
-    await loadMetadata(f, album);
+    await loadMetadata(f);
 
     const currentTime = process.hrtime(startedOn);
     if (isAppExiting || currentTime[0] > timeoutSec) {

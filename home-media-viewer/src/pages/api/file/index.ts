@@ -17,7 +17,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     case 'POST':
       // search files
       try {
-        const postData: FileSearchType | null = getRequestBodyObject(req, res);
+        const postData = getRequestBodyObject<FileSearchType>(req, res);
         if (postData == null) {
           throw Error('No search parameters specified');
         }
@@ -40,7 +40,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       }
 
       // Update or create data in your database
-      const putData: AlbumUpdateType | null = getRequestBodyObject(req, res);
+      const putData = getRequestBodyObject<AlbumUpdateType>(req, res);
       if (putData == null) {
         res.status(400).end('Parameter Id is not specified');
         return;

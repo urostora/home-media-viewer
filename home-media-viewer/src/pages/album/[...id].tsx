@@ -32,7 +32,7 @@ const AlbumRootPage = () => {
             return;
         }
 
-        router.push(`/album/${content.albumId}/${content.id}`);
+        router.push(`/album/${albumId}/${content.id}`);
     };
 
     const onDisplayDetailsToggleClicked = () => {

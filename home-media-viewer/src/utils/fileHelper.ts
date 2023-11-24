@@ -8,14 +8,18 @@ import { getFileThumbnailInBase64 } from '@/utils/thumbnailHelper';
 
 import prisma from '@/utils/prisma/prismaImporter';
 
+export const ALBUM_PATH = process.env.APP_ALBUM_ROOT_PATH ?? '/mnt/albums';
+
 export const syncFilesInAlbumAndFile = async (album: Album, parentFile?: File) => {
   let directoryPath = album.basePath;
+  let outerParentFile: File | undefined = undefined;
+
   if (parentFile != null) {
-    directoryPath += `/${parentFile.path}`;
+    directoryPath = `${ALBUM_PATH}/${parentFile.path}`;
   }
 
   if (!fs.existsSync(directoryPath)) {
-    throw new Error(`Directory not exists at path ${directoryPath}`);
+    throw new Error(`Element not exists at path ${directoryPath}`);
   }
 
   const dirStat = fs.statSync(directoryPath);
@@ -23,9 +27,31 @@ export const syncFilesInAlbumAndFile = async (album: Album, parentFile?: File) =
     throw new Error(`Element at path ${directoryPath} is not a directory`);
   }
 
+  if (parentFile == null) {
+    // find parent directory outside the current album
+    outerParentFile = await prisma.file.findFirst({ where: { path: directoryPath.substring(ALBUM_PATH.length + 1) }}) ?? undefined;
+  }
+
+  // get all albums containing this directory
+  const pathList = directoryPath.split('/').reduce(
+    (carry: string[], part: string) => {
+      if (carry.length === 0) {
+        carry.push(part);
+      } else {
+        carry.push(`${carry[carry.length - 1]}/${part}`);
+      }
+
+      return carry;
+    },
+    []
+  );
+  const albumsContainingThisDirectory = await prisma.album.findMany({ where: { basePath: { in: pathList }}});
+
+  const relativePath = directoryPath.substring(ALBUM_PATH.length + 1);
+
   // console.log(`Syncronize directory ${directoryPath}`);
 
-  const dbFiles = await prisma.file.findMany({ where: { albumId: album.id, parentFile: parentFile ?? null } });
+  const dbFiles = await prisma.file.findMany({ where: { parentFile: parentFile ?? outerParentFile ?? null, albums: { some: { id: album.id }} } });
   const dbFileNames = dbFiles.map((f: File) => f.name + (f.extension.length > 0 ? `.${f.extension}` : ''));
   const dirFiles = fs.readdirSync(directoryPath);
 
@@ -34,30 +60,52 @@ export const syncFilesInAlbumAndFile = async (album: Album, parentFile?: File) =
 
   const filesToDelete = dbFiles.filter((f: File) => {
     const fullName = f.name + (f.extension.length > 0 ? `.${f.extension}` : '');
-    // console.log(`  Check if album file (${fullName}) exists in directory`);
     return !dirFiles.includes(fullName);
   });
 
   const filesToAdd = dirFiles.filter((name) => !dbFileNames.includes(name));
 
-  filesToDelete.forEach(async (f: File) => {
-    console.log(`  Delete file ${f.path}`);
-    await prisma.file.update({ where: { id: f.id }, data: { status: 'Deleted' } });
-  });
+  for (const fileToDelete of filesToDelete) {
+    console.log(`  Delete file ${fileToDelete.path}`);
+    await prisma.file.update({ where: { id: fileToDelete.id }, data: { status: 'Deleted' } });
+  }
 
-  filesToAdd.forEach(async (fileName: string) => {
+  // filesToDelete.forEach(async (f: File) => {
+  //   
+  // });
+
+  const newDirectories: File[] = [];
+
+  for (const fileName of filesToAdd) {
     const fullPath = `${directoryPath}/${fileName}`;
     console.log(`  Add file ${fullPath}`);
-    await addFile(fullPath, album, parentFile);
+
+    const fileCreated = await addFile(fullPath, albumsContainingThisDirectory, parentFile ?? outerParentFile);
+
+    if (fileCreated.isDirectory) {
+      newDirectories.push(fileCreated);
+    }
+  }
+
+  console.log('New directories', newDirectories.map(f => f.path))
+
+  newDirectories.forEach(async (f: File) => {
+    await syncFilesInAlbumAndFile(album, f);
   });
 };
 
-export const addFile = async (filePath: string, album: Album, parentFile?: File) => {
+export const addFile = async (filePath: string, albums: Album[], parentFile?: File) => {
   const stats = fs.statSync(filePath);
   const { name, ext } = path.parse(filePath);
   const isDirectory = stats.isDirectory();
 
-  const relativePath = filePath.substring(album.basePath.length + 1);
+  const relativePath = filePath.substring(ALBUM_PATH.length + 1);
+
+  // check if file already exists
+  const existingFile = await prisma.file.findFirst({ where: { path: relativePath, isDirectory }});
+  if (existingFile !== null) {
+    return existingFile;
+  }
 
   const fileData = {
     path: relativePath,
@@ -65,7 +113,7 @@ export const addFile = async (filePath: string, album: Album, parentFile?: File)
     name: name,
     size: isDirectory ? null : stats.size,
     isDirectory: isDirectory,
-    albumId: album.id,
+    albums: { connect: albums },
     createdAt: stats.ctime,
     modifiedAt: stats.mtime,
     parentFileId: parentFile?.id,
@@ -100,20 +148,46 @@ export const updateThumbnailDate = async (file: File, date?: Date) => {
 };
 
 export const getFiles = async (params: FileSearchType, returnThumbnails: boolean = false) => {
-  const albumSearchParams =
+   const albumSearchParams =
     typeof params?.user !== 'string'
-      ? undefined
-      : {
-          users: {
+      ? (params?.album?.id
+        ? {
             some: {
-              id: params?.user ?? '',
+              id: params.album.id
+            }
+          }
+        : undefined)
+      : {
+          some: {
+            id: params?.album?.id ? params.album.id : undefined,
+            users: {
+              some: {
+                id: params?.user ?? undefined,
+              },
             },
-          },
+          }
         };
 
+  let parentFileIdFilter: any = params?.album?.id ? null : undefined;
+  if (typeof params?.parentFileId === 'string') {
+    // exact parent
+    parentFileIdFilter = params?.parentFileId;
+  } else if (params?.parentFileId == null && typeof params?.album?.id === 'string') {
+    // album root - get directory file representing the album root
+    const album = await prisma.album.findFirst({ where: { id: params?.album?.id }});
+
+    if (album != null) {
+      const relativePath = album.basePath.substring(ALBUM_PATH.length + 1);
+      const parentFile = await prisma.file.findFirst({ where: { path: relativePath }});
+
+      if (parentFile != null) {
+        parentFileIdFilter = parentFile.id;
+      }
+    }
+  }
+
   const filter: Prisma.FileWhereInput = {
-    albumId: params?.album?.id,
-    parentFileId: params?.parentFileId,
+    parentFileId: parentFileIdFilter,
     status: params?.status,
     isDirectory: params?.isDirectory,
     name: typeof params?.name !== 'string' ? undefined : { contains: params.name },
@@ -127,7 +201,7 @@ export const getFiles = async (params: FileSearchType, returnThumbnails: boolean
     modifiedAt: getDateTimeFilter(params?.fileDate),
     contentDate: getDateTimeFilter(params?.contentDate),
     metadataStatus: params.metadataStatus,
-    album: albumSearchParams,
+    albums: albumSearchParams,
     path:
       typeof params?.pathBeginsWith !== 'string'
         ? typeof params?.pathIsExactly !== 'string'
@@ -160,6 +234,7 @@ export const getFiles = async (params: FileSearchType, returnThumbnails: boolean
     }),
   ]);
 
+  // add thumbnails if required
   const fileList = returnThumbnails
     ? results[1].map((fileData) => {
         const thumbnailData = getFileThumbnailInBase64(fileData);
@@ -178,6 +253,10 @@ export const getFiles = async (params: FileSearchType, returnThumbnails: boolean
   return {
     count: results[0],
     data: fileList,
+    debug: {
+      params,
+      finalFilter: filter,
+    }
   };
 };
 
@@ -192,10 +271,8 @@ export const getPureExtension = (extension?: string): string => {
 export const loadMetadataById = async (fileId: string) => {
   const file = await prisma.file.findFirst({
     where: {
-      id: fileId
-    },
-    include: {
-      album: true,
+      id: fileId,
+      status: { in: [ 'Active', 'Disabled' ]}
     }
   });
 
@@ -203,10 +280,10 @@ export const loadMetadataById = async (fileId: string) => {
     throw Error(`File not found with id ${fileId}`);
   }
 
-  loadMetadata(file, file.album)
+  loadMetadata(file);
 };
 
-export const loadMetadata = async (file: File, fileAlbum?: Album): Promise<boolean> => {
+export const loadMetadata = async (file: File): Promise<boolean> => {
   const metadataProcessor = getFileProcessor(file);
 
   let ok: boolean = true;
@@ -217,7 +294,7 @@ export const loadMetadata = async (file: File, fileAlbum?: Album): Promise<boole
         console.log(`    Processing metadata for file ${file.path}`);
       }
 
-      ok = await metadataProcessor(file, fileAlbum);
+      ok = await metadataProcessor(file);
 
       if (!file.isDirectory) {
         console.log('      Metadata processed');
@@ -265,14 +342,8 @@ export const deleteMetadata = async (file: File) => {
   ]);
 };
 
-export const getFullPath = async (file: File, fileAlbum?: Album): Promise<string> => {
-  const album = (fileAlbum ?? (await prisma.album.findFirst({ where: { id: file.albumId } }))) as Album;
-
-  if (album == null) {
-    throw Error('Album not found');
-  }
-
-  return `${album.basePath}/${file.path}`;
+export const getFullPath = async (file: File): Promise<string> => {
+  return `${ALBUM_PATH}/${file.path}`;
 };
 
 export const deleteFile = async (file: File): Promise<void> => {

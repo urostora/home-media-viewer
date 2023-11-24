@@ -13,7 +13,6 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
   switch (method) {
     case 'GET':
-
         const baseDir: string = process.env.APP_ALBUM_ROOT_PATH as string;
         const relativePath = (Array.isArray(req.query['relativePath'])
             ? req.query['relativePath'][0]

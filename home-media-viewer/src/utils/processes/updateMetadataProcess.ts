@@ -3,14 +3,24 @@ import { loadMetadata } from '@/utils/fileHelper';
 
 import prisma from '@/utils/prisma/prismaImporter';
 
+const isDevEnv = process.env.NODE_ENV !== 'production';
+
 const updateMetadataProcess = {
   update: async (processTimeout: number = 50, threadCount: number = 2, albumToProcess: string | null = null) => {
-    const activeAlbums = await prisma.album.findMany({ where: { status: { in: ['Active'] } } });
+    if (isDevEnv) {
+      threadCount = 1;
+    }
+
+    const activeAlbums = await prisma.album.findMany({
+      where: { id: albumToProcess ?? undefined, status: { in: ['Active', 'Disabled'] } },
+      orderBy: { basePath: 'asc' }
+    });
+
     const startedOn = Date.now();
 
     const parallelJobs: Promise<boolean>[] = [];
 
-    console.log(`[${(new Date()).toLocaleDateString('hu-HU')} ${(new Date()).toLocaleTimeString('hu-HU')}] updateMetadataProcess started with ${threadCount} threads, time limit is ${processTimeout} (${activeAlbums.length} albums found)`);
+    console.log(`[${(new Date()).toLocaleDateString('hu-HU')} ${(new Date()).toLocaleTimeString('hu-HU')}] updateMetadataProcess${isDevEnv ? ' (DEV settings)' : ''} started with ${threadCount} threads, time limit is ${processTimeout} (${activeAlbums.length} albums found)`);
 
     for (const album of activeAlbums) {
       if (typeof albumToProcess === 'string' && albumToProcess !== album.id) {
@@ -32,7 +42,9 @@ const updateMetadataProcess = {
       }
 
       const filesUnprocessed = await prisma.file.findMany({
-        where: { AND: [{ albumId: album.id, status: 'Active' }, { OR: [{ metadataStatus: 'New' }, { isDirectory: true }] }] },
+        where: { AND: [
+          { albums: { some: { id: album.id } }, status: 'Active' },
+          { OR: [{ metadataStatus: 'New' }, { isDirectory: true }] }] },
       });
 
       if (filesUnprocessed.length === 0) {
@@ -45,7 +57,7 @@ const updateMetadataProcess = {
 
       let fileIndex = 0;
       for (const file of filesUnprocessed) {
-        parallelJobs.push(loadMetadata(file, album));
+        parallelJobs.push(loadMetadata(file));
 
         if (parallelJobs.length >= threadCount) {
           try {
@@ -59,6 +71,8 @@ const updateMetadataProcess = {
           if (startedOn + processTimeout * 1000 < Date.now()) {
             break;
           }
+
+          await new Promise(resolve => setTimeout(resolve, 1000));
         }
 
         fileIndex++;

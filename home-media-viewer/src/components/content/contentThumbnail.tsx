@@ -75,8 +75,6 @@ const ContentThumbnail = (props: ContentThumbnailPropsType) => {
     if (displayDetails) {
       const metaMap = getMetaMap(content.metas);
 
-      // console.log('metaMap: ', metaMap);
-
       const metaListElements: Array<{ name: string, value: string | ReactElement}> = [];
 
       metaListElements.push({name: 'Size', value: contentSizeToString(content.size ?? 0)});
