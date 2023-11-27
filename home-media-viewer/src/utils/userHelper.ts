@@ -4,13 +4,15 @@ import bcrypt from 'bcrypt';
 
 import prisma from '@/utils/prisma/prismaImporter';
 
-export const getHashedPassword = async (password: string) => await bcrypt.hash(password, 10);
+const SALT_ROUNDS = 10;
 
-export const verifyPassword = async (password: string, hashedPassword: string) =>
-  bcrypt.compare(password, hashedPassword);
+export const getHashedPassword = async (password: string) => await bcrypt.hash(password, SALT_ROUNDS);
 
-export const isPasswordStrong = (password: string) => {
-  const regex = /^(?!.*\s)(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[~`!@#$%^&*()--+={}[\]|\\:;"'<>,.?/_₹]).{8,}$/;
+export const verifyPassword = async (password: string, hashedPassword: string): Promise<boolean> =>
+  await bcrypt.compare(password, hashedPassword);
+
+export const isPasswordStrong = (password: string): boolean => {
+  const regex = new RegExp('/^(?!.*\\s)(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[~`!@#$%^&*()--+={}[\\]|\\:;"\'<>,.?/_₹]).{8,}$/');
   return regex.test(password);
 };
 
