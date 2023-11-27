@@ -61,10 +61,10 @@ const AlbumRootPage = () => {
                 {backLink}
             </div>
             <div className={hmvStyle.rightSide}>
-                <select className={hmvStyle.roundedElement} onChange={onContentTypeChanged}>
-                    <option value="all" selected={contentType === 'all'}>All content type</option>
-                    <option value="image" selected={contentType === 'image'}>Only images</option>
-                    <option value="video" selected={contentType === 'video'}>Only videos</option>
+                <select className={hmvStyle.roundedElement} value={contentType} onChange={onContentTypeChanged}>
+                    <option value="all">All content type</option>
+                    <option value="image">Only images</option>
+                    <option value="video">Only videos</option>
                 </select>
                 <button onClick={onDisplayDetailsToggleClicked}>{displayDetails ? 'Hide details' : 'Display details'}</button>
             </div>
