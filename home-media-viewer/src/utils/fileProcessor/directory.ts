@@ -1,4 +1,4 @@
-import { Album, File } from '@prisma/client';
+import { File } from '@prisma/client';
 import { FileProcessor } from './processorFactory';
 import { syncFilesInAlbumAndFile } from '../fileHelper';
 
