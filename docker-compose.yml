@@ -2,7 +2,7 @@ version: "3"
 services:
   dependencies:
     container_name: media-viewer-dev-node
-    image: "node:20"
+    image: "node:20-alpine"
     working_dir: /home/node/app
     environment:
       DATABASE_URL: ${DATABASE_URL}
@@ -83,6 +83,8 @@ services:
       PROCESS_TOKEN: ${PROCESS_TOKEN}
       TS_NODE_PROJECT: /home/node/app/tsconfig.json
       APP_URL: http://media-viewer-dev-app:3000
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
     volumes:
       - ./home-media-viewer:/home/node/app
     networks:

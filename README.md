@@ -121,38 +121,38 @@ HOSTNAME=
   - Runs background processing jobs
 - **testrunner**
   - test suite can be run in this container
-  - `docker-compose run --rm dependencies bash -c "npm run test"`
+  - `docker-compose run --rm testrunner bash -c "npm run test"`
 - **dependencies**
   - Run custom node commands, like
-    - Node version `docker-compose run --rm dependencies bash -c "node --version"`
-    - npm install `docker-compose run --rm dependencies bash -c "npm install"`
+    - Node version `docker-compose run --rm dependencies sh -c "node --version"`
+    - npm install `docker-compose run --rm dependencies sh -c "npm install"`
     - Prisma commands
       - Generate schema classes
-        `docker-compose run --rm dependencies bash -c "npx prisma generate"`
+        `docker-compose run --rm dependencies sh -c "npx prisma generate"`
       - Create migrate script from schema changes
-        `docker-compose run --rm dependencies bash -c "npx prisma migrate dev --name=init"`
+        `docker-compose run --rm dependencies sh -c "npx prisma migrate dev --name=init"`
       - Apply schema changes
-        `docker-compose run --rm dependencies bash -c "npx prisma migrate deploy"`
+        `docker-compose run --rm dependencies sh -c "npx prisma migrate deploy"`
     - Run linter
-      - `docker-compose run --rm dependencies bash -c "npm run lint"`
+      - `docker-compose run --rm dependencies sh -c "npm run lint"`
 
 ##### Dependencies
 
 This container is used to run casual node commands in the development process
 
 Node version
-`docker-compose run --rm dependencies bash -c "node --version"`
+`docker-compose run --rm dependencies sh -c "node --version"`
 
 Install npm packages
-`docker-compose run --rm dependencies bash -c "npm install"`
+`docker-compose run --rm dependencies sh -c "npm install"`
 
 Prisma commands
 
-`docker-compose run --rm dependencies bash -c "npx prisma generate"`
+`docker-compose run --rm dependencies sh -c "npx prisma generate"`
 
-`docker-compose run --rm dependencies bash -c "npx prisma migrate dev --name=init"`
+`docker-compose run --rm dependencies sh -c "npx prisma migrate dev --name=init"`
 
-`docker-compose run --rm dependencies bash -c "npx prisma db push"`
+`docker-compose run --rm dependencies sh -c "npx prisma db push"`
 
 #### Testing
 

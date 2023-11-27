@@ -9,9 +9,10 @@ import prisma from '@/utils/prisma/prismaImporter';
 
 export default withIronSessionApiRoute(async function loginRoute(req, res) {
   const loginData: LoginRequestType | null = getRequestBodyObject(req, res) as LoginRequestType;
+
   if (loginData == null) {
     await req.session.destroy();
-    res.send(getApiResponse({ ok: false, error: 'Fields "email" and "password" must be set' }));
+    res.status(400).json(getApiResponse({ ok: false, error: 'Fields "email" and "password" must be set' }));
     return;
   }
 
@@ -21,15 +22,17 @@ export default withIronSessionApiRoute(async function loginRoute(req, res) {
     // unknown user
     await req.session.destroy();
     console.warn(`Login failed - user not found ${loginData.email}`);
-    res.setHeader('Reason', 1).send(getApiResponse({ ok: false, error: 'Invalid email or password' }));
+    res.setHeader('Reason', 1).status(400).json(getApiResponse({ ok: false, error: 'Invalid email or password' }));
     return;
   }
 
+  
+  console.log('Verifzing password');
   if (!(await verifyPassword(loginData.password, user.password))) {
     // invalid password
     await req.session.destroy();
-    res.setHeader('Reason', 2).send(getApiResponse({ ok: false, error: 'Invalid email or password' }));
-    console.warn(`Login failed -  ${user.email}`);
+    res.setHeader('Reason', 2).status(400).json(getApiResponse({ ok: false, error: 'Invalid email or password' }));
+    console.warn(`Login failed - wrong password for ${user.email}`);
     return;
   }
 

@@ -1,11 +1,3 @@
-FROM node:20 as dependencies
-
-WORKDIR /home/node/app
-COPY ./home-media-viewer .
-RUN npm install
-RUN npx prisma generate
-
-
 FROM node:20 as testrunner
 
 RUN apt-get update && apt-get install gnupg wget -y && \
