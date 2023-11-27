@@ -111,7 +111,13 @@ export const updateUser = async (data: UserEditType) => {
   await checkUserData(data, id);
 
   const { name = null, email = null, password = null, isAdmin = null, status = null } = data;
-  const updateData: UserEditType = {};
+  const updateData: {
+    name?: string,
+    email?: string,
+    password?: string,
+    isAdmin?: boolean,
+    status?: $Enums.Status,
+  } = {};
 
   if (typeof name === 'string') {
     updateData.name = name;
