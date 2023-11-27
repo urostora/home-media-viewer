@@ -13,14 +13,18 @@ const updateMetadataProcess = {
 
     const activeAlbums = await prisma.album.findMany({
       where: { id: albumToProcess ?? undefined, status: { in: ['Active', 'Disabled'] } },
-      orderBy: { basePath: 'asc' }
+      orderBy: { basePath: 'asc' },
     });
 
     const startedOn = Date.now();
 
     const parallelJobs: Promise<boolean>[] = [];
 
-    console.log(`[${(new Date()).toLocaleDateString('hu-HU')} ${(new Date()).toLocaleTimeString('hu-HU')}] updateMetadataProcess${isDevEnv ? ' (DEV settings)' : ''} started with ${threadCount} threads, time limit is ${processTimeout} (${activeAlbums.length} albums found)`);
+    console.log(
+      `[${new Date().toLocaleDateString('hu-HU')} ${new Date().toLocaleTimeString('hu-HU')}] updateMetadataProcess${
+        isDevEnv ? ' (DEV settings)' : ''
+      } started with ${threadCount} threads, time limit is ${processTimeout} (${activeAlbums.length} albums found)`,
+    );
 
     for (const album of activeAlbums) {
       if (typeof albumToProcess === 'string' && albumToProcess !== album.id) {
@@ -29,7 +33,7 @@ const updateMetadataProcess = {
 
       try {
         await syncAlbumFiles(album.id);
-      } catch(e) {
+      } catch (e) {
         console.error(`  ERROR while syncing album ${album.name} (${album.id}) files: ${e}`);
       }
     }
@@ -42,16 +46,19 @@ const updateMetadataProcess = {
       }
 
       const filesUnprocessed = await prisma.file.findMany({
-        where: { AND: [
-          { albums: { some: { id: album.id } }, status: 'Active' },
-          { OR: [{ metadataStatus: 'New' }, { isDirectory: true }] }] },
+        where: {
+          AND: [
+            { albums: { some: { id: album.id } }, status: 'Active' },
+            { OR: [{ metadataStatus: 'New' }, { isDirectory: true }] },
+          ],
+        },
       });
 
       if (filesUnprocessed.length === 0) {
         continue;
       }
 
-      if (filesUnprocessed.filter(f => !f.isDirectory).length > 0) {
+      if (filesUnprocessed.filter((f) => !f.isDirectory).length > 0) {
         console.log(`  ${filesUnprocessed.length} unprocessed files found in album ${album.name} (${album.id})`);
       }
 
@@ -61,7 +68,7 @@ const updateMetadataProcess = {
         if (parallelJobs.length >= threadCount) {
           try {
             await Promise.all(parallelJobs);
-          } catch(e) {
+          } catch (e) {
             console.error(`  ERROR while loading metadata: ${e}`);
           }
 
@@ -71,23 +78,23 @@ const updateMetadataProcess = {
             break;
           }
 
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise((resolve) => setTimeout(resolve, 1000));
         }
       }
 
       if (parallelJobs.length > 0) {
         try {
           await Promise.all(parallelJobs);
-        } catch(e) {
+        } catch (e) {
           console.error(`  ERROR whole loading metadata: ${e}`);
         }
-        
+
         parallelJobs.splice(0, parallelJobs.length);
       }
 
       if (startedOn + processTimeout * 1000 < Date.now()) {
         const timedOutAfter = Math.floor((Date.now() - startedOn) / 1000);
-        console.log(`UpdateMetadataProcess timed out after ${timedOutAfter}s`)
+        console.log(`UpdateMetadataProcess timed out after ${timedOutAfter}s`);
         break;
       }
 
@@ -95,7 +102,11 @@ const updateMetadataProcess = {
     }
 
     const processingTimeInSec = Math.floor((Date.now() - startedOn) / 1000);
-    console.log(`[${(new Date()).toLocaleDateString('hu-HU')} ${(new Date()).toLocaleTimeString('hu-HU')}] updateMetadataProcess finished in ${processingTimeInSec}s`);
+    console.log(
+      `[${new Date().toLocaleDateString('hu-HU')} ${new Date().toLocaleTimeString(
+        'hu-HU',
+      )}] updateMetadataProcess finished in ${processingTimeInSec}s`,
+    );
   },
 };
 

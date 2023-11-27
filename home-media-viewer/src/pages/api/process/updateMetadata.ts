@@ -5,9 +5,10 @@ import os from 'os';
 
 const isBackgroundProcessEnabled = Number.parseInt(process.env?.IS_BACKGROUND_PROCESS_ENABLED ?? '0') === 1;
 const processToken = process.env?.PROCESS_TOKEN ?? null;
-const longProcessTimeout = typeof process.env?.LONG_PROCESS_TIMEOUT_SEC === 'string' && process.env?.LONG_PROCESS_TIMEOUT_SEC.length > 0
-  ? Number.parseInt(process.env.LONG_PROCESS_TIMEOUT_SEC)
-  : undefined;
+const longProcessTimeout =
+  typeof process.env?.LONG_PROCESS_TIMEOUT_SEC === 'string' && process.env?.LONG_PROCESS_TIMEOUT_SEC.length > 0
+    ? Number.parseInt(process.env.LONG_PROCESS_TIMEOUT_SEC)
+    : undefined;
 
 const threadCount = Math.floor(os.availableParallelism() / 2);
 

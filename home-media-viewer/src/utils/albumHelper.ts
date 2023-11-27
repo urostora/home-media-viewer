@@ -41,7 +41,7 @@ export const getAlbums = async (params: AlbumSearchType) => {
     prisma.album.count({ where: filter }),
     prisma.album.findMany({
       where: filter,
-      take: params.take === 0 ? undefined : (params.take ?? 10),
+      take: params.take === 0 ? undefined : params.take ?? 10,
       skip: params.skip ?? 0,
       select: {
         id: true,
@@ -58,12 +58,12 @@ export const getAlbums = async (params: AlbumSearchType) => {
           take: 1,
           select: {
             id: true,
-          }
-        }
+          },
+        },
       },
       orderBy: {
-        name: 'asc'
-      }
+        name: 'asc',
+      },
     }),
   ]);
 
@@ -99,7 +99,7 @@ export const checkAlbumData = async (data: AlbumUpdateType, currentId: string | 
     notFilter.id = currentId;
   }
 
-  let statusFilter: $Enums.Status[] = [ 'Active', 'Disabled' ];
+  let statusFilter: $Enums.Status[] = ['Active', 'Disabled'];
   if (typeof status === 'string') {
     statusFilter = [status];
   } else if (Array.isArray(status)) {
@@ -194,21 +194,17 @@ export const syncAlbums = async (id: string | undefined = undefined) => {
 
 export const getAlbumsContainingPath = async (path: string): Promise<Album[]> => {
   // get all albums containing this directory
-  const pathList = path.split('/').reduce(
-    (carry: string[], part: string) => {
-      if (carry.length === 0) {
-        carry.push(part);
-      } else {
-        carry.push(`${carry[carry.length - 1]}/${part}`);
-      }
+  const pathList = path.split('/').reduce((carry: string[], part: string) => {
+    if (carry.length === 0) {
+      carry.push(part);
+    } else {
+      carry.push(`${carry[carry.length - 1]}/${part}`);
+    }
 
-      return carry;
-    },
-    []
-  );
+    return carry;
+  }, []);
 
-  const albumsContainingThisDirectory = await prisma.album
-    .findMany({ where: { basePath: { in: pathList }}});
+  const albumsContainingThisDirectory = await prisma.album.findMany({ where: { basePath: { in: pathList } } });
 
   return albumsContainingThisDirectory.sort((a, b) => {
     if (a.basePath.length < b.basePath.length) {
@@ -219,7 +215,7 @@ export const getAlbumsContainingPath = async (path: string): Promise<Album[]> =>
 
     return 0;
   });
-}
+};
 
 export const addAlbum = async (data: AlbumAddType): Promise<Album> => {
   if (typeof data?.path !== 'string') {
@@ -263,17 +259,18 @@ export const addAlbum = async (data: AlbumAddType): Promise<Album> => {
       basePath: finalPath,
       connectionString: `file://${finalPath}`,
       sourceType: AlbumSourceType.File,
-      parentAlbumId: albumsContainingThisDirectory.length === 0
-        ? null
-        : albumsContainingThisDirectory[albumsContainingThisDirectory.length - 1].id
+      parentAlbumId:
+        albumsContainingThisDirectory.length === 0
+          ? null
+          : albumsContainingThisDirectory[albumsContainingThisDirectory.length - 1].id,
     },
   });
 
   // attach all files in path to the created album
-  const filesInAlbum = await prisma.file.findMany({ where: { path: { startsWith: `${relativePath}/` }} });
+  const filesInAlbum = await prisma.file.findMany({ where: { path: { startsWith: `${relativePath}/` } } });
 
   for (const file of filesInAlbum) {
-    await prisma.file.update({ where: { id: file.id }, data: { albums: { connect: { id: newAlbum.id }}}});
+    await prisma.file.update({ where: { id: file.id }, data: { albums: { connect: { id: newAlbum.id } } } });
   }
 
   return newAlbum;

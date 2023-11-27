@@ -19,7 +19,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         }
 
         const albumsFilter =
-          req.session?.user?.admin === true ? undefined : { some: { users: { some: { id: req.session?.user?.id ?? '' } } } };
+          req.session?.user?.admin === true
+            ? undefined
+            : { some: { users: { some: { id: req.session?.user?.id ?? '' } } } };
 
         const file = await prisma.file.findFirst({ where: { id, albums: albumsFilter } });
 

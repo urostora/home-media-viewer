@@ -1,10 +1,5 @@
 import { MetadataProcessingStatus, Status, FileMetaType } from '@prisma/client';
-import type {
-  StatusSearchType,
-  EntityWithStatusType,
-  DateFilter,
-  EntityType,
-} from './generalTypes';
+import type { StatusSearchType, EntityWithStatusType, DateFilter, EntityType } from './generalTypes';
 
 export interface FileSearchType extends StatusSearchType {
   album?: EntityType;

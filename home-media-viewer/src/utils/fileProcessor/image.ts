@@ -72,7 +72,7 @@ const imageFileProcessor: FileProcessor = async (file: File): Promise<boolean> =
   } else if (typeof tags['Image Height']?.value === 'number') {
     height = Math.round(tags['Image Height']?.value);
   }
-  
+
   if (height != null) {
     await addIntMeta(file, 'resolution_y', height);
   }

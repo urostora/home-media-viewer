@@ -41,7 +41,7 @@ export const checkUserData = async (data: UserEditType, currentId: string | null
     notFilter.id = currentId;
   }
 
-  let statusFilter: $Enums.Status[] = [ 'Active', 'Disabled' ];
+  let statusFilter: $Enums.Status[] = ['Active', 'Disabled'];
   if (typeof status === 'string') {
     statusFilter = [status];
   } else if (Array.isArray(status)) {

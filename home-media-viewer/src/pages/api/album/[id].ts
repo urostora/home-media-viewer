@@ -51,8 +51,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         albums: {
           some: {
             id: data.id,
-          }
-        }
+          },
+        },
       },
       by: ['metadataStatus'],
       _count: {
@@ -60,11 +60,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       },
     });
 
-    data.fileStatus = fileStatus.map(fs => {
+    data.fileStatus = fileStatus.map((fs) => {
       return {
         metadataStatus: fs.metadataStatus,
-        fileCount: fs._count.id
-      }
+        fileCount: fs._count.id,
+      };
     });
   }
 

@@ -7,11 +7,9 @@ export const getContentUrl = (fileId: string) => {
 };
 
 export const isVideoByExtension = (extension: string): boolean => {
-  return ['mp4', 'avi', 'mov', 'mkv', 'mpg', 'mpeg']
-      .includes(extension.toLowerCase());
+  return ['mp4', 'avi', 'mov', 'mkv', 'mpg', 'mpeg'].includes(extension.toLowerCase());
 };
 
 export const isImageByExtension = (extension: string): boolean => {
-  return ['jpg', 'jpeg', 'gif', 'png']
-      .includes(extension.toLowerCase());
-}
+  return ['jpg', 'jpeg', 'gif', 'png'].includes(extension.toLowerCase());
+};

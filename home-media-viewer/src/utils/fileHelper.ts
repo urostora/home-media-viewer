@@ -29,26 +29,26 @@ export const syncFilesInAlbumAndFile = async (album: Album, parentFile?: File) =
 
   if (parentFile == null) {
     // find parent directory outside the current album
-    outerParentFile = await prisma.file.findFirst({ where: { path: directoryPath.substring(ALBUM_PATH.length + 1) }}) ?? undefined;
+    outerParentFile =
+      (await prisma.file.findFirst({ where: { path: directoryPath.substring(ALBUM_PATH.length + 1) } })) ?? undefined;
   }
 
   // get all albums containing this directory
-  const pathList = directoryPath.split('/').reduce(
-    (carry: string[], part: string) => {
-      if (carry.length === 0) {
-        carry.push(part);
-      } else {
-        carry.push(`${carry[carry.length - 1]}/${part}`);
-      }
+  const pathList = directoryPath.split('/').reduce((carry: string[], part: string) => {
+    if (carry.length === 0) {
+      carry.push(part);
+    } else {
+      carry.push(`${carry[carry.length - 1]}/${part}`);
+    }
 
-      return carry;
-    },
-    []
-  );
+    return carry;
+  }, []);
 
-  const albumsContainingThisDirectory = await prisma.album.findMany({ where: { basePath: { in: pathList }}});
+  const albumsContainingThisDirectory = await prisma.album.findMany({ where: { basePath: { in: pathList } } });
 
-  const dbFiles = await prisma.file.findMany({ where: { parentFile: parentFile ?? outerParentFile ?? null, albums: { some: { id: album.id }} } });
+  const dbFiles = await prisma.file.findMany({
+    where: { parentFile: parentFile ?? outerParentFile ?? null, albums: { some: { id: album.id } } },
+  });
   const dbFileNames = dbFiles.map((f: File) => f.name + (f.extension.length > 0 ? `.${f.extension}` : ''));
   const dirFiles = fs.readdirSync(directoryPath);
 
@@ -77,7 +77,10 @@ export const syncFilesInAlbumAndFile = async (album: Album, parentFile?: File) =
     }
   }
 
-  console.log('New directories', newDirectories.map(f => f.path))
+  console.log(
+    'New directories',
+    newDirectories.map((f) => f.path),
+  );
 
   newDirectories.forEach(async (f: File) => {
     await syncFilesInAlbumAndFile(album, f);
@@ -92,7 +95,7 @@ export const addFile = async (filePath: string, albums: Album[], parentFile?: Fi
   const relativePath = filePath.substring(ALBUM_PATH.length + 1);
 
   // check if file already exists
-  const existingFile = await prisma.file.findFirst({ where: { path: relativePath, isDirectory }});
+  const existingFile = await prisma.file.findFirst({ where: { path: relativePath, isDirectory } });
   if (existingFile !== null) {
     return existingFile;
   }
@@ -138,15 +141,15 @@ export const updateThumbnailDate = async (file: File) => {
 };
 
 export const getFiles = async (params: FileSearchType, returnThumbnails: boolean = false) => {
-   const albumSearchParams =
+  const albumSearchParams =
     typeof params?.user !== 'string'
-      ? (params?.album?.id
+      ? params?.album?.id
         ? {
             some: {
-              id: params.album.id
-            }
+              id: params.album.id,
+            },
           }
-        : undefined)
+        : undefined
       : {
           some: {
             id: params?.album?.id ? params.album.id : undefined,
@@ -155,20 +158,22 @@ export const getFiles = async (params: FileSearchType, returnThumbnails: boolean
                 id: params?.user ?? undefined,
               },
             },
-          }
+          },
         };
 
-  let parentFileIdFilter: string | Prisma.StringNullableFilter | null | undefined = params?.album?.id ? null : undefined;
+  let parentFileIdFilter: string | Prisma.StringNullableFilter | null | undefined = params?.album?.id
+    ? null
+    : undefined;
   if (typeof params?.parentFileId === 'string') {
     // exact parent
     parentFileIdFilter = params?.parentFileId;
   } else if (params?.parentFileId == null && typeof params?.album?.id === 'string') {
     // album root - get directory file representing the album root
-    const album = await prisma.album.findFirst({ where: { id: params?.album?.id }});
+    const album = await prisma.album.findFirst({ where: { id: params?.album?.id } });
 
     if (album != null) {
       const relativePath = album.basePath.substring(ALBUM_PATH.length + 1);
-      const parentFile = await prisma.file.findFirst({ where: { path: relativePath }});
+      const parentFile = await prisma.file.findFirst({ where: { path: relativePath } });
 
       if (parentFile != null) {
         parentFileIdFilter = parentFile.id;
@@ -181,13 +186,13 @@ export const getFiles = async (params: FileSearchType, returnThumbnails: boolean
     status: params?.status,
     isDirectory: params?.isDirectory,
     name: typeof params?.name !== 'string' ? undefined : { contains: params.name },
-    extension: params?.extension ?? (
-      params?.contentType === undefined || params.contentType === 'all'
+    extension:
+      params?.extension ??
+      (params?.contentType === undefined || params.contentType === 'all'
         ? undefined
-        : (params.contentType === 'video'
-            ? { in: [ 'mpeg', 'avi', 'mp4', 'mkv', 'mov', 'MPEG', 'AVI', 'MP4', 'MKV', 'MOV' ] }
-            : { in: [ 'jpg', 'jpeg', 'png', 'JPG', 'JPEG', 'PNG' ] })
-    ),
+        : params.contentType === 'video'
+        ? { in: ['mpeg', 'avi', 'mp4', 'mkv', 'mov', 'MPEG', 'AVI', 'MP4', 'MKV', 'MOV'] }
+        : { in: ['jpg', 'jpeg', 'png', 'JPG', 'JPEG', 'PNG'] }),
     modifiedAt: getDateTimeFilter(params?.fileDate),
     contentDate: getDateTimeFilter(params?.contentDate),
     metadataStatus: params.metadataStatus,
@@ -204,7 +209,7 @@ export const getFiles = async (params: FileSearchType, returnThumbnails: boolean
     prisma.file.count({ where: filter }),
     prisma.file.findMany({
       where: filter,
-      take: params?.take === 0 ? undefined : (params.take ?? undefined),
+      take: params?.take === 0 ? undefined : params.take ?? undefined,
       skip: params.skip ?? 0,
       include: {
         metas: {
@@ -246,7 +251,7 @@ export const getFiles = async (params: FileSearchType, returnThumbnails: boolean
     debug: {
       params,
       finalFilter: filter,
-    }
+    },
   };
 };
 
@@ -262,8 +267,8 @@ export const loadMetadataById = async (fileId: string) => {
   const file = await prisma.file.findFirst({
     where: {
       id: fileId,
-      status: { in: [ 'Active', 'Disabled' ]}
-    }
+      status: { in: ['Active', 'Disabled'] },
+    },
   });
 
   if (file === null) {
