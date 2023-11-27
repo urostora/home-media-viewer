@@ -18,7 +18,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
 
   switch (method) {
-    case 'POST':
+    case 'POST': {
       // search User
       const postData: UserSearchType | null = getRequestBodyObject(req, res);
       if (postData == null) {
@@ -49,7 +49,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
       res.status(200).json(getApiResponseEntityList({}, results[1], results[0]));
       break;
-    case 'PUT':
+    }
+    case 'PUT': {
       // Update or create data in your database
       const putData: UserEditType | null = getRequestBodyObject(req, res);
       if (putData == null) {
@@ -77,7 +78,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       }
 
       break;
-    case 'DELETE':
+    }
+    case 'DELETE': {
       // Update or create data in your database
       const deleteData: EntityType | null = getEntityTypeRequestBodyObject(req, res);
       if (deleteData == null) {
@@ -92,6 +94,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       } catch (e) {
         res.status(400).end(`${e}`);
       }
+
+      break;
+    }
     default:
       res.setHeader('Allow', ['POST', 'PUT']);
       res.status(405).end(`Method ${method} Not Allowed`);

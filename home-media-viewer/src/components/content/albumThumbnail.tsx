@@ -17,7 +17,7 @@ const AlbumThumbnail = (props: AlbumThumbnailProps) => {
     }
 
     const imageContent = Array.isArray(content.files) && content.files.length > 0 && typeof content.files[0].thumbnailImage === 'string'
-        ? <img src={`data:image/jpeg;base64,${content.files[0].thumbnailImage}`} />
+        ? <img alt={content.name} src={`data:image/jpeg;base64,${content.files[0].thumbnailImage}`} />
         : <></>;
 
     return (

@@ -1,5 +1,5 @@
 import { AlbumSourceType, Status } from '@prisma/client';
-import type { EditEntityWithStatusType, StatusSearchType, EntityWithStatusType } from './generalTypes';
+import type { EditEntityWithStatusType, StatusSearchType } from './generalTypes';
 
 export interface AlbumSearchType extends StatusSearchType {
   name?: string;

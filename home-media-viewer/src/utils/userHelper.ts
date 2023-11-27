@@ -1,5 +1,5 @@
 import { UserEditType } from '@/types/api/userTypes';
-import { Prisma, Status, User } from '@prisma/client';
+import { $Enums, Prisma, User } from '@prisma/client';
 import bcrypt from 'bcrypt';
 
 import prisma from '@/utils/prisma/prismaImporter';
@@ -10,14 +10,14 @@ export const verifyPassword = async (password: string, hashedPassword: string) =
   bcrypt.compare(password, hashedPassword);
 
 export const isPasswordStrong = (password: string) => {
-  const regex = /^(?!.*\s)(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[~`!@#$%^&*()--+={}\[\]|\\:;"'<>,.?/_₹]).{8,}$/;
+  const regex = /^(?!.*\s)(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[~`!@#$%^&*()--+={}[\]|\\:;"'<>,.?/_₹]).{8,}$/;
   return regex.test(password);
 };
 
 export const checkUserData = async (data: UserEditType, currentId: string | null = null): Promise<void> => {
   const { name = null, email = null, password = null, status = null } = data;
 
-  let uniqueFilters: Prisma.UserWhereInput[] = [];
+  const uniqueFilters: Prisma.UserWhereInput[] = [];
   if (typeof name === 'string') {
     if (name.length === 0) {
       throw Error('Parameter "name" is empty');
@@ -36,19 +36,17 @@ export const checkUserData = async (data: UserEditType, currentId: string | null
     }
   }
 
-  let notFilter: any = {};
+  const notFilter: { id?: string } = {};
   if (currentId != null) {
     notFilter.id = currentId;
   }
 
-  let statusFilter: Status[] = [];
+  let statusFilter: $Enums.Status[] = [ 'Active', 'Disabled' ];
   if (typeof status === 'string') {
     statusFilter = [status];
   } else if (Array.isArray(status)) {
     statusFilter = status;
   }
-
-  // statusFilter = Prisma.validator<Status[]>()(statusFilter);
 
   // check if user exists with same name or email
   if (uniqueFilters.length > 0) {
@@ -57,7 +55,7 @@ export const checkUserData = async (data: UserEditType, currentId: string | null
         AND: [
           {
             status: {
-              in: ['Active', 'Disabled'],
+              in: statusFilter,
             },
           },
         ],
@@ -113,7 +111,7 @@ export const updateUser = async (data: UserEditType) => {
   await checkUserData(data, id);
 
   const { name = null, email = null, password = null, isAdmin = null, status = null } = data;
-  const updateData: any = {};
+  const updateData: UserEditType = {};
 
   if (typeof name === 'string') {
     updateData.name = name;
@@ -136,7 +134,7 @@ export const updateUser = async (data: UserEditType) => {
     updateData.isAdmin = isAdmin;
   }
 
-  const updatedUser = await prisma.user.update({
+  await prisma.user.update({
     where: {
       id,
     },

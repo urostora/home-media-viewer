@@ -55,7 +55,6 @@ const updateMetadataProcess = {
         console.log(`  ${filesUnprocessed.length} unprocessed files found in album ${album.name} (${album.id})`);
       }
 
-      let fileIndex = 0;
       for (const file of filesUnprocessed) {
         parallelJobs.push(loadMetadata(file));
 
@@ -74,8 +73,6 @@ const updateMetadataProcess = {
 
           await new Promise(resolve => setTimeout(resolve, 1000));
         }
-
-        fileIndex++;
       }
 
       if (parallelJobs.length > 0) {

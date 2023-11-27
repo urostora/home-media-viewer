@@ -1,6 +1,5 @@
-import { AlbumSourceType, MetadataProcessingStatus, Status, FileMetaType } from '@prisma/client';
+import { MetadataProcessingStatus, Status, FileMetaType } from '@prisma/client';
 import type {
-  EditEntityWithStatusType,
   StatusSearchType,
   EntityWithStatusType,
   DateFilter,

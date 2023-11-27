@@ -9,7 +9,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
 
   switch (method) {
-    case 'POST':
+    case 'POST': {
       // search albums
       try {
         const postData = getRequestBodyObject<AlbumSearchType>(req, res);
@@ -29,7 +29,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       }
 
       break;
-    case 'PUT':
+    }
+    case 'PUT': {
       if (req.session?.user?.admin !== true) {
         res.status(403).end('Only administrators allowed');
         return;
@@ -57,7 +58,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       }
 
       break;
-    case 'DELETE':
+    }
+    case 'DELETE': {
       if (req.session?.user?.admin !== true) {
         res.status(403).end('Only administrators allowed');
         return;
@@ -78,6 +80,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       }
 
       break;
+    }
     default:
       res.setHeader('Allow', ['POST']);
       res.status(405).end(`Method ${method} Not Allowed`);

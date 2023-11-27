@@ -1,4 +1,4 @@
-import { Album, File } from '@prisma/client';
+import { File } from '@prisma/client';
 import { noneFileProcessor } from './none';
 import { directoryFileProcessor } from './directory';
 import { fillProcessorList as fillImageProcessors } from './image';

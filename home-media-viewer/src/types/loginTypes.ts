@@ -1,5 +1,3 @@
-import { GeneralResponse, GeneralResponseWithData } from '@/types/api/generalTypes';
-
 export interface LoginRequestType {
   email: string;
   password: string;

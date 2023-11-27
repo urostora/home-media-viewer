@@ -1,5 +1,4 @@
 import { FileMetadataType, FileResultType } from "@/types/api/fileTypes";
-import Image from "next/image";
 import hmvStyle from '@/styles/hmv.module.scss';
 import { MetaType, contentSizeToString, durationInSecToString } from "@/utils/metaUtils";
 import { ReactElement } from "react";
@@ -12,7 +11,7 @@ export type ContentThumbnailPropsType = {
 }
 
 const getMetaMap = (metaList?: FileMetadataType[] | undefined) => {
-  return (metaList ?? []).reduce((carry: Map<String, String | Number | Date | object>, meta: FileMetadataType) => {
+  return (metaList ?? []).reduce((carry: Map<string, string | number | Date | object>, meta: FileMetadataType) => {
     const key = meta.metaKey;
     let value = undefined;
 
@@ -44,7 +43,7 @@ const getMetaMap = (metaList?: FileMetadataType[] | undefined) => {
     }
     
     return carry;
-  }, new Map<String, String | Number | Date | object>());
+  }, new Map<string, string | number | Date | object>());
 };
 
 const ContentThumbnail = (props: ContentThumbnailPropsType) => {
@@ -67,7 +66,7 @@ const ContentThumbnail = (props: ContentThumbnailPropsType) => {
         : (<img alt={content.name} src={`data:image/jpeg;base64,${content.thumbnail}`} />));
 
     const videoIcon = isVideo
-      ? <img src="/play.svg" className={hmvStyle.videoIcon} />
+      ? <img alt="play" src="/play.svg" className={hmvStyle.videoIcon} />
       : null;
 
     let contentDetails = null;

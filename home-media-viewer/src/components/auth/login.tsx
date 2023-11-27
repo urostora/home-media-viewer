@@ -1,9 +1,7 @@
-import { LoginRequestType } from "@/types/loginTypes";
 import { apiLogin } from "@/utils/frontend/dataSource/auth";
 import { FormEvent, useState } from "react";
 import { AuthData } from "./authContext";
 import hmvStyle from '@/styles/hmv.module.scss';
-
 
 interface LoginProps {
     onUserAuthenticated(ad: AuthData): void;
@@ -17,7 +15,7 @@ const Login = (props: LoginProps) => {
     const onLoginRequest = async (event: FormEvent) => {
         event.preventDefault();
 
-        const data = new FormData(event.currentTarget as HTMLFormElement) as any;
+        const data = new FormData(event.currentTarget as HTMLFormElement);
 
         if (
             typeof data.get('email') !== 'string'
@@ -30,8 +28,8 @@ const Login = (props: LoginProps) => {
         setErrorMessage(null);
 
         const requestData = {
-            email: data.get('email'),
-            password: data.get('password'),
+            email: data.get('email') as string ?? '',
+            password: data.get('password') as string ?? '',
         }
 
         try {

@@ -1,5 +1,5 @@
 import { AlbumAddType, AlbumResultType, AlbumSearchType, AlbumUpdateType } from '@/types/api/albumTypes';
-import { Album, AlbumSourceType, Prisma, Status, User } from '@prisma/client';
+import { $Enums, Album, AlbumSourceType, Prisma, User } from '@prisma/client';
 import fs from 'fs';
 import pathModule from 'path';
 import { ALBUM_PATH, loadMetadata, syncFilesInAlbumAndFile } from './fileHelper';
@@ -86,7 +86,7 @@ export const getAlbums = async (params: AlbumSearchType) => {
 export const checkAlbumData = async (data: AlbumUpdateType, currentId: string | null = null): Promise<void> => {
   const { name = null, status = null } = data;
 
-  let uniqueFilters: Prisma.AlbumWhereInput[] = [];
+  const uniqueFilters: Prisma.AlbumWhereInput[] = [];
   if (typeof name === 'string') {
     if (name.length === 0) {
       throw Error('Parameter "name" is empty');
@@ -94,19 +94,19 @@ export const checkAlbumData = async (data: AlbumUpdateType, currentId: string | 
     uniqueFilters.push({ name });
   }
 
-  let notFilter: any = {};
+  const notFilter: { id?: string } = {};
   if (currentId != null) {
     notFilter.id = currentId;
   }
 
-  let statusFilter: Status[] = [];
+  let statusFilter: $Enums.Status[] = [ 'Active', 'Disabled' ];
   if (typeof status === 'string') {
     statusFilter = [status];
   } else if (Array.isArray(status)) {
     statusFilter = status;
   }
 
-  statusFilter = Prisma.validator<Status[]>()(statusFilter);
+  statusFilter = Prisma.validator<$Enums.Status[]>()(statusFilter);
 
   // check if user exists with same name or email
   if (uniqueFilters.length > 0) {
@@ -115,7 +115,7 @@ export const checkAlbumData = async (data: AlbumUpdateType, currentId: string | 
         AND: [
           {
             status: {
-              in: ['Active', 'Disabled'],
+              in: statusFilter,
             },
           },
         ],
@@ -213,7 +213,7 @@ export const getAlbumsContainingPath = async (path: string): Promise<Album[]> =>
   return albumsContainingThisDirectory.sort((a, b) => {
     if (a.basePath.length < b.basePath.length) {
       return -1;
-    } else if (a.basePath.length < b.basePath.length) {
+    } else if (a.basePath.length > b.basePath.length) {
       return 1;
     }
 
@@ -295,7 +295,7 @@ export const updateAlbum = async (data: AlbumUpdateType) => {
   await checkAlbumData(data, id);
 
   const { name = null, status = null } = data;
-  const updateData: any = {};
+  const updateData: AlbumUpdateType = {};
 
   if (typeof name === 'string') {
     updateData.name = name;

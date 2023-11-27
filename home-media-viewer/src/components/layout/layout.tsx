@@ -15,11 +15,11 @@ const cookieNames = {
 
 const getCookie = (name: string) => {
     // Split cookie string and get all individual name=value pairs in an array
-    var cookieArr = document.cookie.split(";");
+    const cookieArr = document.cookie.split(";");
     
     // Loop through the array elements
-    for(var i = 0; i < cookieArr.length; i++) {
-        var cookiePair = cookieArr[i].split("=");
+    for(let i = 0; i < cookieArr.length; i++) {
+        const cookiePair = cookieArr[i].split("=");
         
         /* Removing whitespace at the beginning of the cookie name
         and compare it with the given string */
@@ -65,8 +65,6 @@ const clearAuthData = () => {
 };
 
 export default function Layout({ children }: { children: ReactElement }) {
-    const authDataFromCookies = getAuthDataFromCookie();
-
     const [ isAuthProcessed, setIsAuthProcessed ] = useState<boolean>(false);
     const [ authData, setAuthData ] = useState<AuthData>({ isLoggedIn: false });
 

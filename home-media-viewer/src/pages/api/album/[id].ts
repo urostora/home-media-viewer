@@ -29,7 +29,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         },
       };
 
-  const data: any = await prisma.album.findFirst({
+  const data = await prisma.album.findFirst({
     where: {
       id: id,
       users: usersQuery,

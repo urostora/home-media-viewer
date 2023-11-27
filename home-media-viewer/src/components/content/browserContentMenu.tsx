@@ -4,7 +4,6 @@ import hmvStyle from '@/styles/hmv.module.scss';
 import { MouseEventHandler, useState } from "react";
 import { apiFileDelete, apiFileRefreshMetadata } from "@/utils/frontend/dataSource/file";
 import { AlbumResultType } from "@/types/api/albumTypes";
-import album from "@/pages/api/album";
 import { apiAlbumAdd } from "@/utils/frontend/dataSource/album";
 
 type BrowseContentMenuProps = {

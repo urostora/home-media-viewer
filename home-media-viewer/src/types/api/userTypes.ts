@@ -1,4 +1,3 @@
-import { Status } from '@prisma/client';
 import type { EditEntityWithStatusType, StatusSearchType, EntityWithStatusType } from './generalTypes';
 
 export interface UserSearchType extends StatusSearchType {

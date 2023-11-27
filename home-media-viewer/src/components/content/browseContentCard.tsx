@@ -34,10 +34,10 @@ const BrowseContentCard = (props: BrowseContentCardProps) => {
     const hasThumbnailStyle = typeof thumbnailContent === 'string' || isDirectory ? hmvStyle.hasThumbnail : '';
 
     const videoIcon = isVideo
-        ? <img src="/play.svg" className={hmvStyle.videoIcon} />
+        ? <img alt="play icon" src="/play.svg" className={hmvStyle.videoIcon} />
         : null;
 
-    const onContentClickedHandler = (event: React.MouseEvent<HTMLDivElement>) => {
+    const onContentClickedHandler = () => {
         if (typeof contentSelected === 'function') {
             contentSelected(content);
         }

@@ -1,10 +1,5 @@
 import { useRouter } from 'next/router'
 
-import FilteredContentList from '@/components/content/filteredContentList';
-import { FileResultType, FileSearchType } from '@/types/api/fileTypes';
-import Link from 'next/link';
-
-import hmvStyle from '@/styles/hmv.module.scss';
 import Browser from '@/components/browser';
 
 const BrowsePage = () => {

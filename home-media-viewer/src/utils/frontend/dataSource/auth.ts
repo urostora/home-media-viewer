@@ -1,5 +1,4 @@
-import { FileResultType, FileSearchType } from '@/types/api/fileTypes';
-import { GeneralEntityListResponse, GeneralResponseWithData } from '@/types/api/generalTypes';
+import { GeneralResponseWithData } from '@/types/api/generalTypes';
 import { LoginRequestType, LoginResponseDataType } from '@/types/loginTypes';
 
 export const apiLogin = async (args: LoginRequestType): Promise<LoginResponseDataType | null> => {

@@ -102,7 +102,8 @@ const videoFileProcessor: FileProcessor = async (file: File): Promise<boolean> =
   // create thumbnail
   thumbnailSizes.forEach(async (size) => {
     const thumbnailFilePath = getFileThumbnailPath(file, size);
-    const thumbnailPath = createThumbnailImage(path, thumbnailFilePath, size);
+    createThumbnailImage(path, thumbnailFilePath, size);
+
     console.log(`Thumbnail size ${size} saved to path ${thumbnailFilePath}`);
   });
 
@@ -187,7 +188,7 @@ const loadCustomVideoData = (path: string, ffprobePath?: string): CustomVideoRes
 
     if (ret?.location == null) {
       // get location
-      const m = str.match(/location\s*\:\s*(?<lat>[+-][\d\.]+)(?<lon>[+-][\d\.]+)/i);
+      const m = str.match(/location\s*:\s*(?<lat>[+-][\d.]+)(?<lon>[+-][\d.]+)/i);
       if (m != null && m?.groups) {
         ret.location = {
           lat: Number.parseFloat(m.groups['lat']),
@@ -208,7 +209,7 @@ const createThumbnailImage = (videoFilePath: string, thumbnailPath: string, size
 
   const args = ['-i', videoFilePath, '-frames:v', '1', '-vf', `scale=${Math.round(size)}:-1`, thumbnailPath];
 
-  const child = spawnSync(executablePath, args);
+  spawnSync(executablePath, args);
 };
 
 const supportedExtensions: string[] = ['mp4', 'mkv', 'avi', 'mpg', 'mpeg', 'mov'];

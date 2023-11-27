@@ -1,7 +1,9 @@
 import { useContext } from 'react';
-import hmvStyle from '@/styles/hmv.module.scss';
+
 import Link from 'next/link';
-import { AuthContext } from '../auth/authContext';
+import { AuthContext } from '@/components/auth/authContext';
+
+import hmvStyle from '@/styles/hmv.module.scss';
 
 const UserHeader = () => {
     const authContext = useContext(AuthContext);

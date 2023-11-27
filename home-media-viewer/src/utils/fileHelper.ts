@@ -45,18 +45,12 @@ export const syncFilesInAlbumAndFile = async (album: Album, parentFile?: File) =
     },
     []
   );
+
   const albumsContainingThisDirectory = await prisma.album.findMany({ where: { basePath: { in: pathList }}});
-
-  const relativePath = directoryPath.substring(ALBUM_PATH.length + 1);
-
-  // console.log(`Syncronize directory ${directoryPath}`);
 
   const dbFiles = await prisma.file.findMany({ where: { parentFile: parentFile ?? outerParentFile ?? null, albums: { some: { id: album.id }} } });
   const dbFileNames = dbFiles.map((f: File) => f.name + (f.extension.length > 0 ? `.${f.extension}` : ''));
   const dirFiles = fs.readdirSync(directoryPath);
-
-  // console.log('Files in directory', dirFiles);
-  // console.log('Stored files in db', dbFileNames);
 
   const filesToDelete = dbFiles.filter((f: File) => {
     const fullName = f.name + (f.extension.length > 0 ? `.${f.extension}` : '');
@@ -69,10 +63,6 @@ export const syncFilesInAlbumAndFile = async (album: Album, parentFile?: File) =
     console.log(`  Delete file ${fileToDelete.path}`);
     await prisma.file.update({ where: { id: fileToDelete.id }, data: { status: 'Deleted' } });
   }
-
-  // filesToDelete.forEach(async (f: File) => {
-  //   
-  // });
 
   const newDirectories: File[] = [];
 
@@ -135,7 +125,7 @@ export const updateContentDate = async (file: File, date?: Date) => {
   });
 };
 
-export const updateThumbnailDate = async (file: File, date?: Date) => {
+export const updateThumbnailDate = async (file: File) => {
   await prisma.file.update({
     where: {
       id: file.id,
@@ -168,7 +158,7 @@ export const getFiles = async (params: FileSearchType, returnThumbnails: boolean
           }
         };
 
-  let parentFileIdFilter: any = params?.album?.id ? null : undefined;
+  let parentFileIdFilter: string | Prisma.StringNullableFilter | null | undefined = params?.album?.id ? null : undefined;
   if (typeof params?.parentFileId === 'string') {
     // exact parent
     parentFileIdFilter = params?.parentFileId;

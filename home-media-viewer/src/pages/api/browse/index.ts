@@ -5,15 +5,15 @@ import * as fs from 'node:fs';
 
 import { getApiResponse } from '@/utils/apiHelpers';
 import { apiOnlyWithAdminUsers } from '@/utils/auth/apiHoc';
-import { getFiles } from '@/utils/fileHelper';
+import { ALBUM_PATH, getFiles } from '@/utils/fileHelper';
 import { getAlbums } from '@/utils/albumHelper';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
 
   switch (method) {
-    case 'GET':
-        const baseDir: string = process.env.APP_ALBUM_ROOT_PATH as string;
+    case 'GET': {
+        const baseDir: string = ALBUM_PATH;
         const relativePath = (Array.isArray(req.query['relativePath'])
             ? req.query['relativePath'][0]
             : req.query['relativePath']) ?? '';
@@ -113,6 +113,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
         res.status(200).json(getApiResponse(results));
         break;
+    }
     default:
       res.setHeader('Allow', [ 'GET' ]);
       res.status(405).end(`Method ${method} Not Allowed`);

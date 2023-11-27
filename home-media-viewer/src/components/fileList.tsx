@@ -110,7 +110,11 @@ export default function FileList() {
                 document.removeEventListener('scroll', onScrollEventHandler);
             }
         }
-    }, []);
+    }, [
+        currentFilter.contentType,
+        currentFilter.dateFrom,
+        currentFilter.dateTo,
+    ]);
 
     const onContentFilterChanged = (contentFilter: ContentFilterType) => {
 

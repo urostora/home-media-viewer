@@ -1,4 +1,3 @@
-import { FormEvent, useState } from "react";
 import { AuthData } from "../auth/authContext";
 import Login from "../auth/login";
 

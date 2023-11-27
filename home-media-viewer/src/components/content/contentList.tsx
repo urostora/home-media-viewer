@@ -37,7 +37,7 @@ const ContentList = (props: ContentListPropsType) => {
             return null;
         }
 
-        let position = data.indexOf(currentContent);
+        const position = data.indexOf(currentContent);
         return position === -1 ? null : position;
     };
 

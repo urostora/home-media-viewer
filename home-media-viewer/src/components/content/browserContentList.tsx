@@ -54,7 +54,7 @@ const BrowserContentList = (props: BrowserContentListProps) => {
             return null;
         }
 
-        let position = content.content.indexOf(currentContent);
+        const position = content.content.indexOf(currentContent);
         return position === -1 ? null : position;
     };
 

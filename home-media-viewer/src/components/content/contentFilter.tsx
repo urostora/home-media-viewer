@@ -1,6 +1,5 @@
 import { useState } from "react";
 import hmvStyle from '@/styles/hmv.module.scss';
-// import { MapContainer, TileLayer } from 'react-leaflet'; // map is not working yet
 
 export type ContentFilterType = {
     dateFrom?: string;
@@ -12,11 +11,6 @@ export type ContentFilterPropsType = {
     onFilterChanged?(filter: ContentFilterType): void,
     currentFilter?: ContentFilterType
 }
-
-const mapStartingPoint = {
-    lat: 47.498,
-    lng: 19.040,
-};
 
 const ContentFilter = (props: ContentFilterPropsType) => {
     const { onFilterChanged, currentFilter = null } = props;
