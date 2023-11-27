@@ -133,6 +133,8 @@ HOSTNAME=
         `docker-compose run --rm dependencies bash -c "npx prisma migrate dev --name=init"`
       - Apply schema changes
         `docker-compose run --rm dependencies bash -c "npx prisma migrate deploy"`
+    - Run linter
+      - `docker-compose run --rm dependencies bash -c "npm run lint"`
 
 ##### Dependencies
 
