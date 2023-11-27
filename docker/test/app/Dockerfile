@@ -1,8 +1,7 @@
 FROM node:20 as dependencies
 
 WORKDIR /home/node/app
-COPY ./home-media-viewer/package.json .
-COPY ./home-media-viewer/package-lock.json .
+COPY ./home-media-viewer/package*.json .
 RUN npm install
 
 
