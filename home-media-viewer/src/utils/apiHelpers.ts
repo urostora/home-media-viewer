@@ -2,8 +2,8 @@ import {
   DebugType,
   EntityType,
   GeneralEntityListResponse,
-  GeneralMutationResponse,
   GeneralResponse,
+  GeneralResponseParameters,
   GeneralResponseWithData,
 } from '@/types/api/generalTypes';
 import type { NextApiRequest, NextApiResponse } from 'next';
@@ -30,24 +30,26 @@ export function getRequestBodyObject<T>(req: NextApiRequest, res?: NextApiRespon
 }
 
 export function getEntityTypeRequestBodyObject(req: NextApiRequest, res?: NextApiResponse): EntityType | null {
-  const requestObject: any = getRequestBodyObject(req, res);
+  const requestObject: { id?: string } | undefined | null = getRequestBodyObject(req, res);
 
   if (requestObject == null) {
     return null;
   }
 
-  if (typeof (requestObject.id ?? null) !== 'string') {
+  if (typeof requestObject?.id !== 'string') {
     if (res != null) {
       res.status(400).end('Missing parameter "id"');
     }
+
+    return null;
   }
 
-  return requestObject;
+  return { id: requestObject.id };
 }
 
-export function getApiResponse(parameters: any = {}): GeneralResponse {
+export function getApiResponse(parameters: GeneralResponseParameters = {}): GeneralResponse {
   const now = new Date();
-  const ret: GeneralMutationResponse = {
+  const ret: GeneralResponse = {
     date: `${now.getFullYear()}.${('0' + (now.getMonth() + 1)).slice(-2)}.${('0' + now.getDate()).slice(-2)} ${(
       '0' + now.getHours()
     ).slice(-2)}:${('0' + now.getMinutes()).slice(-2)}:${('0' + now.getSeconds()).slice(-2)}`,
@@ -63,26 +65,18 @@ export function getApiResponse(parameters: any = {}): GeneralResponse {
     ret.id = parameters.id;
   }
 
-  if (typeof parameters?.count === 'number') {
-    ret.count = parameters.count;
-  }
-
   if (parameters?.debug) {
     ret.debug = parameters.debug;
-  }
-
-  if (parameters?.data) {
-    ret.data = parameters.data;
   }
 
   return ret;
 }
 
 export function getApiResponseWithData<T>(data: T | null): GeneralResponseWithData<T> {
-  return getApiResponse({
-    data,
-    ok: data !== null,
-  });
+  return {
+    ...getApiResponse({ ok: data !== null }),
+    data: data ?? undefined,
+  };
 }
 
 export function getApiResponseEntityList<T>(
@@ -92,7 +86,7 @@ export function getApiResponseEntityList<T>(
   skip: number = 0,
 ): GeneralEntityListResponse<T> {
   return {
-    ...getApiResponse({ count: elementCount }),
+    ...getApiResponse(),
     data,
     take,
     skip,

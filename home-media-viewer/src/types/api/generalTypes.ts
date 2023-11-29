@@ -10,6 +10,13 @@ export interface GeneralResponse {
   debug?: DebugType;
 }
 
+export interface GeneralResponseParameters {
+  ok?: boolean;
+  id?: string;
+  error?: string;
+  debug?: DebugType;
+}
+
 export interface GeneralResponseWithData<T> extends GeneralResponse {
   data?: T;
 }
