@@ -1,98 +1,36 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { Prisma } from '@prisma/client';
 
-import {
-  getRequestBodyObject,
-  getEntityTypeRequestBodyObject,
-  getApiResponse,
-  getApiResponseEntityList,
-} from '@/utils/apiHelpers';
-import { UserEditType, UserSearchType } from '@/types/api/userTypes';
-import { addUser, deleteUser, updateUser } from '@/utils/userHelper';
-import { EntityType } from '@/types/api/generalTypes';
+import { getRequestBodyObject, handleApiError, getApiResponseWithData } from '@/utils/apiHelpers';
+import { UserAddType, UserDataType } from '@/types/api/userTypes';
+import { addUser, userAddDataSchema } from '@/utils/userHelper';
 import { apiOnlyWithAdminUsers } from '@/utils/auth/apiHoc';
 
-import prisma from '@/utils/prisma/prismaImporter';
+import { validateData } from '@/utils/dataValidator';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
 
   switch (method) {
-    case 'POST': {
-      // search User
-      const postData: UserSearchType | null = getRequestBodyObject(req, res);
-      if (postData == null) {
-        return;
-      }
-
-      const filter: Prisma.UserWhereInput = {
-        id: postData.id ?? undefined,
-        name: postData.name ?? undefined,
-        email: postData.email ?? undefined,
-        status: postData.status ?? { in: ['Active', 'Disabled'] },
-      };
-
-      const results = await prisma.$transaction([
-        prisma.user.count({ where: filter }),
-        prisma.user.findMany({
-          where: filter,
-          take: postData.take ?? 10,
-          skip: postData.skip ?? 0,
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            status: true,
-          },
-        }),
-      ]);
-
-      res.status(200).json(getApiResponseEntityList({}, results[1], results[0]));
-      break;
-    }
+    case 'POST':
     case 'PUT': {
       // Update or create data in your database
-      const putData: UserEditType | null = getRequestBodyObject(req, res);
+      const putData: UserAddType | null = getRequestBodyObject(req, res);
       if (putData == null) {
         return;
       }
 
-      const { id = null } = putData;
-      if (id == null) {
-        // add user
-        try {
-          const userAdded = await addUser(putData);
-
-          res.status(200).json(getApiResponse({ id: userAdded.id }));
-        } catch (e) {
-          res.status(400).end(`${e}`);
-        }
-      } else {
-        // edit user
-        try {
-          await updateUser(putData);
-          res.status(200).json(getApiResponse({ id }));
-        } catch (e) {
-          res.status(400).end(`${e}`);
-        }
-      }
-
-      break;
-    }
-    case 'DELETE': {
-      // Update or create data in your database
-      const deleteData: EntityType | null = getEntityTypeRequestBodyObject(req, res);
-      if (deleteData == null) {
-        return;
-      }
-
-      const { id: idToDelete } = deleteData;
-
+      // add user
       try {
-        await deleteUser(idToDelete);
-        res.status(200).json(getApiResponse({ idToDelete }));
+        validateData(putData, userAddDataSchema);
+
+        const userAdded = await addUser(putData);
+
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { password, ...userData } = userAdded;
+
+        res.status(200).json(getApiResponseWithData<UserDataType>(userData));
       } catch (e) {
-        res.status(400).end(`${e}`);
+        handleApiError(res, 'add user', e, putData);
       }
 
       break;

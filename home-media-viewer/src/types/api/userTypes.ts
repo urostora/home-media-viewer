@@ -1,8 +1,9 @@
 import type { EditEntityWithStatusType, StatusSearchType, EntityWithStatusType } from './generalTypes';
 
 export interface UserSearchType extends StatusSearchType {
-  name?: string;
-  email?: string;
+  name?: string | Array<string>;
+  email?: string | Array<string>;
+  isAdmin?: boolean;
 }
 
 export interface UserAddType {
@@ -21,6 +22,7 @@ export interface UserEditType extends EditEntityWithStatusType {
 export interface UserDataType extends EntityWithStatusType {
   name: string;
   email: string;
+  isAdmin: boolean;
 }
 
 export interface UserAlbumConnectType {

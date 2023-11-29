@@ -1,4 +1,5 @@
 import {
+  DebugType,
   EntityType,
   GeneralEntityListResponse,
   GeneralMutationResponse,
@@ -22,7 +23,7 @@ export function getRequestBodyObject<T>(req: NextApiRequest, res?: NextApiRespon
 
   if (ret == null && res != null) {
     // send bad request response
-    res.status(400).end(`Could not parse JSON body: ${req.body}`);
+    res.status(400).end(`Could not parse body as JSON object`);
   }
 
   return ret as T;
@@ -77,18 +78,101 @@ export function getApiResponse(parameters: any = {}): GeneralResponse {
   return ret;
 }
 
-export function getApiResponseWithData<T>(data: T): GeneralResponseWithData<T> {
-  return getApiResponse({ data });
+export function getApiResponseWithData<T>(data: T | null): GeneralResponseWithData<T> {
+  return getApiResponse({
+    data,
+    ok: data !== null,
+  });
 }
 
-export function getApiResponseEntityList(
-  parameters: any = {},
-  data: Array<any>,
+export function getApiResponseEntityList<T>(
+  data: Array<T>,
   elementCount: number = 0,
-): GeneralEntityListResponse<any> {
+  take: number = 10,
+  skip: number = 0,
+): GeneralEntityListResponse<T> {
   return {
-    ...getApiResponse(parameters),
+    ...getApiResponse({ count: elementCount }),
     data,
+    take,
+    skip,
     count: elementCount,
   };
 }
+
+export function getApiResponseWithEntityList<T>(
+  data: Array<T>,
+  elementCount: number = 0,
+  take: number = 10,
+  skip: number = 0,
+  debug?: DebugType,
+): GeneralEntityListResponse<T> {
+  return {
+    ...getApiResponse({}),
+    data,
+    count: elementCount,
+    take,
+    skip,
+    debug,
+  };
+}
+
+interface HmvErrorOptions extends ErrorOptions {
+  publicMessage?: string;
+  isPublic?: boolean;
+  data?: unknown;
+}
+
+export class HmvError extends Error {
+  isPublic: boolean = false;
+  publicMessage: string | undefined;
+  data: unknown;
+
+  constructor(message?: string, options?: HmvErrorOptions) {
+    super(message, options);
+
+    if (options) {
+      const { isPublic = false, publicMessage = undefined, data = undefined } = options;
+
+      this.isPublic = (isPublic ?? false) || typeof publicMessage === 'string';
+      this.publicMessage = publicMessage;
+      this.data = data;
+    }
+  }
+}
+
+export const handleApiError = (
+  response: NextApiResponse,
+  task: string,
+  error: unknown = undefined,
+  data: object | undefined = undefined,
+): void => {
+  let logMessage = `Error in ${task}`;
+  let publicError: string | null = null;
+
+  if (typeof error === 'string') {
+    logMessage += ` ${error}`;
+  } else if (typeof error === 'object' && error !== null) {
+    if (error instanceof HmvError) {
+      logMessage += ` ${error.message}`;
+      if (error.isPublic === true || typeof error.publicMessage === 'string') {
+        publicError = error.publicMessage ?? error.message;
+      }
+    } else if (error instanceof Error) {
+      logMessage += ` ${error}`;
+    } else if ('error' in error && typeof error?.error === 'string') {
+      logMessage += ` ${error.error}`;
+    } else if ('publicError' in error && typeof error?.publicError === 'string') {
+      logMessage += ` ${error.publicError}`;
+      publicError = error.publicError;
+    }
+  }
+
+  if (typeof data === 'object') {
+    logMessage += ` (data: ${JSON.stringify(data)})`;
+  }
+
+  console.warn(logMessage);
+
+  response.status(400).end(`Error in ${task}` + (publicError ? `: ${publicError}` : ''));
+};

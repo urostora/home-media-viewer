@@ -22,16 +22,20 @@ export default withIronSessionApiRoute(async function loginRoute(req, res) {
     // unknown user
     await req.session.destroy();
     console.warn(`Login failed - user not found ${loginData.email}`);
-    res.setHeader('Reason', 1).status(400).json(getApiResponse({ ok: false, error: 'Invalid email or password' }));
+    res
+      .setHeader('Reason', 1)
+      .status(400)
+      .json(getApiResponse({ ok: false, error: 'Invalid email or password' }));
     return;
   }
 
-  
-  console.log('Verifzing password');
   if (!(await verifyPassword(loginData.password, user.password))) {
     // invalid password
     await req.session.destroy();
-    res.setHeader('Reason', 2).status(400).json(getApiResponse({ ok: false, error: 'Invalid email or password' }));
+    res
+      .setHeader('Reason', 2)
+      .status(400)
+      .json(getApiResponse({ ok: false, error: 'Invalid email or password' }));
     console.warn(`Login failed - wrong password for ${user.email}`);
     return;
   }

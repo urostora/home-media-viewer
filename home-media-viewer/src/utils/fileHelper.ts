@@ -77,11 +77,6 @@ export const syncFilesInAlbumAndFile = async (album: Album, parentFile?: File) =
     }
   }
 
-  console.log(
-    'New directories',
-    newDirectories.map((f) => f.path),
-  );
-
   newDirectories.forEach(async (f: File) => {
     await syncFilesInAlbumAndFile(album, f);
   });

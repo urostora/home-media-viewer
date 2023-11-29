@@ -1,10 +1,13 @@
+import { $Enums } from '@prisma/client';
+
+export type DebugType = string | Array<string> | object;
+
 export interface GeneralResponse {
   date: string;
   ok: boolean;
-  error?: string;
-  count?: number;
   id?: string;
-  debug?: string | Array<string>;
+  error?: string;
+  debug?: DebugType;
 }
 
 export interface GeneralResponseWithData<T> extends GeneralResponse {
@@ -13,25 +16,27 @@ export interface GeneralResponseWithData<T> extends GeneralResponse {
 
 export interface GeneralEntityListResponse<T> extends GeneralResponse {
   count: number;
+  take: number;
+  skip: number;
   data: Array<T>;
 }
 
-export interface GeneralMutationResponse extends GeneralResponse {
-  id?: string;
-  data?: object;
+export interface GeneralMutationResponse<T> extends GeneralResponse {
+  id: string;
+  data: T;
 }
 
 export interface GeneralSearchType {
-  take?: number | null;
-  skip?: number;
+  take?: number | undefined;
+  skip?: number | undefined;
 }
 
 export interface IdSearchType extends GeneralSearchType {
-  id?: string;
+  id?: string | Array<string>;
 }
 
 export interface StatusSearchType extends IdSearchType {
-  status?: Status;
+  status?: $Enums.Status | Array<$Enums.Status>;
 }
 
 export enum Status {
@@ -45,15 +50,15 @@ export interface EntityType {
 }
 
 export interface EntityWithStatusType extends EntityType {
-  status: Status;
+  status: $Enums.Status;
 }
 
-export interface EditEntityType {
-  id?: string;
+export interface EntityDataWithStatusType {
+  status: $Enums.Status;
 }
 
-export interface EditEntityWithStatusType extends EditEntityType {
-  status?: Status | Status[];
+export interface EditEntityWithStatusType {
+  status?: $Enums.Status;
 }
 
 export type DateFilter = {

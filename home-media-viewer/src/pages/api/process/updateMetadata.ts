@@ -15,20 +15,22 @@ const threadCount = Math.floor(os.availableParallelism() / 2);
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
 
+  console.log('background process called');
+
   switch (method) {
     case 'GET':
       if (!isBackgroundProcessEnabled) {
-        res.status(400).end(`Background process api disabled by config`);
+        res.status(400).send(`Background process api disabled by config`);
         break;
       }
 
       if (typeof processToken !== 'string' || processToken.length === 0) {
-        res.status(400).end(`Invalid process token settings - api disabled`);
+        res.status(400).send(`Invalid process token settings - api disabled`);
         break;
       }
 
       if (req.query['token'] !== processToken) {
-        res.status(403).end(`Invalid process token`);
+        res.status(403).send(`Invalid process token`);
         break;
       }
 
@@ -37,13 +39,13 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
         res.status(200).json(getApiResponse({ ok: true }));
       } catch (e) {
-        res.status(500).end(`${e}`);
+        res.status(500).send(`${e}`);
       }
 
       break;
     default:
       res.setHeader('Allow', ['GET']);
-      res.status(405).end(`Method ${method} Not Allowed`);
+      res.status(405).send(`Method ${method} Not Allowed`);
   }
 };
 
