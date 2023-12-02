@@ -1,8 +1,8 @@
-FROM node:20-alpine
+FROM node:20
 # Cron setup to run background process scheduled
-COPY --chmod=0777 ./home-media-viewer/runBackgroundProcess.sh /home/node/app/
-RUN echo "*/3 * * * * /home/node/app/runBackgroundProcess.sh >> /var/log/cron.log 2>&1" >> /var/spool/cron/crontabs/root
-RUN touch /var/log/cron.log
+# COPY --chmod=0777 ./home-media-viewer/runBackgroundProcess.sh /home/node/app/
+# RUN echo "*/3 * * * * /home/node/app/runBackgroundProcess.sh >> /var/log/cron.log 2>&1" >> /var/spool/cron/crontabs/root
+# RUN touch /var/log/cron.log
 
 # Prepare app
 WORKDIR /home/node/app
@@ -20,5 +20,5 @@ VOLUME /home/node/app
 USER root
 ENV PORT 3000
 
-CMD crond && npm run dev
-# CMD npm run dev
+# CMD crond && npm run dev
+CMD npm run dev
