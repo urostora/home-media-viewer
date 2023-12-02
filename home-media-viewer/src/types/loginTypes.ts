@@ -7,4 +7,6 @@ export interface LoginResponseDataType {
   name: string;
   email: string;
   isAdmin: boolean;
+  sessionExpiresOn: number;
+  sessionExpiresInSeconds: number;
 }

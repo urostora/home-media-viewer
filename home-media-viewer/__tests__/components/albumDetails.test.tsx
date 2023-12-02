@@ -6,11 +6,11 @@ import {rest} from 'msw'
 import {setupServer} from 'msw/node';
 
 import AlbumDetails from "@/components/content/albumDetails";
-import { getApiResponse } from '@/utils/apiHelpers';
+import { getApiResponse, getApiResponseWithData } from '@/utils/apiHelpers';
 
-import { AlbumDetailsType } from '@/types/api/albumTypes';
+import { AlbumExtendedDataType } from '@/types/api/albumTypes';
 
-const SAMPLE_DATA: AlbumDetailsType = {
+const SAMPLE_DATA: AlbumExtendedDataType = {
       id: 'qwer-1234',
       status: 'Active',
       name: 'Test album name',
@@ -36,12 +36,12 @@ const SAMPLE_DATA: AlbumDetailsType = {
 const server = setupServer(
   rest.get('/api/album/asdf-1234', (req, res, ctx) => {
     // return album details
-    return res(ctx.json(getApiResponse({ data: SAMPLE_DATA })))
+    return res(ctx.json(getApiResponseWithData<AlbumExtendedDataType>(SAMPLE_DATA)));
   }),
   rest.get('/api/album/qwer', (req, res, ctx) => {
     return res(ctx.status(400));
   }),
-)
+);
 
 beforeAll(() => server.listen())
 afterEach(() => server.resetHandlers())

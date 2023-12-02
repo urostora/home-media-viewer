@@ -1,5 +1,5 @@
-import { LoginRequestType } from '@/types/loginTypes';
-import { getApiResponse } from '@/utils/apiHelpers';
+import { LoginRequestType, LoginResponseDataType } from '@/types/loginTypes';
+import { getApiResponse, getApiResponseWithData } from '@/utils/apiHelpers';
 import { getRequestBodyObject } from '@/utils/apiHelpers';
 import { getIronSessionOptions } from '@/utils/sessionHelper';
 import { verifyPassword } from '@/utils/userHelper';
@@ -48,16 +48,14 @@ export default withIronSessionApiRoute(async function loginRoute(req, res) {
   };
   await req.session.save();
   console.log(`User ${user.name} logged in`);
+
   res.send(
-    getApiResponse({
-      ok: true,
-      data: {
-        name: user.name,
-        email: user.email,
-        isAdmin: user.isAdmin,
-        sessionExpiresOn: new Date().getTime() + sessionOptions.cookieOptions.ttl * 1000,
-        sessionExpiresInSeconds: sessionOptions.cookieOptions.ttl * 1000,
-      },
+    getApiResponseWithData<LoginResponseDataType>({
+      name: user.name,
+      email: user.email,
+      isAdmin: user.isAdmin,
+      sessionExpiresOn: new Date().getTime() + sessionOptions.cookieOptions.ttl * 1000,
+      sessionExpiresInSeconds: sessionOptions.cookieOptions.ttl * 1000,
     }),
   );
 }, getIronSessionOptions());

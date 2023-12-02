@@ -3,10 +3,11 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import path from 'path';
 import * as fs from 'node:fs';
 
-import { getApiResponse } from '@/utils/apiHelpers';
+import { getApiResponseEntityList, getApiResponseWithData } from '@/utils/apiHelpers';
 import { apiOnlyWithAdminUsers } from '@/utils/auth/apiHoc';
 import { ALBUM_PATH, getFiles } from '@/utils/fileHelper';
 import { getAlbums } from '@/utils/albumHelper';
+import { BrowseResult, BrowseResultFile } from '@/types/api/browseTypes';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
@@ -20,13 +21,13 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       const fullPath = path.join(baseDir, relativePath);
 
       if (!fs.existsSync(fullPath)) {
-        res.status(404).json(getApiResponse(`${relativePath} not found`));
+        res.status(404).send(`${relativePath} not found`);
         return;
       }
 
       const fullPathStats = fs.statSync(fullPath);
       if (!fullPathStats.isDirectory()) {
-        res.status(404).json(getApiResponse(`${relativePath} is not a directory`));
+        res.status(404).send(`${relativePath} is not a directory`);
         return;
       }
 
@@ -64,7 +65,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
       const directoryContentNames = fs.readdirSync(fullPath);
 
-      const contentList = directoryContentNames.map((name) => {
+      const contentList = directoryContentNames.map((name: string): BrowseResultFile => {
         const filePathFull = path.join(fullPath, name);
         const fileStats = fs.statSync(filePathFull);
 
@@ -103,16 +104,14 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       });
 
       const results = {
-        data: {
-          relativePath: relativePath,
-          storedDirectory: storedDirectoryObject,
-          albumExactly,
-          albumContains,
-          content: contentList,
-        },
+        relativePath: relativePath,
+        storedDirectory: storedDirectoryObject,
+        albumExactly,
+        albumContains,
+        content: contentList,
       };
 
-      res.status(200).json(getApiResponse(results));
+      res.status(200).json(getApiResponseWithData<BrowseResult>(results));
       break;
     }
     default:

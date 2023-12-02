@@ -1,4 +1,11 @@
-import { AlbumAddType, AlbumResultType, AlbumSearchType, AlbumUpdateType } from '@/types/api/albumTypes';
+import {
+  AlbumAddType,
+  AlbumDataType,
+  AlbumExtendedDataType,
+  AlbumResultType,
+  AlbumSearchType,
+  AlbumUpdateType,
+} from '@/types/api/albumTypes';
 import { $Enums, Album, AlbumSourceType, Prisma, User } from '@prisma/client';
 import fs from 'fs';
 import pathModule from 'path';
@@ -6,6 +13,10 @@ import { ALBUM_PATH, loadMetadata, syncFilesInAlbumAndFile } from './fileHelper'
 
 import prisma from '@/utils/prisma/prismaImporter';
 import { getFileThumbnailInBase64 } from './thumbnailHelper';
+import { DataValidatorSchema, statusValues } from './dataValidator';
+import { EntityListResult } from '@/types/api/generalTypes';
+import { getSimpleValueOrInFilter } from './api/searchParameterHelper';
+import { HmvError } from './apiHelpers';
 
 let isAppExiting = false;
 
@@ -13,7 +24,87 @@ process.on('SIGTERM', () => {
   isAppExiting = true;
 });
 
-export const getAlbums = async (params: AlbumSearchType) => {
+const ALBUM_SOURCE_TYPE_VALUES = ['File', 'Ftp'];
+
+export const albumSearchDataSchema: DataValidatorSchema = [
+  { field: 'name' },
+  { field: 'basePathContains' },
+  { field: 'basePath' },
+  { field: 'user' },
+  { field: 'status', valuesAllowed: statusValues },
+];
+
+export const albumAddDataSchema: DataValidatorSchema = [
+  { field: 'path', isRequired: true },
+  { field: 'name' },
+  { field: 'status', valuesAllowed: ALBUM_SOURCE_TYPE_VALUES },
+];
+
+export const albumUpdateDataSchema: DataValidatorSchema = [
+  { field: 'name' },
+  { field: 'status', valuesAllowed: statusValues },
+];
+
+export const getAlbum = async (id: string, onlyActive: boolean = true): Promise<AlbumExtendedDataType | null> => {
+  const statusFilter = onlyActive ? { in: [$Enums.Status.Active, $Enums.Status.Disabled] } : undefined;
+  const album = await prisma.album.findFirst({
+    where: { id, status: statusFilter },
+    select: {
+      id: true,
+      status: true,
+      name: true,
+      basePath: true,
+      sourceType: true,
+      connectionString: true,
+      files: {
+        where: {
+          status: 'Active',
+          metadataStatus: 'Processed',
+          isDirectory: false,
+        },
+        take: 1,
+        select: {
+          id: true,
+        },
+      },
+      users: { select: { id: true, name: true, isAdmin: true }, orderBy: { name: 'asc' } },
+    },
+  });
+
+  if (album === null) {
+    return null;
+  }
+
+  // collect file statistics
+  // get file processing informations
+  const fileStatus = await prisma.file.groupBy({
+    where: {
+      albums: {
+        some: {
+          id: album.id,
+        },
+      },
+    },
+    by: ['metadataStatus'],
+    _count: {
+      id: true,
+    },
+  });
+
+  const fileStatusData = fileStatus.map((fs) => {
+    return {
+      metadataStatus: fs.metadataStatus,
+      fileCount: fs._count.id,
+    };
+  });
+
+  return {
+    ...album,
+    fileStatus: fileStatusData,
+  };
+};
+
+export const getAlbums = async (params: AlbumSearchType): Promise<EntityListResult<AlbumDataType>> => {
   const usersFilter =
     typeof params.user !== 'string'
       ? undefined
@@ -24,25 +115,27 @@ export const getAlbums = async (params: AlbumSearchType) => {
         };
 
   const filter: Prisma.AlbumWhereInput = {
-    id: params.id ?? undefined,
-    name: typeof params?.name === 'string' ? { contains: params?.name } : undefined,
+    id: getSimpleValueOrInFilter<string>(params?.id),
+    name: getSimpleValueOrInFilter<string>(params?.name),
     basePath:
       typeof params.basePath === 'string'
         ? { equals: params.basePath }
         : typeof params.basePathContains === 'string'
         ? { contains: params.basePath }
         : undefined,
-    sourceType: params.sourceType ?? undefined,
-    status: params.status ?? { in: ['Active', 'Disabled'] },
+    status: getSimpleValueOrInFilter<$Enums.Status>(params?.status) ?? { in: ['Active', 'Disabled'] },
     users: usersFilter,
   };
+
+  const take = params.take === 0 ? undefined : params.take ?? 10;
+  const skip = params.skip ?? 0;
 
   const results = await prisma.$transaction([
     prisma.album.count({ where: filter }),
     prisma.album.findMany({
       where: filter,
-      take: params.take === 0 ? undefined : params.take ?? 10,
-      skip: params.skip ?? 0,
+      take,
+      skip,
       select: {
         id: true,
         status: true,
@@ -80,18 +173,34 @@ export const getAlbums = async (params: AlbumSearchType) => {
   return {
     data: results[1],
     count: results[0],
+    take,
+    skip,
   };
 };
 
-export const checkAlbumData = async (data: AlbumUpdateType, currentId: string | null = null): Promise<void> => {
-  const { name = null, status = null } = data;
+export const checkAlbumData = async (
+  data: AlbumUpdateType & { basePath?: string },
+  currentId: string | null = null,
+): Promise<void> => {
+  const { name = null, basePath } = data;
 
   const uniqueFilters: Prisma.AlbumWhereInput[] = [];
   if (typeof name === 'string') {
     if (name.length === 0) {
-      throw Error('Parameter "name" is empty');
+      throw new HmvError('Parameter "name" is empty', { isPublic: true });
     }
     uniqueFilters.push({ name });
+  }
+
+  if (typeof basePath === 'string') {
+    if (basePath.length === 0) {
+      throw new HmvError('Parameter "basePath" is empty', { isPublic: true });
+    }
+    uniqueFilters.push({ basePath });
+  }
+
+  if (uniqueFilters.length === 0) {
+    return;
   }
 
   const notFilter: { id?: string } = {};
@@ -99,33 +208,27 @@ export const checkAlbumData = async (data: AlbumUpdateType, currentId: string | 
     notFilter.id = currentId;
   }
 
-  let statusFilter: $Enums.Status[] = ['Active', 'Disabled'];
-  if (typeof status === 'string') {
-    statusFilter = [status];
-  } else if (Array.isArray(status)) {
-    statusFilter = status;
-  }
-
-  statusFilter = Prisma.validator<$Enums.Status[]>()(statusFilter);
-
   // check if user exists with same name or email
   if (uniqueFilters.length > 0) {
-    const existingUser = await prisma.album.findFirst({
+    const existingOtherAlbum = await prisma.album.findFirst({
       where: {
         AND: [
           {
             status: {
-              in: statusFilter,
+              in: ['Active', 'Disabled'],
             },
           },
         ],
         OR: uniqueFilters,
         NOT: notFilter,
       },
+      select: { id: true },
     });
 
-    if (existingUser != null) {
-      throw Error(`Album with name ${name} already exists`);
+    if (existingOtherAlbum != null) {
+      throw new HmvError(`Album with same name or path already exists (id: ${existingOtherAlbum.id})`, {
+        isPublic: true,
+      });
     }
   }
 };
@@ -218,8 +321,8 @@ export const getAlbumsContainingPath = async (path: string): Promise<Album[]> =>
 };
 
 export const addAlbum = async (data: AlbumAddType): Promise<Album> => {
-  if (typeof data?.path !== 'string') {
-    throw Error('Parameter "path" must be a non-empty string');
+  if (typeof data?.path !== 'string' || data.path.length === 0) {
+    throw new HmvError('Parameter "path" must be a non-empty string', { isPublic: true });
   }
 
   const finalPath = data.path.startsWith('/') ? data.path : `${process.env.APP_ALBUM_ROOT_PATH}/${data.path}`;
@@ -230,28 +333,25 @@ export const addAlbum = async (data: AlbumAddType): Promise<Album> => {
     const stat = fs.statSync(finalPath);
 
     if (!stat.isDirectory()) {
-      throw Error(`"path" (${finalPath}) is not directory`);
+      throw new HmvError(`"path" (${finalPath}) is not directory`, { isPublic: true });
     }
 
     directoryName = pathModule.basename(finalPath);
   } catch {
-    throw Error(`"path" (${finalPath}) not found`);
+    throw new HmvError(`"path" (${finalPath}) not found`, { isPublic: true });
   }
 
-  const existingAlbum = await prisma.album.findFirst({ where: { basePath: finalPath } });
-  if (existingAlbum != null) {
-    throw Error(`Album with "path" (${finalPath}) already exists`);
-  }
+  // const existingAlbum = await prisma.album.findFirst({ where: { basePath: finalPath } });
+  // if (existingAlbum != null) {
+  //   throw new HmvError(`Album with "path" (${finalPath}) already exists`, { isPublic: true });
+  // }
 
   // get parent album
   const albumsContainingThisDirectory = await getAlbumsContainingPath(finalPath);
 
   const albumName = typeof data?.name === 'string' ? data.name : directoryName;
 
-  const albumWithSameName = await prisma.album.findFirst({ where: { name: albumName } });
-  if (albumWithSameName != null) {
-    throw Error(`Album with name "${albumName}" already exists`);
-  }
+  await checkAlbumData({ name: albumName, basePath: finalPath });
 
   const newAlbum = await prisma.album.create({
     data: {
@@ -276,11 +376,9 @@ export const addAlbum = async (data: AlbumAddType): Promise<Album> => {
   return newAlbum;
 };
 
-export const updateAlbum = async (data: AlbumUpdateType) => {
-  const { id = null } = data;
-
-  if (typeof id !== 'string') {
-    throw Error('Parameter "id" must be a non-empty string');
+export const updateAlbum = async (id: string, data: AlbumUpdateType) => {
+  if (typeof id !== 'string' || id.length === 0) {
+    throw new HmvError('Parameter "id" must be a non-empty string');
   }
 
   const user = await prisma.album.findFirst({ where: { id } });
@@ -316,14 +414,8 @@ export const updateAlbum = async (data: AlbumUpdateType) => {
   return updatedAlbum;
 };
 
-export const deleteAlbum = async (id: string) => {
-  const album = await prisma.album.findFirst({ where: { id, status: { in: ['Active', 'Disabled'] } } });
-
-  if (album == null) {
-    throw Error(`Album not found with id ${id}`);
-  }
-
-  await prisma.album.update({ where: { id }, data: { status: 'Deleted' } });
+export const deleteAlbum = async (id: string): Promise<AlbumDataType | null> => {
+  return await prisma.album.update({ where: { id }, data: { status: 'Deleted' } });
 };
 
 export const syncAlbumFiles = async (albumId: string) => {

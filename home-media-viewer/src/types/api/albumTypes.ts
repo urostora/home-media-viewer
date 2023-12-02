@@ -1,16 +1,18 @@
-import { AlbumSourceType, Status } from '@prisma/client';
-import type { EditEntityWithStatusType, StatusSearchType } from './generalTypes';
+import { $Enums, AlbumSourceType, Status } from '@prisma/client';
+import type { EditEntityWithStatusType, EntityDataWithStatusType, EntityType, StatusSearchType } from './generalTypes';
+import { UserConnectedDataType } from './userTypes';
 
 export interface AlbumSearchType extends StatusSearchType {
   name?: string;
   basePathContains?: string;
   basePath?: string;
-  sourceType?: AlbumSourceType;
   user?: string;
+  status?: $Enums.Status;
 }
 
 export interface AlbumUpdateType extends EditEntityWithStatusType {
   name?: string;
+  status?: Status;
 }
 
 export interface AlbumAddType {
@@ -34,12 +36,19 @@ export interface AlbumDetailsFileStatusType {
   metadataStatus: string;
   fileCount: number;
 }
-export interface AlbumDetailsType {
-  id?: string;
-  status?: Status;
-  name?: string;
-  sourceType?: string;
-  basePath?: string;
-  connectionString?: string;
-  fileStatus?: AlbumDetailsFileStatusType[];
+export interface AlbumDataType extends EntityDataWithStatusType {
+  name: string;
+  sourceType: string;
+  connectionString: string;
+  basePath: string;
+  parentAlbumId: string | null;
+}
+
+export interface AlbumExtendedDataType extends AlbumDataType {
+  fileStatus: AlbumDetailsFileStatusType[];
+  users?: UserConnectedDataType[];
+}
+
+export interface AlbumConnectedData extends EntityType {
+  name: string;
 }

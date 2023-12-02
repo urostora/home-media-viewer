@@ -54,7 +54,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       } else {
         // edit album
         try {
-          await updateAlbum(putData);
+          await updateAlbum(id, putData);
           res.status(200).json(getApiResponse({ id }));
         } catch (e) {
           res.status(400).end(`${e}`);

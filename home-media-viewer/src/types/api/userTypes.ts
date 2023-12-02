@@ -1,4 +1,5 @@
-import type { EditEntityWithStatusType, StatusSearchType, EntityWithStatusType } from './generalTypes';
+import { AlbumConnectedData } from './albumTypes';
+import type { EditEntityWithStatusType, StatusSearchType, EntityType } from './generalTypes';
 
 export interface UserSearchType extends StatusSearchType {
   name?: string | Array<string>;
@@ -19,10 +20,17 @@ export interface UserEditType extends EditEntityWithStatusType {
   isAdmin?: boolean;
 }
 
-export interface UserDataType extends EntityWithStatusType {
+export interface UserConnectedDataType extends EntityType {
   name: string;
-  email: string;
   isAdmin: boolean;
+}
+
+export interface UserDataType extends UserConnectedDataType {
+  email: string;
+}
+
+export interface UserExtendedDataType extends UserDataType {
+  albums: AlbumConnectedData[];
 }
 
 export interface UserAlbumConnectType {

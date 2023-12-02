@@ -21,9 +21,17 @@ export interface GeneralResponseWithData<T> extends GeneralResponse {
   data?: T;
 }
 
+export interface EntityListResult<T> {
+  count: number;
+  take?: number;
+  skip: number;
+  data: Array<T>;
+  debug?: DebugType;
+}
+
 export interface GeneralEntityListResponse<T> extends GeneralResponse {
   count: number;
-  take: number;
+  take?: number;
   skip: number;
   data: Array<T>;
 }
@@ -60,7 +68,7 @@ export interface EntityWithStatusType extends EntityType {
   status: $Enums.Status;
 }
 
-export interface EntityDataWithStatusType {
+export interface EntityDataWithStatusType extends EntityType {
   status: $Enums.Status;
 }
 

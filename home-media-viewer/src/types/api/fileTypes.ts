@@ -22,7 +22,7 @@ export interface FileMetadataType {
   stringValue: string | null;
   intValue: number | null;
   floatValue: number | null;
-  dateValue: string | null;
+  dateValue: Date | null;
   latitude: number | null;
   longitude: number | null;
 }
@@ -34,17 +34,16 @@ export interface FileResultType {
   name: string;
   extension: string;
   isDirectory: boolean;
-  createdAt: string;
-  modifiedAt: string;
-  contentDate: string | null;
+  createdAt: Date;
+  modifiedAt: Date;
+  contentDate: Date | null;
   size: number | null;
   hash: string | null;
   metadataStatus: MetadataProcessingStatus;
-  metadataProcessedAt: string | null;
+  metadataProcessedAt: Date | null;
   metadataProcessingError: string | null;
   thumbnailStatus: MetadataProcessingStatus;
-  thumbnailProcessedAt: string | null;
-  albumId: string;
+  thumbnailProcessedAt: Date | null;
   parentFileId: string | null;
   metas: FileMetadataType[];
   thumbnail: string | null;

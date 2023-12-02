@@ -1,6 +1,6 @@
 import { useState, useEffect, ReactElement } from 'react';
 
-import { AlbumDetailsType } from '@/types/api/albumTypes';
+import { AlbumDataType } from '@/types/api/albumTypes';
 import { apiAlbumDetails } from '@/utils/frontend/dataSource/album';
 
 import hmvStyle from '@/styles/hmv.module.scss';
@@ -12,7 +12,7 @@ export type AlbumDetailsProps = {
 const AlbumDetails = (props: AlbumDetailsProps): ReactElement => {
     const { albumId } = props;
 
-    const [ albumData, setAlbumData ] = useState<AlbumDetailsType | null>(null);
+    const [ albumData, setAlbumData ] = useState<AlbumDataType | null>(null);
     const [ isLoading, setIsLoading ] = useState<boolean>(true);
     const [ error, setError ] = useState<string | null>(null);
 

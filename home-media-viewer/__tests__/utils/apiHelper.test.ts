@@ -1,6 +1,7 @@
-import { GeneralResponse } from '@/types/api/generalTypes';
-import { getApiResponse, getApiResponseWithData } from '@/utils/apiHelpers';
+import { EntityListResult, EntityWithStatusType, GeneralResponse } from '@/types/api/generalTypes';
+import { getApiResponse, getApiResponseWithData, getApiResponseWithEntityList } from '@/utils/apiHelpers';
 import { getDateObject } from '@/utils/utils';
+import { $Enums } from '@prisma/client';
 
 const DATE_TRESHOLD_IN_MILLISEC = 1000;
 
@@ -64,24 +65,6 @@ describe('utils/apiHelper/getApiResponse', () => {
     expect(typeof result?.id).toBe('string');
     expect(result.id).toBe(content.id);
   });
-
-  it('api response with count', () => {
-    const dateBefore = new Date();
-
-    const content = {
-      count: 1234,
-    };
-
-    const result = getApiResponse(content);
-
-    expect(typeof result).toBe('object');
-
-    checkBasicApiResponseData(result, dateBefore);
-
-    // count
-    expect(typeof result?.count).toBe('number');
-    expect(result.count).toBe(content.count);
-  });
 });
 
 describe('utils/apiHelper/getApiResponseWithData', () => {
@@ -89,11 +72,11 @@ describe('utils/apiHelper/getApiResponseWithData', () => {
     const dateBefore = new Date();
 
     const data = {
-      id: 1234,
-      name: 'Data name',
+      id: '1234',
+      status: $Enums.Status.Active,
     };
 
-    const result = getApiResponseWithData(data);
+    const result = getApiResponseWithData<EntityWithStatusType>(data);
 
     expect(typeof result).toBe('object');
 
@@ -102,5 +85,40 @@ describe('utils/apiHelper/getApiResponseWithData', () => {
     // check data
     expect(typeof result?.data).toEqual('object');
     expect(result.data).toEqual(data);
+  });
+});
+
+describe('utils/apiHelper/getApiResponseWithData', () => {
+  it('api response with data', () => {
+    const dateBefore = new Date();
+
+    const data: EntityListResult<EntityWithStatusType> = {
+      count: 2,
+      skip: 0,
+      take: 10,
+      data: [
+        {
+          id: '1234',
+          status: $Enums.Status.Active,
+        },
+        {
+          id: '5678',
+          status: $Enums.Status.Disabled,
+        },
+      ],
+    };
+
+    const result = getApiResponseWithEntityList<EntityWithStatusType>(data);
+
+    expect(typeof result).toBe('object');
+
+    checkBasicApiResponseData(result, dateBefore);
+
+    // check data
+    expect(result.count).toBe(2);
+    expect(result.take).toBe(10);
+    expect(result.skip).toBe(0);
+    expect(typeof result?.data).toEqual('object');
+    expect(result.data).toEqual(data.data);
   });
 });

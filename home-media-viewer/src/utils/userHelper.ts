@@ -1,10 +1,12 @@
-import { UserEditType } from '@/types/api/userTypes';
-import { Prisma, User } from '@prisma/client';
+import { UserDataType, UserEditType, UserExtendedDataType, UserSearchType } from '@/types/api/userTypes';
+import { $Enums, Prisma, User } from '@prisma/client';
 import bcrypt from 'bcrypt';
 
 import prisma from '@/utils/prisma/prismaImporter';
 import { DataValidatorSchema, statusValues } from './dataValidator';
 import { HmvError } from './apiHelpers';
+import { EntityListResult } from '@/types/api/generalTypes';
+import { getSimpleValueOrInFilter, getStringContainOrInFilter } from './api/searchParameterHelper';
 
 const SALT_ROUNDS = 10;
 
@@ -82,6 +84,71 @@ export const checkUserData = async (data: UserEditType, currentId: string | null
       throw new HmvError(`User with name ${name} or email ${email} already exists`, { isPublic: true });
     }
   }
+};
+
+export const searchUser = async (param: UserSearchType): Promise<EntityListResult<UserDataType>> => {
+  const filter: Prisma.UserWhereInput = {
+    id: getSimpleValueOrInFilter<string>(param?.id),
+    name: getStringContainOrInFilter(param?.name),
+    email: getStringContainOrInFilter(param?.email),
+    status: getSimpleValueOrInFilter<$Enums.Status>(param?.status) ?? { in: ['Active', 'Disabled'] },
+    isAdmin: param.isAdmin,
+  };
+
+  const take = param.take === 0 ? undefined : param.take ?? 10;
+  const skip = param.skip ?? 0;
+
+  const results = await prisma.$transaction([
+    prisma.user.count({ where: filter }),
+    prisma.user.findMany({
+      where: filter,
+      take,
+      skip,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        status: true,
+        isAdmin: true,
+      },
+    }),
+  ]);
+
+  return {
+    data: results[1],
+    count: results[0],
+    skip,
+    take,
+    debug: {
+      filter: filter,
+    },
+  };
+};
+
+export const getUserData = async (id: string): Promise<UserExtendedDataType | null> => {
+  const user = await prisma.user.findFirst({
+    where: {
+      id: id,
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      status: true,
+      albums: {
+        select: {
+          id: true,
+          name: true,
+        },
+        orderBy: {
+          name: 'asc',
+        },
+      },
+      isAdmin: true,
+    },
+  });
+
+  return user;
 };
 
 export const addUser = async (data: UserEditType): Promise<User> => {

@@ -21,8 +21,8 @@ export interface BrowseResultFile {
   pathRelativeToAlbum: string | null;
   isDirectory: boolean;
   size: number;
-  dateCreatedOn: string;
-  dateModifiedOn: string;
+  dateCreatedOn: Date;
+  dateModifiedOn: Date;
   /** file object stored in database */
   storedFile: FileResultType | null;
   storedAlbum: AlbumResultType | null;

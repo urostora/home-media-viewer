@@ -1,12 +1,14 @@
-import { Album, File, MetadataProcessingStatus, Prisma } from '@prisma/client';
+import { $Enums, Album, File, MetadataProcessingStatus, Prisma } from '@prisma/client';
 import fs from 'fs';
 import path from 'path';
 import { getFileProcessor } from '@/utils/fileProcessor/processorFactory';
-import { FileSearchType } from '@/types/api/fileTypes';
+import { FileResultType, FileSearchType } from '@/types/api/fileTypes';
 import { getDateTimeFilter } from '@/utils/utils';
 import { getFileThumbnailInBase64 } from '@/utils/thumbnailHelper';
 
 import prisma from '@/utils/prisma/prismaImporter';
+import { EntityListResult } from '@/types/api/generalTypes';
+import { getSimpleValueOrInFilter } from './api/searchParameterHelper';
 
 export const ALBUM_PATH = process.env.APP_ALBUM_ROOT_PATH ?? '/mnt/albums';
 
@@ -135,7 +137,10 @@ export const updateThumbnailDate = async (file: File) => {
   });
 };
 
-export const getFiles = async (params: FileSearchType, returnThumbnails: boolean = false) => {
+export const getFiles = async (
+  params: FileSearchType,
+  returnThumbnails: boolean = false,
+): Promise<EntityListResult<FileResultType>> => {
   const albumSearchParams =
     typeof params?.user !== 'string'
       ? params?.album?.id
@@ -176,11 +181,14 @@ export const getFiles = async (params: FileSearchType, returnThumbnails: boolean
     }
   }
 
+  const take = params?.take === 0 ? undefined : params.take ?? undefined;
+  const skip = params.skip ?? 0;
+
   const filter: Prisma.FileWhereInput = {
     parentFileId: parentFileIdFilter,
-    status: params?.status,
+    status: getSimpleValueOrInFilter<$Enums.Status>(params?.status) ?? { in: ['Active', 'Disabled'] },
     isDirectory: params?.isDirectory,
-    name: typeof params?.name !== 'string' ? undefined : { contains: params.name },
+    name: getSimpleValueOrInFilter<string>(params.name),
     extension:
       params?.extension ??
       (params?.contentType === undefined || params.contentType === 'all'
@@ -204,8 +212,8 @@ export const getFiles = async (params: FileSearchType, returnThumbnails: boolean
     prisma.file.count({ where: filter }),
     prisma.file.findMany({
       where: filter,
-      take: params?.take === 0 ? undefined : params.take ?? undefined,
-      skip: params.skip ?? 0,
+      take,
+      skip,
       include: {
         metas: {
           select: {
@@ -243,9 +251,10 @@ export const getFiles = async (params: FileSearchType, returnThumbnails: boolean
   return {
     count: results[0],
     data: fileList,
+    take,
+    skip,
     debug: {
-      params,
-      finalFilter: filter,
+      filter,
     },
   };
 };

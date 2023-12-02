@@ -1,48 +1,32 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 import { getRequestBodyObject, getApiResponse, getApiResponseWithData, handleApiError } from '@/utils/apiHelpers';
-import { UserDataType, UserEditType } from '@/types/api/userTypes';
-import { deleteUser, updateUser, userEditDataSchema } from '@/utils/userHelper';
+import { UserDataType, UserEditType, UserExtendedDataType } from '@/types/api/userTypes';
+import { deleteUser, getUserData, updateUser, userEditDataSchema } from '@/utils/userHelper';
 import { apiOnlyWithAdminUsers } from '@/utils/auth/apiHoc';
 
-import prisma from '@/utils/prisma/prismaImporter';
 import { validateData } from '@/utils/dataValidator';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const { method, query } = req;
 
-  if (typeof query?.id !== 'string') {
-    res.status(400).write('Invalid identifier');
+  if (typeof query?.id !== 'string' || query.id.length === 0) {
+    res.status(400).write(`Invalid identifier ${query?.id}`);
     res.end();
     return;
   }
 
   const id = query.id as string;
 
-  const user = await prisma.user.findFirst({
-    where: {
-      id: id,
-    },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      status: true,
-      albums: true,
-      isAdmin: true,
-    },
-  });
-
-  if (user === null) {
-    res.status(404).write(`User not found with id ${id}`);
-    res.end();
-    return;
-  }
-
   switch (method) {
     case 'GET': {
-      // return user data
-      res.status(200).json(getApiResponseWithData<UserDataType | null>(user));
+      try {
+        const result = await getUserData(id);
+        // return user data
+        res.status(200).json(getApiResponseWithData<UserExtendedDataType | null>(result));
+      } catch (e) {
+        handleApiError(res, 'get user', e, { id });
+      }
       break;
     }
     case 'PATCH':

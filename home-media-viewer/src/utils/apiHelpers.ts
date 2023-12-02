@@ -1,5 +1,6 @@
 import {
   DebugType,
+  EntityListResult,
   EntityType,
   GeneralEntityListResponse,
   GeneralResponse,
@@ -8,14 +9,14 @@ import {
 } from '@/types/api/generalTypes';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
-export function getRequestBodyObject<T>(req: NextApiRequest, res?: NextApiResponse): T | null {
+export function getRequestBodyObject<T>(req: NextApiRequest, res?: NextApiResponse): T {
   let ret: object | null = null;
   if (typeof req.body === 'string') {
     try {
       const parsedData = JSON.parse(req.body);
       ret = parsedData;
     } catch (ex) {
-      return null;
+      throw new HmvError('Could not parse JSON body', { isPublic: true });
     }
   } else if (typeof req.body === 'object') {
     ret = req.body;
@@ -23,7 +24,7 @@ export function getRequestBodyObject<T>(req: NextApiRequest, res?: NextApiRespon
 
   if (ret == null && res != null) {
     // send bad request response
-    res.status(400).end(`Could not parse body as JSON object`);
+    throw new HmvError('Could not parse JSON body', { isPublic: true });
   }
 
   return ret as T;
@@ -95,18 +96,15 @@ export function getApiResponseEntityList<T>(
 }
 
 export function getApiResponseWithEntityList<T>(
-  data: Array<T>,
-  elementCount: number = 0,
-  take: number = 10,
-  skip: number = 0,
+  data: EntityListResult<T>,
   debug?: DebugType,
 ): GeneralEntityListResponse<T> {
   return {
     ...getApiResponse({}),
-    data,
-    count: elementCount,
-    take,
-    skip,
+    data: data.data,
+    count: data.count,
+    take: data.take,
+    skip: data.skip,
     debug,
   };
 }
@@ -139,7 +137,7 @@ export const handleApiError = (
   response: NextApiResponse,
   task: string,
   error: unknown = undefined,
-  data: object | undefined = undefined,
+  data: object | undefined | null = undefined,
 ): void => {
   let logMessage = `Error in ${task}`;
   let publicError: string | null = null;
