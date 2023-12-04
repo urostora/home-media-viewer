@@ -2,7 +2,7 @@
  * @jest-environment puppeteer
  */
 
-import type { Page, Browser } from 'puppeteer';
+import type { Page } from 'puppeteer';
 
 describe('HMV Login page', () => {
   let testPage: Page;
