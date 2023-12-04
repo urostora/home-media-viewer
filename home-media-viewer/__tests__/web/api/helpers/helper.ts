@@ -46,19 +46,22 @@ export const fetchResultFromApi = async (
   return fetch(url, fetchOptions);
 };
 
-export const getLoginCookie = async (): Promise<string | undefined> => {
+export const getLoginCookie = async (email?: string, password?: string): Promise<string | undefined> => {
   if (typeof loginCookie === 'undefined') {
     const url = getApiUrl('login');
 
     const response = await fetch(url, {
-      body: JSON.stringify({ email: adminEmail, password: adminPassword }),
+      body: JSON.stringify({ email: email ?? adminEmail, password: password ?? adminPassword }),
       method: 'POST',
     });
 
+    if (!response.ok) {
+      throw `Could not get login cookie - returned status ${response.status}`;
+    }
+
     const setCookieValue = response?.headers?.get('set-cookie');
     if (typeof setCookieValue != 'string' || setCookieValue.length < 50) {
-      loginCookie = null;
-      throw 'Could not get login cookie - 1';
+      throw 'Could not get login cookie - no set-cookie header found';
     }
 
     const groups = /(?<logincookie>home-media-viewer-user-cookie=[^;]+);/.exec(setCookieValue as string)?.groups;
@@ -66,7 +69,7 @@ export const getLoginCookie = async (): Promise<string | undefined> => {
     if (groups && groups['logincookie'].length > 50) {
       loginCookie = groups['logincookie'];
     } else {
-      loginCookie = null;
+      throw 'Login cookie invalid (too short or not found)';
     }
   }
 
