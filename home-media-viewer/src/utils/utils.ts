@@ -14,23 +14,19 @@ export const getDateObject = (dateTimeString: string | undefined | null): Date |
     return null;
   }
 
-  try {
-    const ret = new Date(
-      Number.parseInt(match.groups['year']),
-      Number.parseInt(match.groups['month'] ?? 1) - 1,
-      Number.parseInt(match.groups['day'] ?? 1),
-      Number.parseInt(match.groups['hour'] ?? 0),
-      Number.parseInt(match.groups['min'] ?? 0),
-      Number.parseInt(match.groups['sec'] ?? 0),
-    );
+  const ret = new Date(
+    Number.parseInt(match.groups['year']),
+    Number.parseInt(match.groups['month'] ?? 1) - 1,
+    Number.parseInt(match.groups['day'] ?? 1),
+    Number.parseInt(match.groups['hour'] ?? 0),
+    Number.parseInt(match.groups['min'] ?? 0),
+    Number.parseInt(match.groups['sec'] ?? 0),
+  );
 
-    return ret;
-  } catch (e) {
-    return null;
-  }
+  return ret;
 };
 
-export const getDateTimeFilter = (obj?: DateFilter): Prisma.DateTimeFilter | undefined => {
+export const getDateTimeFilter = (obj?: DateFilter | null): Prisma.DateTimeFilter | undefined => {
   if (typeof obj !== 'object') {
     return undefined;
   }
