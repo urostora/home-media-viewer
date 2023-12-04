@@ -11,28 +11,28 @@ import { getApiResponseWithData } from '@/utils/apiHelpers';
 import { AlbumExtendedDataType } from '@/types/api/albumTypes';
 
 const SAMPLE_DATA: AlbumExtendedDataType = {
-      id: 'qwer-1234',
-      status: 'Active',
-      name: 'Test album name',
-      sourceType: 'File',
-      basePath: 'albumRoot/album1',
-      connectionString: 'file://albumRoot/album1',
-      parentAlbumId: null,
-      fileStatus: [
-        {
-          metadataStatus: 'New',
-          fileCount: 1,
-        },
-        {
-          metadataStatus: 'Processed',
-          fileCount: 3,
-        },
-        {
-          metadataStatus: 'Failed',
-          fileCount: 2,
-        },
-      ]
-    };
+  id: 'qwer-1234',
+  status: 'Active',
+  name: 'Test album name',
+  sourceType: 'File',
+  basePath: 'albumRoot/album1',
+  connectionString: 'file://albumRoot/album1',
+  parentAlbumId: null,
+  fileStatus: [
+    {
+      metadataStatus: 'New',
+      fileCount: 1,
+    },
+    {
+      metadataStatus: 'Processed',
+      fileCount: 3,
+    },
+    {
+      metadataStatus: 'Failed',
+      fileCount: 2,
+    },
+  ]
+};
 
 const server = setupServer(
   rest.get('/api/album/asdf-1234', (req, res, ctx) => {
@@ -44,19 +44,25 @@ const server = setupServer(
   }),
 );
 
-beforeAll(() => server.listen())
-afterEach(() => server.resetHandlers())
-afterAll(() => server.close())
+beforeAll(() => server.listen());
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
 
 
-describe('AlbumDetails', () => {
-  it('Render AlbumDetails loading message', async () => {
+describe('component/contents/AlbumDetails', () => {
+  it('shows loading message at first render', async () => {
     render(<AlbumDetails albumId="qwer" />);
 
     screen.getByText(/Loading album details/i);
-  })
+  });
 
-  it('Render Album details with match', async () => {
+  it('show empty element without albumId set', async () => {
+    const { container } = render(<AlbumDetails />);
+
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it('show album found in database', async () => {
     render(<AlbumDetails albumId="asdf-1234" />);
 
     await screen.findByText('Name:', undefined, { timeout: 2000 });
@@ -68,9 +74,9 @@ describe('AlbumDetails', () => {
     screen.getByText(/New: 1/i)
     screen.getByText(/Processed: 3/i)
     screen.getByText(/Failed: 2/i)
-  })
+  });
 
-  it('Render AlbumDetails with nonexisting id', async () => {
+  it('show error when album not exists', async () => {
     render(<AlbumDetails albumId="qwer" />);
 
     await waitForElementToBeRemoved(() => screen.getByText(/Loading/i))
@@ -78,5 +84,5 @@ describe('AlbumDetails', () => {
     await screen.findByText(/Could not load/i, undefined, { timeout: 2000 })
 
     screen.getByText(/Could not load/i);
-  })
-})
+  });
+});
