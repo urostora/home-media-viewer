@@ -3,7 +3,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import path from 'path';
 import * as fs from 'node:fs';
 
-import { getApiResponseEntityList, getApiResponseWithData } from '@/utils/apiHelpers';
+import { getApiResponseWithData } from '@/utils/apiHelpers';
 import { apiOnlyWithAdminUsers } from '@/utils/auth/apiHoc';
 import { ALBUM_PATH, getFiles } from '@/utils/fileHelper';
 import { getAlbums } from '@/utils/albumHelper';
