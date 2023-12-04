@@ -6,7 +6,7 @@ import {rest} from 'msw'
 import {setupServer} from 'msw/node';
 
 import AlbumDetails from "@/components/content/albumDetails";
-import { getApiResponse, getApiResponseWithData } from '@/utils/apiHelpers';
+import { getApiResponseWithData } from '@/utils/apiHelpers';
 
 import { AlbumExtendedDataType } from '@/types/api/albumTypes';
 
@@ -17,6 +17,7 @@ const SAMPLE_DATA: AlbumExtendedDataType = {
       sourceType: 'File',
       basePath: 'albumRoot/album1',
       connectionString: 'file://albumRoot/album1',
+      parentAlbumId: null,
       fileStatus: [
         {
           metadataStatus: 'New',

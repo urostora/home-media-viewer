@@ -1,4 +1,4 @@
-import fetch from 'node-fetch';
+import fetch, { Response } from 'node-fetch';
 
 const APP_URL = process.env.APP_URL;
 const adminEmail = process.env.ADMIN_EMAIL;
@@ -32,13 +32,13 @@ export const fetchResultFromApi = async (
   const url = getApiUrl(path);
   const loginCookie = await getLoginCookie();
 
-  const cookiesHeader = loginCookie ? { Cookie: loginCookie } : {};
+  const cookiesHeader: { Cookie: string } | object = loginCookie ? { Cookie: loginCookie } : {};
 
   const fetchOptions = {
     body: data ? JSON.stringify(data) : undefined,
     method: method,
     headers: {
-      'Content-Type': data ? 'text/javascript' : '',
+      'Content-Type': data ? 'application/javascript' : '',
       ...cookiesHeader,
     },
   };

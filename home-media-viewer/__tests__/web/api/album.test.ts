@@ -1,7 +1,7 @@
 import { GeneralResponseWithData } from '@/types/api/generalTypes';
 import { fetchDataFromApi } from './helpers/helper';
 import { UserDataType } from '@/types/api/userTypes';
-import { AlbumDataType } from '@/types/api/albumTypes';
+import { AlbumDataType, AlbumUpdateType } from '@/types/api/albumTypes';
 import { getAlbumData } from './helpers/album.helper';
 
 const APP_ALBUM_ROOT_PATH = process.env.APP_ALBUM_ROOT_PATH;
@@ -110,5 +110,47 @@ describe('web/api/album', () => {
     expect(savedAlbum.sourceType).toBe('File');
     expect(savedAlbum.status).toBe('Active');
     expect(savedAlbum.name).toBe('testalbum0101');
+  });
+
+  it('update album', async () => {
+    if (typeof parentAlbumId !== 'string') {
+      throw Error('Could not create parent album');
+    }
+
+    const originalAlbumData = await getAlbumData(parentAlbumId);
+    if (originalAlbumData == null) {
+      throw Error('Could not get parent album data');
+    }
+
+    expect(originalAlbumData?.id).toBe(parentAlbumId);
+    expect(typeof originalAlbumData?.name).toBe('string');
+    expect(typeof originalAlbumData?.status).toBe('string');
+
+    const updateData: AlbumUpdateType = { name: originalAlbumData.name + '_mod', status: 'Disabled' };
+
+    const updateResult = await fetchDataFromApi<GeneralResponseWithData<AlbumDataType>>(
+      getExactAlbumPath(parentAlbumId),
+      updateData,
+      'PATCH',
+    );
+
+    expect(updateResult?.ok).toBe(true);
+    expect(typeof updateResult?.data).toBe('object');
+    expect(typeof updateResult?.data?.id).toBe('string');
+
+    if (typeof updateResult?.data?.id !== 'string') {
+      return;
+    }
+
+    const newAlbumData = await getAlbumData(parentAlbumId);
+    if (newAlbumData == null) {
+      throw Error('Could not get parent album data');
+    }
+
+    expect(newAlbumData?.id).toBe(parentAlbumId);
+    expect(typeof newAlbumData?.name).toBe('string');
+    expect(newAlbumData?.name).toBe(updateData.name);
+    expect(typeof newAlbumData?.status).toBe('string');
+    expect(newAlbumData?.status).toBe(updateData.status);
   });
 });
