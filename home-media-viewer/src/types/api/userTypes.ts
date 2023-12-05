@@ -34,6 +34,6 @@ export interface UserExtendedDataType extends UserDataType {
 }
 
 export interface UserAlbumConnectType {
-  userId?: string;
-  albumId?: string;
+  userId: string;
+  albumId: string;
 }

@@ -6,7 +6,7 @@ import {
   AlbumSearchType,
   AlbumUpdateType,
 } from '@/types/api/albumTypes';
-import { $Enums, Album, AlbumSourceType, Prisma, User } from '@prisma/client';
+import { $Enums, Album, AlbumSourceType, Prisma } from '@prisma/client';
 import fs from 'fs';
 import pathModule from 'path';
 import { ALBUM_PATH, loadMetadata, syncFilesInAlbumAndFile } from './fileHelper';
@@ -56,6 +56,7 @@ export const getAlbum = async (id: string, onlyActive: boolean = true): Promise<
       basePath: true,
       sourceType: true,
       connectionString: true,
+      parentAlbumId: true,
       files: {
         where: {
           status: 'Active',
@@ -142,6 +143,7 @@ export const getAlbums = async (params: AlbumSearchType): Promise<EntityListResu
         name: true,
         sourceType: true,
         basePath: true,
+        parentAlbumId: true,
         files: {
           where: {
             status: 'Active',
@@ -458,51 +460,47 @@ export const processAlbumFilesMetadata = async (
   }
 };
 
-export const addUserToAlbum = async (album: string | Album, user: string | User) => {
-  const albumEntity =
-    typeof album === 'string'
-      ? await prisma.album.findFirst({
-          where: { id: album, status: { in: ['Active', 'Disabled'] } },
-          include: { users: true },
-        })
-      : album;
+export const addUserToAlbum = async (album: string, user: string) => {
+  const albumEntity = await prisma.album.findFirst({
+    where: { id: album, status: { in: ['Active', 'Disabled'] } },
+    include: { users: true },
+  });
 
   if (albumEntity == null) {
-    throw Error(`Album not found with id ${album}`);
+    throw new HmvError(`Album not found with id ${album}`, { isPublic: true });
   }
 
-  const userEntity =
-    typeof user === 'string'
-      ? await prisma.user.findFirst({ where: { id: user, status: { in: ['Active', 'Disabled'] } } })
-      : user;
+  const userEntity = await prisma.user.findFirst({ where: { id: user, status: { in: ['Active', 'Disabled'] } } });
 
   if (userEntity == null) {
-    throw Error(`User not found with id ${user}`);
+    throw new HmvError(`User not found with id ${user}`, { isPublic: true });
+  }
+
+  if (albumEntity.users.find((u) => u.id === user)) {
+    return;
   }
 
   await prisma.album.update({ where: { id: albumEntity.id }, data: { users: { connect: { id: userEntity.id } } } });
 };
 
-export const removeUserFromAlbum = async (album: string | Album, user: string | User) => {
-  const albumEntity =
-    typeof album === 'string'
-      ? await prisma.album.findFirst({
-          where: { id: album, status: { in: ['Active', 'Disabled'] } },
-          include: { users: true },
-        })
-      : album;
+export const removeUserFromAlbum = async (album: string, user: string) => {
+  const albumEntity = await prisma.album.findFirst({
+    where: { id: album, status: { in: ['Active', 'Disabled'] } },
+    include: { users: true },
+  });
 
   if (albumEntity == null) {
-    throw Error(`Album not found with id ${album}`);
+    throw new HmvError(`Album not found with id ${album}`, { isPublic: true });
   }
 
-  const userEntity =
-    typeof user === 'string'
-      ? await prisma.user.findFirst({ where: { id: user, status: { in: ['Active', 'Disabled'] } } })
-      : user;
+  const userEntity = await prisma.user.findFirst({ where: { id: user, status: { in: ['Active', 'Disabled'] } } });
 
   if (userEntity == null) {
-    throw Error(`User not found with id ${user}`);
+    throw new HmvError(`User not found with id ${user}`, { isPublic: true });
+  }
+
+  if (!albumEntity.users.find((u) => u.id === user)) {
+    return;
   }
 
   await prisma.album.update({ where: { id: albumEntity.id }, data: { users: { disconnect: { id: userEntity.id } } } });
