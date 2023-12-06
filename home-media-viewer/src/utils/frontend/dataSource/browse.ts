@@ -7,6 +7,12 @@ export const apiBrowse = async (relativePath: string = ''): Promise<BrowseResult
   };
 
   const fetchResult = await fetch(`/api/browse?relativePath=${encodeURI(relativePath)}`, fetchArgs);
+
+  if (!fetchResult.ok) {
+    const errorText = await fetchResult.text();
+    throw Error(errorText);
+  }
+
   const resultData: GeneralResponseWithData<BrowseResult> = await fetchResult.json();
 
   if (!resultData.ok) {

@@ -42,7 +42,7 @@ const BrowserContentList = (props: BrowserContentListProps) => {
     }
 
     if (error !== null) {
-        return <>Error while loading content: {error.toString()}</>
+        return <div className={hmvStyle.errorContainer}>{error.toString()}</div>;
     }
 
     const onContentClosedHandler = () => {
