@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { HmvError, getApiResponse, getRequestBodyObject, handleApiError } from '@/utils/apiHelpers';
-import { FileSearchType } from '@/types/api/fileTypes';
+import { HmvError, getApiResponseWithEntityList, getRequestBodyObject, handleApiError } from '@/utils/apiHelpers';
+import { FileResultType, FileSearchType } from '@/types/api/fileTypes';
 import { getFiles } from '@/utils/fileHelper';
 import { withSessionRoute } from '@/utils/sessionRoute';
 
@@ -23,7 +23,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         }
 
         const results = await getFiles(postData, true);
-        res.status(200).json(getApiResponse(results));
+        res.status(200).json(getApiResponseWithEntityList<FileResultType>(results));
       } catch (e) {
         handleApiError(res, 'search files', e, { filter: postData });
       }
