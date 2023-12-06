@@ -11,7 +11,7 @@ export const apiLoadFiles = async (args: FileSearchType): Promise<FileResultType
     }),
   };
 
-  const fetchResult = await fetch('/api/file', fetchArgs);
+  const fetchResult = await fetch('/api/file/search', fetchArgs);
   const resultData: GeneralEntityListResponse<FileResultType> = await fetchResult.json();
 
   if (!resultData.ok) {
