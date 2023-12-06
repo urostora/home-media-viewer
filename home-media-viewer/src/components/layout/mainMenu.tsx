@@ -30,8 +30,15 @@ const MainMenu = () => {
                 {
                     authContext?.isAdmin === true
                     ? (<div className={`${hmvStyle.linkItem} ${(url.includes('/browse') ? hmvStyle.activeLinkItem : null)}`}>
-                            <Link href="/browse" onClick={closeMenu}>Browse</Link>
-                        </div>)
+                        <Link href="/browse" onClick={closeMenu}>Browse</Link>
+                    </div>)
+                    : null
+                }
+                {
+                    authContext?.isAdmin === true
+                    ? (<div className={`${hmvStyle.linkItem} ${(url.includes('/user') ? hmvStyle.activeLinkItem : null)}`}>
+                        <Link href="/user" onClick={closeMenu}>Users</Link>
+                    </div>)
                     : null
                 }
             </div>

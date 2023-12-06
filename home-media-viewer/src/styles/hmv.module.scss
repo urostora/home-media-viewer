@@ -515,6 +515,11 @@ $appTextColorAlternative: #2d9649;
     }
 }
 
+.generalListContainer {
+    margin: 3rem auto;
+    max-width: 90%;
+}
+
 .videoIcon {
     position: absolute;
     top: 50%;
@@ -543,6 +548,148 @@ select.roundedElement {
 .roundBorderedButtonElement:hover {
     background-color: $appTextColorAlternative;
     color: $appBackgroundAlternative;
+}
+
+.buttonElement {
+    padding: 4px;
+    margin-right: 5px;
+    border-radius: 3px;
+    border: 1px solid $appBorderColor;
+    background-color: $appBackgroundAlternative;
+    color: $appTextColorAlternative;
+}
+
+.buttonElement:hover {
+    background-color: $appTextColorAlternative;
+    color: $appBackgroundAlternative;
+}
+
+.buttonElement.primaryButton {
+    background-color: $appTextColorAlternative;
+    color: $appBackgroundAlternative;
+}
+
+.buttonElement.primaryButton:hover {
+    background-color: $appBackgroundAlternative;
+    color: $appTextColorAlternative;
+}
+
+// user list
+.userListContainer {
+    width: 100%;
+    // display: grid;
+    // grid-template-columns: 100px 100px 100px;
+    // grid-gap: 10px;
+
+    .isEditing {
+        border: black 1px solid;
+        border-radius: 5px;
+        padding: 1rem;
+    }
+
+    .row {
+        width: 100%;
+        display: flex;
+        flex-flow: row nowrap;
+        padding: 0.5rem;
+
+        .fullWidth {
+            width: 100%;
+        }
+
+        > div {
+            overflow-wrap: break-word;
+            margin-right: 2px;
+        }
+
+        input[type="text"],
+        input[type="email"] {
+            width: 100%;
+        }
+
+        .emailField,
+        .nameField,
+        .passwordField {
+            flex-grow: 1;
+            min-width: 130px;
+        }
+
+        .isAdminField {
+            flex-grow: 0;
+            min-width: 50px;
+            text-align: center;
+        }
+
+        .actionField {
+            flex-grow: 0;
+            min-width: 50px;
+        }
+
+        div.fullWidthField {
+            width: 100%;
+        }
+    }
+
+    .row.tableHeader {
+        font-weight: bold;
+    }
+
+    .row.isEditing {
+        flex-flow: row wrap;
+        line-height: 170%;
+
+        span {
+            display: inline-block;
+            width: 100%;
+        }
+    }
+
+    .albumConnectionContainer {
+        margin-top: 15px;
+        display: flex;
+        flex-flow: row wrap;
+        justify-content: space-between;
+
+        .connectionElement {
+            display: flex;
+            flex-flow: row nowrap;
+            justify-content: space-between;
+            align-content: center;
+            min-width: 200px;
+            width: 12rem;
+            margin-bottom: 5px;
+
+            > span {
+                flex-grow: 0;
+                overflow: hidden;
+            }
+
+            > input {
+                flex-grow: 1;
+                width: 40px;
+            }
+        }
+
+        .connectionElement.disabled span {
+            color: lightslategray
+        }
+
+    }
+}
+
+.errorContainer {
+    border: red 1px solid;
+    border-radius: 3px;
+    background-color: rgb(255, 171, 171);
+    padding: 1rem;
+    margin: 1rem auto;
+}
+
+// large screen
+@media (min-width: 768px) {
+    .generalListContainer {
+        width: 50rem;
+    }
 }
 
 @media (max-width: 799px) {
@@ -591,5 +738,9 @@ select.roundedElement {
             z-index: 100;
             position: inherit;
         }
+    }
+
+    .userListContainer {
+
     }
 }
