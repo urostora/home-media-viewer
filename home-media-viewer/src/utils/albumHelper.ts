@@ -13,7 +13,7 @@ import { ALBUM_PATH, loadMetadata, syncFilesInAlbumAndFile } from './fileHelper'
 
 import prisma from '@/utils/prisma/prismaImporter';
 import { getFileThumbnailInBase64 } from './thumbnailHelper';
-import { DataValidatorSchema, statusValues } from './dataValidator';
+import { DataValidatorSchema, statusValues, metadataProcessingStatusValues } from './dataValidator';
 import { EntityListResult } from '@/types/api/generalTypes';
 import { getSimpleValueOrInFilter } from './api/searchParameterHelper';
 import { HmvError } from './apiHelpers';
@@ -31,7 +31,8 @@ export const albumSearchDataSchema: DataValidatorSchema = [
   { field: 'basePathContains' },
   { field: 'basePath' },
   { field: 'user' },
-  { field: 'status', valuesAllowed: statusValues },
+  { field: 'status', valuesAllowed: statusValues, isArrayAllowed: true },
+  { field: 'metadataStatus', valuesAllowed: metadataProcessingStatusValues, isArrayAllowed: true },
 ];
 
 export const albumAddDataSchema: DataValidatorSchema = [

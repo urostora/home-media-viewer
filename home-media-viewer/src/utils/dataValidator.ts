@@ -13,6 +13,8 @@ export type DataValidatorSchema = Array<DataValidatorField>;
 
 export const statusValues = Object.values($Enums.Status);
 
+export const metadataProcessingStatusValues = Object.values($Enums.MetadataProcessingStatus);
+
 export const validateData = (data: object | null | undefined, schema: DataValidatorSchema): boolean => {
   if (!data) {
     throw new HmvError('Input data not available', { isPublic: true });

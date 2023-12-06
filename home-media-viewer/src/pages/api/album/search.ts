@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { albumSearchDataSchema, getAlbums } from '@/utils/albumHelper';
 import { HmvError, getApiResponseWithEntityList, getRequestBodyObject, handleApiError } from '@/utils/apiHelpers';
-import { AlbumResultType, AlbumSearchType } from '@/types/api/albumTypes';
+import { AlbumDataType, AlbumSearchType } from '@/types/api/albumTypes';
 import { withSessionRoute } from '@/utils/sessionRoute';
 import { validateData } from '@/utils/dataValidator';
 
@@ -25,7 +25,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         }
 
         const results = await getAlbums(postData);
-        res.status(200).json(getApiResponseWithEntityList<AlbumResultType>(results, { filter: postData }));
+        res.status(200).json(getApiResponseWithEntityList<AlbumDataType>(results, { filter: postData }));
       } catch (e) {
         handleApiError(res, 'search user', e, postData);
       }

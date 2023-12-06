@@ -7,7 +7,8 @@ export interface AlbumSearchType extends StatusSearchType {
   basePathContains?: string;
   basePath?: string;
   user?: string;
-  status?: $Enums.Status;
+  status?: $Enums.Status | $Enums.Status[];
+  metadataStatus?: $Enums.MetadataProcessingStatus | $Enums.MetadataProcessingStatus[];
 }
 
 export interface AlbumUpdateType extends EditEntityWithStatusType {
@@ -26,10 +27,9 @@ export interface AlbumFile {
   thumbnailImage?: string;
 }
 
-export interface AlbumResultType {
-  id?: string;
-  name?: string;
-  files?: AlbumFile[];
+export interface AlbumResultType extends EntityDataWithStatusType {
+  name: string;
+  files: AlbumFile[];
 }
 
 export interface AlbumDetailsFileStatusType {
@@ -39,12 +39,12 @@ export interface AlbumDetailsFileStatusType {
 export interface AlbumDataType extends EntityDataWithStatusType {
   name: string;
   sourceType: string;
-  connectionString: string;
   basePath: string;
   parentAlbumId: string | null;
 }
 
 export interface AlbumExtendedDataType extends AlbumDataType {
+  connectionString: string;
   fileStatus: AlbumDetailsFileStatusType[];
   users?: UserConnectedDataType[];
 }
