@@ -44,6 +44,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
       const albumBasePath = album?.basePath ?? null;
 
+      // load albums in this directory
+      const albumsInCurrentDirectory = (await getAlbums({ basePathContains: fullPath })).data.filter(
+        (a) => a.basePath.startsWith(fullPath) && a.basePath.substring(fullPath.length + 1).indexOf('/') <= 0,
+      );
+
       // check if current directory is a file object
       const storedDirectoryObjectResult =
         relativePath.length === 0 || albumContains === null
@@ -90,6 +95,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         const storedFile =
           storedFilesMatchingName === null || storedFilesMatchingName.length === 0 ? null : storedFilesMatchingName[0];
 
+        const album = albumsInCurrentDirectory.find((a) => a.basePath === filePathFull);
+
         return {
           name,
           path: filePathRelativeToContentDir,
@@ -100,6 +107,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
           dateModifiedOn: fileStats.mtime,
           storedFile,
           storedAlbum,
+          exactAlbum: album ?? null,
         };
       });
 

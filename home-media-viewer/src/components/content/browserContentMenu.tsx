@@ -95,7 +95,7 @@ const BrowseContentMenu = (props: BrowseContentMenuProps) => {
             name: 'Delete file',
             clickHandler: deleteFileHandler,
         });
-    } else if (!album && content.isDirectory && !content?.storedAlbum) {
+    } else if (content.isDirectory && content.exactAlbum === null) {
         // directory out of an album
 
         menuList.push({

@@ -26,4 +26,5 @@ export interface BrowseResultFile {
   /** file object stored in database */
   storedFile: FileResultType | null;
   storedAlbum: AlbumDataType | null;
+  exactAlbum: AlbumDataType | null;
 }
