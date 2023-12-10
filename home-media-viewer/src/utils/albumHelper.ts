@@ -344,11 +344,6 @@ export const addAlbum = async (data: AlbumAddType): Promise<Album> => {
     throw new HmvError(`"path" (${finalPath}) not found`, { isPublic: true });
   }
 
-  // const existingAlbum = await prisma.album.findFirst({ where: { basePath: finalPath } });
-  // if (existingAlbum != null) {
-  //   throw new HmvError(`Album with "path" (${finalPath}) already exists`, { isPublic: true });
-  // }
-
   // get parent album
   const albumsContainingThisDirectory = await getAlbumsContainingPath(finalPath);
 
