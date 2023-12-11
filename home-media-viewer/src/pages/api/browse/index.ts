@@ -6,17 +6,19 @@ import * as fs from 'node:fs';
 import { getApiResponseWithData } from '@/utils/apiHelpers';
 import { apiOnlyWithAdminUsers } from '@/utils/auth/apiHoc';
 import { ALBUM_PATH, getFiles } from '@/utils/fileHelper';
-import { getAlbums } from '@/utils/albumHelper';
-import { BrowseResult, BrowseResultFile } from '@/types/api/browseTypes';
+import { getAlbums, getAlbumsContainingPath, getClosestParentAlbum } from '@/utils/albumHelper';
+import type { BrowseResult, BrowseResultFile } from '@/types/api/browseTypes';
+import type { EntityListResult } from '@/types/api/generalTypes';
+import type { FileResultType } from '@/types/api/fileTypes';
 
-const handler = async (req: NextApiRequest, res: NextApiResponse) => {
+const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
   const { method } = req;
 
   switch (method) {
     case 'GET': {
       const baseDir: string = ALBUM_PATH;
       const relativePath =
-        (Array.isArray(req.query['relativePath']) ? req.query['relativePath'][0] : req.query['relativePath']) ?? '';
+        (Array.isArray(req.query.relativePath) ? req.query.relativePath[0] : req.query.relativePath) ?? '';
 
       const fullPath = path.join(baseDir, relativePath);
 
@@ -32,15 +34,14 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       }
 
       // check if current directory is an album root
-      const allAlbums = await getAlbums({ take: 0 });
-      const albumExactlyResult = allAlbums.data.filter((a) => a.basePath === fullPath);
-      const albumContainsResult =
-        albumExactlyResult.length === 0 ? allAlbums.data.filter((a) => fullPath.startsWith(a.basePath)) : [];
+      const albumsContainingThisDirectory = await getAlbumsContainingPath(fullPath);
 
-      const albumContains = albumContainsResult.length > 0 ? albumContainsResult[0] : null;
-      const albumExactly = albumExactlyResult.length > 0 ? albumExactlyResult[0] : null;
+      const [albumExactly = null] = albumsContainingThisDirectory.filter((a) => a.basePath === fullPath);
+      const albumContains = await getClosestParentAlbum(fullPath, false);
 
       const album = albumExactly ?? albumContains;
+
+      // console.log(`Browse GET API for path ${fullPath}, Album:`, album);
 
       const albumBasePath = album?.basePath ?? null;
 
@@ -51,11 +52,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
       // check if current directory is a file object
       const storedDirectoryObjectResult =
-        relativePath.length === 0 || albumContains === null
+        relativePath.length === 0
           ? null
           : await getFiles({
-              album: albumContains,
-              pathIsExactly: fullPath.substring(albumContains.basePath.length + 1),
+              pathIsExactly: relativePath,
               isDirectory: true,
               take: 0,
             });
@@ -65,8 +65,28 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
           ? null
           : storedDirectoryObjectResult.data[0];
 
-      const storedFilesInDirectory =
-        album === null ? null : await getFiles({ album, parentFileId: storedDirectoryObject?.id }, true);
+      let storedFilesInDirectory: EntityListResult<FileResultType> | null = null;
+      if (storedDirectoryObject !== null) {
+        storedFilesInDirectory = await getFiles(
+          {
+            parentFileId: storedDirectoryObject.id,
+          },
+          true,
+        );
+      } else if (albumExactly !== null) {
+        storedFilesInDirectory = await getFiles(
+          {
+            album: { id: albumExactly.id },
+            parentFileId: null,
+          },
+          true,
+        );
+      }
+
+      // console.log(
+      //   'Stored files in directory: ',
+      //   storedFilesInDirectory === null ? '-' : storedFilesInDirectory.data.map((f) => `${f.path} (id: ${f.id})`),
+      // );
 
       const directoryContentNames = fs.readdirSync(fullPath);
 
@@ -79,8 +99,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         const filePathRelativeToContentDir = filePathFull.substring(baseDir.length + 1);
 
         const storedAlbumList =
-          fileStats.isDirectory() && allAlbums && allAlbums?.data && allAlbums?.data?.length > 0
-            ? allAlbums.data.filter((a) => a.basePath === filePathFull)
+          fileStats.isDirectory() && albumsInCurrentDirectory.length > 0
+            ? albumsInCurrentDirectory.filter((a) => a.basePath === filePathFull)
             : [];
 
         const storedAlbum = storedAlbumList === null || storedAlbumList.length === 0 ? null : storedAlbumList[0];
@@ -112,7 +132,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       });
 
       const results = {
-        relativePath: relativePath,
+        relativePath,
         storedDirectory: storedDirectoryObject,
         albumExactly,
         albumContains,

@@ -61,7 +61,7 @@ export enum Status {
 }
 
 export interface EntityType {
-  id: string;
+  id: string | string[];
 }
 
 export interface EntityWithStatusType extends EntityType {
@@ -76,7 +76,7 @@ export interface EditEntityWithStatusType {
   status?: $Enums.Status;
 }
 
-export type DateFilter = {
+export interface DateFilter {
   from?: string;
   to?: string;
   equals?: string;

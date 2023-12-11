@@ -1,4 +1,4 @@
-import {
+import type {
   AlbumAddType,
   AlbumDataType,
   AlbumExtendedDataType,
@@ -6,15 +6,15 @@ import {
   AlbumSearchType,
   AlbumUpdateType,
 } from '@/types/api/albumTypes';
-import { $Enums, Album, AlbumSourceType, Prisma } from '@prisma/client';
+import { $Enums, type Album, AlbumSourceType, type Prisma } from '@prisma/client';
 import fs from 'fs';
 import pathModule from 'path';
 import { ALBUM_PATH, loadMetadata, syncFilesInAlbumAndFile } from './fileHelper';
 
 import prisma from '@/utils/prisma/prismaImporter';
 import { getFileThumbnailInBase64 } from './thumbnailHelper';
-import { DataValidatorSchema, statusValues, metadataProcessingStatusValues } from './dataValidator';
-import { EntityListResult } from '@/types/api/generalTypes';
+import { type DataValidatorSchema, statusValues, metadataProcessingStatusValues } from './dataValidator';
+import type { EntityListResult } from '@/types/api/generalTypes';
 import { getSimpleValueOrInFilter } from './api/searchParameterHelper';
 import { HmvError } from './apiHelpers';
 
@@ -236,68 +236,6 @@ export const checkAlbumData = async (
   }
 };
 
-export const syncAlbums = async (id: string | undefined = undefined) => {
-  const baseDirectory = process.env.APP_ALBUM_ROOT_PATH;
-  if (typeof baseDirectory !== 'string') {
-    throw new Error('Base directory is not set in env variable "APP_ALBUM_ROOT_PATH"');
-  }
-
-  if (!fs.existsSync(baseDirectory)) {
-    throw new Error(`Base directory not exists at path ${baseDirectory}`);
-  }
-
-  const activeAlbums = await prisma.album.findMany({ where: { id, status: { in: ['Active', 'Disabled'] } } });
-  const directories = fs.readdirSync(baseDirectory).filter((path) => {
-    const stat = fs.statSync(`${baseDirectory}/${path}`);
-    return stat.isDirectory();
-  });
-  const directoriesWithFullPath = directories.map((dir) => `${baseDirectory}/${dir}`);
-
-  const directoriesWithoutAlbum = directories.filter(
-    (path) => activeAlbums.filter((a) => a.basePath === `${baseDirectory}/${path}`).length === 0,
-  );
-  const albumsWithoutDirectory = activeAlbums.filter((a) => !directoriesWithFullPath.includes(a.basePath));
-  const existingAlbums = activeAlbums.filter((a) => directoriesWithFullPath.includes(a.basePath));
-
-  directoriesWithoutAlbum.forEach(async (path) => {
-    const newAlbum = await prisma.album.create({
-      data: {
-        basePath: `${baseDirectory}/${path}`,
-        name: path,
-        sourceType: 'File',
-        connectionString: `file://${baseDirectory}/${path}`,
-      },
-    });
-
-    await syncFilesInAlbumAndFile(newAlbum);
-  });
-
-  existingAlbums.forEach(async (album: Album) => {
-    await syncFilesInAlbumAndFile(album);
-  });
-
-  albumsWithoutDirectory.forEach(async (a) => {
-    await prisma.album.update({
-      data: {
-        status: 'Deleted',
-      },
-      where: {
-        id: a.id,
-      },
-    });
-  });
-
-  return {
-    baseDirectory,
-    allDirectories: directories,
-    allDirectoriesWithFullPath: directoriesWithFullPath,
-    allDirectoriesCount: directories.length,
-    activeAlbumsCount: activeAlbums.length,
-    albumsAdded: directoriesWithoutAlbum.length,
-    albumsDeleted: albumsWithoutDirectory.length,
-  };
-};
-
 export const getAlbumsContainingPath = async (path: string): Promise<Album[]> => {
   // get all albums containing this directory
   const pathList = path.split('/').reduce((carry: string[], part: string) => {
@@ -312,11 +250,40 @@ export const getAlbumsContainingPath = async (path: string): Promise<Album[]> =>
 
   const albumsContainingThisDirectory = await prisma.album.findMany({ where: { basePath: { in: pathList } } });
 
+  // order by path length ascending
   return albumsContainingThisDirectory.sort((a, b) => {
     if (a.basePath.length < b.basePath.length) {
       return -1;
     } else if (a.basePath.length > b.basePath.length) {
       return 1;
+    }
+
+    return 0;
+  });
+};
+
+export const getClosestParentAlbum = async (path: string, includingPath: boolean = true): Promise<Album | null> => {
+  const albumsContainingPath = await getAlbumsContainingPath(path);
+
+  let ret: Album | null = null;
+  for (const album of albumsContainingPath) {
+    if (includingPath || album.basePath !== path) {
+      ret = album;
+    }
+  }
+
+  return ret;
+};
+
+export const getChildAlbumsInPath = async (path: string): Promise<Album[]> => {
+  const albumsInThisDirectory = await prisma.album.findMany({ where: { basePath: { startsWith: `${path}/` } } });
+
+  // order by path length descending
+  return albumsInThisDirectory.sort((a, b) => {
+    if (a.basePath.length < b.basePath.length) {
+      return 1;
+    } else if (a.basePath.length > b.basePath.length) {
+      return -1;
     }
 
     return 0;
@@ -344,8 +311,15 @@ export const addAlbum = async (data: AlbumAddType): Promise<Album> => {
     throw new HmvError(`"path" (${finalPath}) not found`, { isPublic: true });
   }
 
-  // get parent album
+  // get parent album(s)
   const albumsContainingThisDirectory = await getAlbumsContainingPath(finalPath);
+  const closestParentAlbum =
+    albumsContainingThisDirectory.length === 0
+      ? null
+      : albumsContainingThisDirectory[albumsContainingThisDirectory.length - 1];
+
+  // get child albums
+  const childAlbums = await getChildAlbumsInPath(finalPath);
 
   const albumName = typeof data?.name === 'string' ? data.name : directoryName;
 
@@ -357,12 +331,17 @@ export const addAlbum = async (data: AlbumAddType): Promise<Album> => {
       basePath: finalPath,
       connectionString: `file://${finalPath}`,
       sourceType: AlbumSourceType.File,
-      parentAlbumId:
-        albumsContainingThisDirectory.length === 0
-          ? null
-          : albumsContainingThisDirectory[albumsContainingThisDirectory.length - 1].id,
+      parentAlbumId: closestParentAlbum?.id ?? null,
     },
   });
+
+  // connect child albums to new album
+  for (const childAlbum of childAlbums) {
+    if (childAlbum.parentAlbumId === null || childAlbum.parentAlbumId === closestParentAlbum?.id) {
+      // set parent to the newly created album
+      await prisma.album.update({ where: { id: childAlbum.id }, data: { parentAlbumId: newAlbum.id } });
+    }
+  }
 
   // attach all files in path to the created album
   const filesInAlbum = await prisma.file.findMany({ where: { path: { startsWith: `${relativePath}/` } } });
@@ -374,7 +353,7 @@ export const addAlbum = async (data: AlbumAddType): Promise<Album> => {
   return newAlbum;
 };
 
-export const updateAlbum = async (id: string, data: AlbumUpdateType) => {
+export const updateAlbum = async (id: string, data: AlbumUpdateType): Promise<Album | null> => {
   if (typeof id !== 'string' || id.length === 0) {
     throw new HmvError('Parameter "id" must be a non-empty string');
   }
@@ -416,7 +395,7 @@ export const deleteAlbum = async (id: string): Promise<AlbumDataType | null> => 
   return await prisma.album.update({ where: { id }, data: { status: 'Deleted' } });
 };
 
-export const syncAlbumFiles = async (albumId: string) => {
+export const syncAlbumFiles = async (albumId: string): Promise<void> => {
   const album = await prisma.album.findFirst({ where: { id: albumId, status: { in: ['Active', 'Disabled'] } } });
 
   if (album == null) {
@@ -429,7 +408,7 @@ export const syncAlbumFiles = async (albumId: string) => {
 export const processAlbumFilesMetadata = async (
   albumId: string,
   timeoutSec: number = Number.parseInt(process.env.LONG_PROCESS_TIMEOUT_SEC ?? '20'),
-) => {
+): Promise<void> => {
   const startedOn = process.hrtime();
   const album = await prisma.album.findFirst({ where: { id: albumId, status: { in: ['Active', 'Disabled'] } } });
 
@@ -456,7 +435,7 @@ export const processAlbumFilesMetadata = async (
   }
 };
 
-export const addUserToAlbum = async (album: string, user: string) => {
+export const addUserToAlbum = async (album: string, user: string): Promise<void> => {
   const albumEntity = await prisma.album.findFirst({
     where: { id: album, status: { in: ['Active', 'Disabled'] } },
     include: { users: true },
@@ -472,14 +451,14 @@ export const addUserToAlbum = async (album: string, user: string) => {
     throw new HmvError(`User not found with id ${user}`, { isPublic: true });
   }
 
-  if (albumEntity.users.find((u) => u.id === user)) {
+  if (albumEntity.users.find((u) => u.id === user) !== undefined) {
     return;
   }
 
   await prisma.album.update({ where: { id: albumEntity.id }, data: { users: { connect: { id: userEntity.id } } } });
 };
 
-export const removeUserFromAlbum = async (album: string, user: string) => {
+export const removeUserFromAlbum = async (album: string, user: string): Promise<void> => {
   const albumEntity = await prisma.album.findFirst({
     where: { id: album, status: { in: ['Active', 'Disabled'] } },
     include: { users: true },
@@ -495,7 +474,7 @@ export const removeUserFromAlbum = async (album: string, user: string) => {
     throw new HmvError(`User not found with id ${user}`, { isPublic: true });
   }
 
-  if (!albumEntity.users.find((u) => u.id === user)) {
+  if (albumEntity.users.find((u) => u.id === user) !== null) {
     return;
   }
 
