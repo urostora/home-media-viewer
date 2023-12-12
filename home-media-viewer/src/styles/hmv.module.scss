@@ -65,6 +65,14 @@ $appTextColorAlternative: #2d9649;
     width: 100%;
 }
 
+.pageFooter {
+    height: 25px;
+    width: 100%;
+    padding: 2px;
+    background-color: $appBackgroundColor;
+    color: $appTextColor;
+}
+
 .navigationBar {
     display: flex;
     flex-flow: row nowrap;
