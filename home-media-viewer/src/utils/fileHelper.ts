@@ -6,10 +6,13 @@ import { getDateTimeFilter } from '@/utils/utils';
 import { getFileThumbnailInBase64 } from '@/utils/thumbnailHelper';
 import { getSimpleValueOrInFilter } from './api/searchParameterHelper';
 import prisma from '@/utils/prisma/prismaImporter';
+import { HmvError } from './apiHelpers';
+import { getAlbums, getAlbumsContainingPath, getClosestParentAlbum } from './albumHelper';
 
 import type { FileResultType, FileSearchType } from '@/types/api/fileTypes';
 import type { $Enums, Album, File, MetadataProcessingStatus, Prisma, FileMeta } from '@prisma/client';
 import type { EntityListResult } from '@/types/api/generalTypes';
+import type { BrowseResult, BrowseResultFile } from '@/types/api/browseTypes';
 
 export const ALBUM_PATH = process.env.APP_ALBUM_ROOT_PATH ?? '/mnt/albums';
 
@@ -433,4 +436,137 @@ export const deleteFile = async (file: File): Promise<void> => {
     where: { id: file.id },
     data: { status: 'Deleted' },
   });
+};
+
+export const getBrowseResult = async (directoryPath: string): Promise<BrowseResult> => {
+  const baseDir: string = ALBUM_PATH;
+  const fullPath = directoryPath.startsWith('/') ? directoryPath : path.join(baseDir, directoryPath);
+  const relativePath = fullPath.substring(baseDir.length + 1);
+
+  if (!fs.existsSync(fullPath)) {
+    throw new HmvError(`${relativePath} not found`, { isPublic: true, httpStatus: 404 });
+  }
+
+  const fullPathStats = fs.statSync(fullPath);
+  if (!fullPathStats.isDirectory()) {
+    throw new HmvError(`${relativePath} is not a directory`, { isPublic: true, httpStatus: 404 });
+  }
+
+  // check if current directory is an album root
+  const albumsContainingThisDirectory = await getAlbumsContainingPath(fullPath);
+
+  const [albumExactly = null] = albumsContainingThisDirectory.filter((a) => a.basePath === fullPath);
+  const albumContains = await getClosestParentAlbum(fullPath, false);
+
+  const album = albumExactly ?? albumContains;
+
+  // console.log(`Browse GET API for path ${fullPath}, Album:`, album);
+
+  const albumBasePath = album?.basePath ?? null;
+
+  // load albums in this directory
+  const albumsInCurrentDirectory = (await getAlbums({ basePathContains: fullPath })).data.filter(
+    (a) => a.basePath.startsWith(fullPath) && a.basePath.substring(fullPath.length + 1).indexOf('/') <= 0,
+  );
+
+  // check if current directory is a file object
+  const storedDirectoryObjectResult =
+    relativePath.length === 0
+      ? null
+      : await getFiles({
+          pathIsExactly: relativePath,
+          isDirectory: true,
+          take: 0,
+        });
+
+  const storedDirectoryObject =
+    storedDirectoryObjectResult === null || storedDirectoryObjectResult.count === 0
+      ? null
+      : storedDirectoryObjectResult.data[0];
+
+  let storedFilesInDirectory: EntityListResult<FileResultType> | null = null;
+  if (storedDirectoryObject !== null) {
+    storedFilesInDirectory = await getFiles(
+      {
+        parentFileId: storedDirectoryObject.id,
+      },
+      true,
+    );
+  } else if (albumExactly !== null) {
+    storedFilesInDirectory = await getFiles(
+      {
+        album: { id: albumExactly.id },
+        parentFileId: null,
+      },
+      true,
+    );
+  }
+
+  // console.log(
+  //   'Stored files in directory: ',
+  //   storedFilesInDirectory === null ? '-' : storedFilesInDirectory.data.map((f) => `${f.path} (id: ${f.id})`),
+  // );
+
+  const directoryContentNames = fs.readdirSync(fullPath);
+
+  const contentList = directoryContentNames
+    .map((name: string): BrowseResultFile => {
+      const filePathFull = path.join(fullPath, name);
+      const fileStats = fs.statSync(filePathFull);
+
+      const filePathRelativeToAlbum = albumBasePath === null ? null : filePathFull.substring(albumBasePath.length + 1);
+      const filePathRelativeToContentDir = filePathFull.substring(baseDir.length + 1);
+
+      const storedAlbumList =
+        fileStats.isDirectory() && albumsInCurrentDirectory.length > 0
+          ? albumsInCurrentDirectory.filter((a) => a.basePath === filePathFull)
+          : [];
+
+      const storedAlbum = storedAlbumList === null || storedAlbumList.length === 0 ? null : storedAlbumList[0];
+
+      const storedFilesMatchingName =
+        storedFilesInDirectory === null
+          ? null
+          : storedFilesInDirectory.data.filter(
+              (f) => name === `${f.name}${f.extension.length > 0 ? `.${f.extension}` : ''}`,
+            );
+
+      const storedFile =
+        storedFilesMatchingName === null || storedFilesMatchingName.length === 0 ? null : storedFilesMatchingName[0];
+
+      const album = albumsInCurrentDirectory.find((a) => a.basePath === filePathFull);
+
+      return {
+        name,
+        path: filePathRelativeToContentDir,
+        pathRelativeToAlbum: filePathRelativeToAlbum,
+        isDirectory: fileStats.isDirectory(),
+        size: fileStats.size,
+        dateCreatedOn: fileStats.ctime,
+        dateModifiedOn: fileStats.mtime,
+        storedFile,
+        storedAlbum,
+        exactAlbum: album ?? null,
+      };
+    })
+    .sort((brf1, brf2) => {
+      if (brf1.isDirectory && !brf2.isDirectory) {
+        return -1;
+      }
+      if (!brf1.isDirectory && brf2.isDirectory) {
+        return 1;
+      }
+
+      return brf1.name.localeCompare(brf2.name);
+    });
+
+  const results = {
+    relativePath,
+    storedDirectory: storedDirectoryObject,
+    albumExactly,
+    albumContains,
+    content: contentList,
+  };
+
+  return results;
 };

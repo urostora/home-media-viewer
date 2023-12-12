@@ -6,7 +6,7 @@ export const apiBrowse = async (relativePath: string = ''): Promise<BrowseResult
     method: 'get',
   };
 
-  const fetchResult = await fetch(`/api/browse?relativePath=${encodeURI(relativePath)}`, fetchArgs);
+  const fetchResult = await fetch(`/api/browse/${encodeURI(relativePath)}`, fetchArgs);
 
   if (!fetchResult.ok) {
     const errorText = await fetchResult.text();

@@ -113,12 +113,14 @@ interface HmvErrorOptions extends ErrorOptions {
   publicMessage?: string;
   isPublic?: boolean;
   data?: unknown;
+  httpStatus?: number;
 }
 
 export class HmvError extends Error {
   isPublic: boolean = false;
   publicMessage: string | undefined;
   data: unknown;
+  httpStatus: number = 400;
 
   constructor(message?: string, options?: HmvErrorOptions) {
     super(message, options);
@@ -129,6 +131,7 @@ export class HmvError extends Error {
       this.isPublic = (isPublic ?? false) || typeof publicMessage === 'string';
       this.publicMessage = publicMessage;
       this.data = data;
+      this.httpStatus = options?.httpStatus ?? (this.isPublic ? 400 : 500);
     }
   }
 }
@@ -141,6 +144,7 @@ export const handleApiError = (
 ): void => {
   let logMessage = `Error in ${task}`;
   let publicError: string | null = null;
+  let httpStatus: number = 400;
 
   if (typeof error === 'string') {
     logMessage += ` ${error}`;
@@ -149,6 +153,9 @@ export const handleApiError = (
       logMessage += ` ${error.message}`;
       if (error.isPublic || typeof error.publicMessage === 'string') {
         publicError = error.publicMessage ?? error.message;
+      }
+      if (error.httpStatus !== undefined) {
+        httpStatus = error.httpStatus;
       }
     } else if (error instanceof Error) {
       logMessage += ` ${error}`;
@@ -166,5 +173,5 @@ export const handleApiError = (
 
   console.warn(logMessage);
 
-  response.status(400).end(`Error in ${task}` + (publicError !== null ? `: ${publicError}` : ''));
+  response.status(httpStatus).end(`Error in ${task}` + (publicError !== null ? `: ${publicError}` : ''));
 };
