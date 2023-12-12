@@ -1,4 +1,5 @@
 import { $Enums } from '@prisma/client';
+
 import { HmvError } from './apiHelpers';
 
 export interface DataValidatorField {
@@ -6,24 +7,24 @@ export interface DataValidatorField {
   type?: 'string' | 'number' | 'boolean' | 'object' | 'bigint';
   isRequired?: boolean;
   isArrayAllowed?: boolean;
-  valuesAllowed?: Array<string>;
+  valuesAllowed?: unknown[];
 }
 
-export type DataValidatorSchema = Array<DataValidatorField>;
+export type DataValidatorSchema = DataValidatorField[];
 
 export const statusValues = Object.values($Enums.Status);
 
 export const metadataProcessingStatusValues = Object.values($Enums.MetadataProcessingStatus);
 
 export const validateData = (data: object | null | undefined, schema: DataValidatorSchema): boolean => {
-  if (!data) {
+  if (data === null || data === undefined || typeof data !== 'object') {
     throw new HmvError('Input data not available', { isPublic: true });
   }
 
   for (const fieldConfig of schema) {
     const { field, type = 'string', isRequired = false, isArrayAllowed = false, valuesAllowed } = fieldConfig;
 
-    if (field in data === false) {
+    if (!(field in data)) {
       if (isRequired) {
         throw new HmvError(`field "${field}" is required`, { isPublic: true });
       }
@@ -34,14 +35,15 @@ export const validateData = (data: object | null | undefined, schema: DataValida
     const value = data[field as keyof typeof data];
 
     if (Array.isArray(value)) {
-      if (isArrayAllowed !== true) {
+      if (!isArrayAllowed) {
         throw new HmvError(`field "${field}" has invalid array value, type must be ${type}`, { isPublic: true });
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const arr: Array<any> = value;
+      const arr: any[] = value;
       for (const arrayValue of arr) {
-        if (typeof arrayValue != type) {
+        // eslint-disable-next-line valid-typeof
+        if (typeof arrayValue !== type) {
           throw new HmvError(
             `field "${field}" has invalid value in array ${arrayValue}, type must be '${type}' instead of '${type}'`,
             { isPublic: true },
@@ -56,7 +58,8 @@ export const validateData = (data: object | null | undefined, schema: DataValida
         }
       }
     } else {
-      if (typeof value != type) {
+      // eslint-disable-next-line valid-typeof
+      if (typeof value !== type) {
         throw new HmvError(`field "${field}" has invalid value ${value}, type must be ${type}`, { isPublic: true });
       }
 

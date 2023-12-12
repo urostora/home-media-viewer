@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 
-import { UserDataType } from "@/types/api/userTypes";
+import UserList from './userList';
 import { apiLoadUsers } from '@/utils/frontend/dataSource/user';
 
+import type { UserDataType } from "@/types/api/userTypes";
+
 import style from '@/styles/hmv.module.scss';
-import UserList from './userList';
 
 
-const UserListPage = () => {
+const UserListPage = (): JSX.Element => {
     const [ isLoading, setIsLoading ] = useState<boolean>(true);
     const [ users, setUsers ] = useState<UserDataType[] | null | undefined>(undefined);
     const [ error, setError ] = useState<string | null>(null);
@@ -17,7 +18,7 @@ const UserListPage = () => {
         loadUsers();
     }, []);
 
-    const loadUsers = () => {
+    const loadUsers = (): void => {
         setIsLoading(true);
         setError(null);
         setUsers(undefined);
@@ -34,7 +35,7 @@ const UserListPage = () => {
             });
     }
 
-    const onUserChanged = (user: UserDataType) => {
+    const onUserChanged = (user: UserDataType): void => {
         console.log(user);
         loadUsers();
     }
@@ -42,9 +43,9 @@ const UserListPage = () => {
     let content = null;
     if (isLoading) {
         content = <>Loading...</>;
-    } else if (error) {
+    } else if (typeof error === 'string') {
         content = <div className={style.errorContainer}>{error}</div>;
-    } else if (users) {
+    } else if (Array.isArray(users)) {
         content = <UserList users={users} onUserChanged={onUserChanged} />;
     }
 

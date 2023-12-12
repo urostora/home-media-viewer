@@ -1,9 +1,9 @@
-import { AlbumConnectedData } from './albumTypes';
+import { type AlbumConnectedData } from './albumTypes';
 import type { EditEntityWithStatusType, StatusSearchType, EntityType } from './generalTypes';
 
 export interface UserSearchType extends StatusSearchType {
-  name?: string | Array<string>;
-  email?: string | Array<string>;
+  name?: string | string[];
+  email?: string | string[];
   isAdmin?: boolean;
 }
 

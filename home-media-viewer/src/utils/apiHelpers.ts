@@ -1,11 +1,11 @@
 import {
-  DebugType,
-  EntityListResult,
-  EntityType,
-  GeneralEntityListResponse,
-  GeneralResponse,
-  GeneralResponseParameters,
-  GeneralResponseWithData,
+  type DebugType,
+  type EntityListResult,
+  type EntityType,
+  type GeneralEntityListResponse,
+  type GeneralResponse,
+  type GeneralResponseParameters,
+  type GeneralResponseWithData,
 } from '@/types/api/generalTypes';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
@@ -54,7 +54,7 @@ export function getApiResponse(parameters: GeneralResponseParameters = {}): Gene
     date: `${now.getFullYear()}.${('0' + (now.getMonth() + 1)).slice(-2)}.${('0' + now.getDate()).slice(-2)} ${(
       '0' + now.getHours()
     ).slice(-2)}:${('0' + now.getMinutes()).slice(-2)}:${('0' + now.getSeconds()).slice(-2)}`,
-    ok: (parameters?.ok ?? true) === true,
+    ok: parameters?.ok ?? true,
   };
 
   if (typeof parameters?.error === 'string') {
@@ -66,7 +66,7 @@ export function getApiResponse(parameters: GeneralResponseParameters = {}): Gene
     ret.id = parameters.id;
   }
 
-  if (parameters?.debug) {
+  if (parameters?.debug !== undefined) {
     ret.debug = parameters.debug;
   }
 
@@ -81,7 +81,7 @@ export function getApiResponseWithData<T>(data: T | null): GeneralResponseWithDa
 }
 
 export function getApiResponseEntityList<T>(
-  data: Array<T>,
+  data: T[],
   elementCount: number = 0,
   take: number = 10,
   skip: number = 0,
@@ -123,7 +123,7 @@ export class HmvError extends Error {
   constructor(message?: string, options?: HmvErrorOptions) {
     super(message, options);
 
-    if (options) {
+    if (options !== undefined) {
       const { isPublic = false, publicMessage = undefined, data = undefined } = options;
 
       this.isPublic = (isPublic ?? false) || typeof publicMessage === 'string';
@@ -147,7 +147,7 @@ export const handleApiError = (
   } else if (typeof error === 'object' && error !== null) {
     if (error instanceof HmvError) {
       logMessage += ` ${error.message}`;
-      if (error.isPublic === true || typeof error.publicMessage === 'string') {
+      if (error.isPublic || typeof error.publicMessage === 'string') {
         publicError = error.publicMessage ?? error.message;
       }
     } else if (error instanceof Error) {
@@ -166,5 +166,5 @@ export const handleApiError = (
 
   console.warn(logMessage);
 
-  response.status(400).end(`Error in ${task}` + (publicError ? `: ${publicError}` : ''));
+  response.status(400).end(`Error in ${task}` + (publicError !== null ? `: ${publicError}` : ''));
 };

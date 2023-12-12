@@ -1,18 +1,20 @@
-import { FileResultType } from "@/types/api/fileTypes"
+import { type FileResultType } from "@/types/api/fileTypes"
 import hmvStyle from '@/styles/hmv.module.scss';
-import { ReactElement } from "react";
+import { type ReactElement } from "react";
 import { getContentUrl, getThumbnailUrl, isImageByExtension, isVideoByExtension } from "@/utils/frontend/contentUtils";
 
-type ContentDisplayProps = {
+interface ContentDisplayProps {
     content?: FileResultType,
-    closeHandler?(): void,
-    previousHandler?(): void,
-    nextHandler?(): void,
+    closeHandler?: () => void,
+    previousHandler?: () => void,
+    nextHandler?: () => void,
 }
 
-const ContentDisplay = (props: ContentDisplayProps) => {
-    if (!props.content) {
-        return null;
+const ContentDisplay = (props: ContentDisplayProps): JSX.Element => {
+    const { content, closeHandler, previousHandler, nextHandler } = props;
+    
+    if (content === undefined) {
+        return <></>;
     }
 
     const getContentElement = (content: FileResultType): ReactElement => {
@@ -31,17 +33,17 @@ const ContentDisplay = (props: ContentDisplayProps) => {
 
     return (
         <div className={hmvStyle.contentDisplayContainer}>
-            <div className={hmvStyle.closeButton} onClick={props?.closeHandler}>X</div>
+            <div className={hmvStyle.closeButton} onClick={closeHandler}>X</div>
             <div
                 className={`${hmvStyle.navigationArea} ${hmvStyle.previousContainer}`}
-                onClick={props?.previousHandler}>
+                onClick={previousHandler}>
             </div>
             <div className={hmvStyle.contentWrapper}>
-                {getContentElement(props.content)}
+                {getContentElement(content)}
             </div>
             <div
                 className={`${hmvStyle.navigationArea} ${hmvStyle.nextContainer}`}
-                onClick={props?.nextHandler}>
+                onClick={nextHandler}>
             </div>
         </div>
     );

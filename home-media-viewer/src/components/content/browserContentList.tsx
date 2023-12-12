@@ -1,24 +1,26 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 
-import hmvStyle from '@/styles/hmv.module.scss';
-import { BrowseResult, BrowseResultFile } from '@/types/api/browseTypes';
-import { apiBrowse } from '@/utils/frontend/dataSource/browse';
 import BrowseContentCard from './browseContentCard';
 import ContentDisplay from './contentDisplay';
 import AlbumDetails from './albumDetails';
+import { apiBrowse } from '@/utils/frontend/dataSource/browse';
 
-type BrowserContentListProps = {
+import type { BrowseResult, BrowseResultFile } from '@/types/api/browseTypes';
+
+import hmvStyle from '@/styles/hmv.module.scss';
+
+interface BrowserContentListProps {
     path: string;
 }
 
-const BrowserContentList = (props: BrowserContentListProps) => {
+const BrowserContentList = (props: BrowserContentListProps): JSX.Element => {
     const { path } = props;
 
     const router = useRouter();
 
     const [ isLoading, setIsLoading ] = useState<boolean>(false);
-    const [ error, setError ] = useState<string | Error | null>(null);
+    const [ error, setError ] = useState<string | null>(null);
     const [ content, setContent ] = useState<BrowseResult | null>(null);
     const [ contentSelected, setContentSelected ] = useState<BrowseResultFile | null>(null);
 
@@ -30,7 +32,7 @@ const BrowserContentList = (props: BrowserContentListProps) => {
         })
         .catch(e => {
             setIsLoading(false);
-            setError(e);
+            setError(`${e}`);
         });
     }, [ path ]);
 
@@ -45,7 +47,7 @@ const BrowserContentList = (props: BrowserContentListProps) => {
         return <div className={hmvStyle.errorContainer}>{error.toString()}</div>;
     }
 
-    const onContentClosedHandler = () => {
+    const onContentClosedHandler = (): void => {
         setContentSelected(null);
     };
 
@@ -58,7 +60,7 @@ const BrowserContentList = (props: BrowserContentListProps) => {
         return position === -1 ? null : position;
     };
 
-    const onPreviousContentClickedHandler = () => {
+    const onPreviousContentClickedHandler = (): void => {
         if (contentSelected === null) {
             return;
         }
@@ -74,15 +76,15 @@ const BrowserContentList = (props: BrowserContentListProps) => {
             return;
         }
 
-        const newContent = content?.content[currentPosition - 1] as BrowseResultFile;
-        if (!newContent || newContent?.isDirectory === true) {
+        const newContent = content?.content[currentPosition - 1] ;
+        if (newContent.isDirectory) {
             return;
         }
 
         setContentSelected(newContent);
     };
 
-    const onNextContentClickedHandler = () => {
+    const onNextContentClickedHandler = (): void => {
         if (contentSelected === null) {
             return;
         }
@@ -96,18 +98,18 @@ const BrowserContentList = (props: BrowserContentListProps) => {
             return;
         }
 
-        const newContent = content?.content[currentPosition + 1] as BrowseResultFile;
-        if (!newContent || newContent?.isDirectory === true) {
+        const newContent = content?.content[currentPosition + 1] ;
+        if (newContent.isDirectory) {
             return;
         }
 
         setContentSelected(content.content[currentPosition + 1]);
     };
 
-    const onContentSelectedHandler = (content: BrowseResultFile) => {
+    const onContentSelectedHandler = (content: BrowseResultFile): void => {
         if (content?.isDirectory) {
             // Browse directory
-            router.push(`/browse/${content.path}`);
+            void router.push(`/browse/${content.path}`);
             return;
         }
 
@@ -118,7 +120,7 @@ const BrowserContentList = (props: BrowserContentListProps) => {
         setContentSelected(content);
     };
 
-    const displayContent = contentSelected === null || contentSelected?.storedFile === null
+    const displayContent = contentSelected?.storedFile === null
         ? null
         : <ContentDisplay
             key={contentSelected?.path}
@@ -127,16 +129,18 @@ const BrowserContentList = (props: BrowserContentListProps) => {
             previousHandler={onPreviousContentClickedHandler}
             nextHandler={onNextContentClickedHandler}
         />;
+    
+    const closestAlbum = content?.albumContains ?? content?.albumExactly;
 
-    const albumDetails = content?.albumContains ?? content?.albumExactly
-        ? <AlbumDetails albumId={(content?.albumContains ?? content?.albumExactly ?? {})?.id} />
+    const albumDetails = closestAlbum !== null && closestAlbum !== undefined
+        ? <AlbumDetails albumId={closestAlbum.id} />
         : null;
 
     const contentElements = content?.content.map(c => {
         return <BrowseContentCard
             key={c.name}
             content={c}
-            album={content.albumExactly ?? content.albumContains ?? undefined}
+            album={closestAlbum ?? undefined}
             contentSelected={onContentSelectedHandler}
         />;
     });

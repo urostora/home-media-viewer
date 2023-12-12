@@ -1,4 +1,4 @@
-import { MetadataProcessingStatus, Status, FileMetaType } from '@prisma/client';
+import { type MetadataProcessingStatus, type Status, type FileMetaType } from '@prisma/client';
 import type { StatusSearchType, EntityWithStatusType, DateFilter, EntityType } from './generalTypes';
 
 export interface FileSearchType extends StatusSearchType {
@@ -34,13 +34,13 @@ export interface FileResultType {
   name: string;
   extension: string;
   isDirectory: boolean;
-  createdAt: Date;
-  modifiedAt: Date;
-  contentDate: Date | null;
+  createdAt: string;
+  modifiedAt: string;
+  contentDate: string | null;
   size: number | null;
   hash: string | null;
   metadataStatus: MetadataProcessingStatus;
-  metadataProcessedAt: Date | null;
+  metadataProcessedAt: string | null;
   metadataProcessingError: string | null;
   thumbnailStatus: MetadataProcessingStatus;
   thumbnailProcessedAt: Date | null;

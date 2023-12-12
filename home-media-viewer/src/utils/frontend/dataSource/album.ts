@@ -1,5 +1,5 @@
-import { AlbumDataType, AlbumResultType, AlbumSearchType, AlbumUpdateType } from '@/types/api/albumTypes';
-import { GeneralEntityListResponse, GeneralResponse, GeneralResponseWithData } from '@/types/api/generalTypes';
+import type { AlbumExtendedDataType, AlbumResultType, AlbumSearchType, AlbumUpdateType } from '@/types/api/albumTypes';
+import type { GeneralEntityListResponse, GeneralResponse, GeneralResponseWithData } from '@/types/api/generalTypes';
 
 export const apiLoadAlbums = async (args: AlbumSearchType): Promise<AlbumResultType[]> => {
   const fetchArgs: RequestInit = {
@@ -25,7 +25,7 @@ export const apiLoadAlbums = async (args: AlbumSearchType): Promise<AlbumResultT
   return resultData.data;
 };
 
-export const apiAlbumAdd = async (path: string) => {
+export const apiAlbumAdd = async (path: string): Promise<void> => {
   const fetchArgs: RequestInit = {
     method: 'PUT',
     body: JSON.stringify({ path }),
@@ -39,7 +39,7 @@ export const apiAlbumAdd = async (path: string) => {
   }
 };
 
-export const apiAlbumUpdate = async (id: string, data: AlbumUpdateType) => {
+export const apiAlbumUpdate = async (id: string, data: AlbumUpdateType): Promise<void> => {
   const fetchArgs: RequestInit = {
     method: 'PUT',
     body: JSON.stringify(data),
@@ -53,7 +53,7 @@ export const apiAlbumUpdate = async (id: string, data: AlbumUpdateType) => {
   }
 };
 
-export const apiAlbumDelete = async (id: string) => {
+export const apiAlbumDelete = async (id: string): Promise<void> => {
   const fetchArgs: RequestInit = {
     method: 'DELETE',
   };
@@ -66,14 +66,14 @@ export const apiAlbumDelete = async (id: string) => {
   }
 };
 
-export const apiAlbumDetails = async (id: string): Promise<AlbumDataType | undefined> => {
+export const apiAlbumDetails = async (id: string): Promise<AlbumExtendedDataType | undefined> => {
   const fetchResult = await fetch(`/api/album/${id}`);
   if (fetchResult.status !== 200) {
     throw Error(`Album fetch status is ${fetchResult.status} (${fetchResult.statusText})`);
   }
 
   const resultText = await fetchResult.text();
-  const resultData: GeneralResponseWithData<AlbumDataType> = JSON.parse(resultText);
+  const resultData: GeneralResponseWithData<AlbumExtendedDataType> = JSON.parse(resultText);
 
   if (typeof resultData?.data?.name !== 'string') {
     throw Error(`Could not parse result (status: ${fetchResult.status}, ${fetchResult.statusText}): ${resultText}`);

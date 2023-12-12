@@ -1,5 +1,5 @@
-import { BrowseResult } from '@/types/api/browseTypes';
-import { GeneralResponseWithData } from '@/types/api/generalTypes';
+import { type BrowseResult } from '@/types/api/browseTypes';
+import { type GeneralResponseWithData } from '@/types/api/generalTypes';
 
 export const apiBrowse = async (relativePath: string = ''): Promise<BrowseResult> => {
   const fetchArgs: RequestInit = {
@@ -19,7 +19,7 @@ export const apiBrowse = async (relativePath: string = ''): Promise<BrowseResult
     throw Error(resultData.error ?? 'Could not load files');
   }
 
-  if (!resultData.data) {
+  if (resultData?.data === undefined) {
     throw Error(resultData.error ?? 'Response data not found');
   }
 

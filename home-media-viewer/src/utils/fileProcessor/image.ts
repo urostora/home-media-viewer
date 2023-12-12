@@ -1,13 +1,15 @@
-import { File } from '@prisma/client';
-import { FileProcessor } from './processorFactory';
+import * as ExifReader from 'exifreader';
+import fs from 'fs';
+import jimp from 'jimp';
+
 import { getFullPath, updateContentDate, updateThumbnailDate } from '../fileHelper';
 
-import fs from 'fs';
-import * as ExifReader from 'exifreader';
 import { addDateMeta, addFloatMeta, addIntMeta, addPositionMeta, addStringMeta } from '../metaHelper';
 import { getDateObject } from '../utils';
 import { getFileThumbnailPath, thumbnailSizes } from '../thumbnailHelper';
-import jimp from 'jimp';
+
+import type { File } from '@prisma/client';
+import type { FileProcessor } from './processorFactory';
 
 const imageFileProcessor: FileProcessor = async (file: File): Promise<boolean> => {
   const path = await getFullPath(file);
@@ -99,7 +101,7 @@ const imageFileProcessor: FileProcessor = async (file: File): Promise<boolean> =
 
   if (width !== null && height !== null) {
     // create thumbnail
-    thumbnailSizes.forEach(async (size) => {
+    for (const size of thumbnailSizes) {
       const thumbnailPath = getFileThumbnailPath(file, size);
 
       const image = await jimp.read(path);
@@ -108,7 +110,7 @@ const imageFileProcessor: FileProcessor = async (file: File): Promise<boolean> =
         .quality(size < 400 ? 50 : 75)
         .write(thumbnailPath);
       console.log(`  Thumbnail size ${size} saved to path ${thumbnailPath}`);
-    });
+    }
 
     await updateThumbnailDate(file);
   }
@@ -118,7 +120,7 @@ const imageFileProcessor: FileProcessor = async (file: File): Promise<boolean> =
 
 const supportedExtensions: string[] = ['bmp', 'jpg', 'jpeg', 'gif', 'png', 'tiff'];
 
-export const fillProcessorList = (processors: { [key: string]: FileProcessor }) => {
+export const fillProcessorList = (processors: Record<string, FileProcessor>): void => {
   supportedExtensions.forEach((ext) => {
     processors[ext] = imageFileProcessor;
   });

@@ -1,10 +1,12 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+
 import { getApiResponse, getRequestBodyObject } from '@/utils/apiHelpers';
 import { apiOnlyWithAdminUsers } from '@/utils/auth/apiHoc';
-import { EntityType } from '@/types/api/generalTypes';
 import updateMetadataProcess from '@/utils/processes/updateMetadataProcess';
 
-const handler = async (req: NextApiRequest, res: NextApiResponse) => {
+import { type EntityType } from '@/types/api/generalTypes';
+
+const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
   const { method } = req;
 
   switch (method) {

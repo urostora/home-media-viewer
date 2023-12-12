@@ -1,6 +1,6 @@
 import Browser from "@/components/browser";
 
-const BrowsePageDefault = () => {
+const BrowsePageDefault = (): JSX.Element => {
     return <Browser />;
 };
 

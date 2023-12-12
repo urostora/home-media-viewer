@@ -13,7 +13,7 @@ type AppPropsWithLayout = AppProps & {
   Component: NextPageWithLayout
 }
 
-const App = ({ Component, pageProps }: AppPropsWithLayout) =>  (<Layout><Component {...pageProps} /></Layout>);
+const App = ({ Component, pageProps }: AppPropsWithLayout): JSX.Element =>  (<Layout><Component {...pageProps} /></Layout>);
 
 export default App;
 

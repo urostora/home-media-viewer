@@ -1,8 +1,9 @@
 import type {
   AlbumAddType,
   AlbumDataType,
+  AlbumDataTypeWithFiles,
   AlbumExtendedDataType,
-  AlbumResultType,
+  AlbumFile,
   AlbumSearchType,
   AlbumUpdateType,
 } from '@/types/api/albumTypes';
@@ -106,7 +107,7 @@ export const getAlbum = async (id: string, onlyActive: boolean = true): Promise<
   };
 };
 
-export const getAlbums = async (params: AlbumSearchType): Promise<EntityListResult<AlbumDataType>> => {
+export const getAlbums = async (params: AlbumSearchType): Promise<EntityListResult<AlbumDataTypeWithFiles>> => {
   const usersFilter =
     typeof params.user !== 'string'
       ? undefined
@@ -123,8 +124,8 @@ export const getAlbums = async (params: AlbumSearchType): Promise<EntityListResu
       typeof params.basePath === 'string'
         ? { equals: params.basePath }
         : typeof params.basePathContains === 'string'
-        ? { contains: params.basePath }
-        : undefined,
+          ? { contains: params.basePath }
+          : undefined,
     status: getSimpleValueOrInFilter<$Enums.Status>(params?.status) ?? { in: ['Active', 'Disabled'] },
     users: usersFilter,
   };
@@ -163,12 +164,14 @@ export const getAlbums = async (params: AlbumSearchType): Promise<EntityListResu
     }),
   ]);
 
-  results[1].forEach((res: AlbumResultType) => {
+  results[1].forEach((res) => {
     if (Array.isArray(res?.files) && res.files.length > 0) {
-      const thumbnail = getFileThumbnailInBase64(res.files[0]);
+      const albumFile: AlbumFile = res.files[0];
+
+      const thumbnail = getFileThumbnailInBase64(albumFile);
 
       if (thumbnail !== null) {
-        res.files[0].thumbnailImage = thumbnail;
+        albumFile.thumbnailImage = thumbnail;
       }
     }
   });

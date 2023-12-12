@@ -2,7 +2,7 @@ import { useRouter } from 'next/router'
 
 import Browser from '@/components/browser';
 
-const BrowsePage = () => {
+const BrowsePage = (): JSX.Element => {
     const router = useRouter();
 
     const requestedPath: string | undefined = (Array.isArray(router?.query?.path)

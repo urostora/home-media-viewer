@@ -1,15 +1,16 @@
-import { File } from '@prisma/client';
-import { FileProcessor } from './processorFactory';
-import { getFullPath, updateContentDate, updateThumbnailDate } from '../fileHelper';
-
 import fs, { existsSync } from 'fs';
 import ffprobe from 'ffprobe';
 import ffprobeStatic from 'ffprobe-static';
 import pathToFfmpeg from 'ffmpeg-static';
+
+import { getFullPath, updateContentDate, updateThumbnailDate } from '../fileHelper';
 import { addDateMeta, addFloatMeta, addIntMeta, addPositionMeta, addStringMeta } from '../metaHelper';
 import { getDateObject } from '../utils';
 import { spawnSync } from 'child_process';
 import { getFileThumbnailPath, thumbnailSizes } from '../thumbnailHelper';
+
+import { type File } from '@prisma/client';
+import { type FileProcessor } from './processorFactory';
 
 const videoFileProcessor: FileProcessor = async (file: File): Promise<boolean> => {
   const path = await getFullPath(file);
@@ -100,7 +101,7 @@ const videoFileProcessor: FileProcessor = async (file: File): Promise<boolean> =
   }
 
   // create thumbnail
-  thumbnailSizes.forEach(async (size) => {
+  thumbnailSizes.forEach((size) => {
     const thumbnailFilePath = getFileThumbnailPath(file, size);
     createThumbnailImage(path, thumbnailFilePath, size);
 
@@ -123,14 +124,14 @@ const getFpsValue = (fps: string | undefined): number | null => {
 
   const res = /(?<fps>\d+)\/\d+/.exec(fps);
 
-  if (res == null || res.groups == null) {
+  if (res?.groups == null) {
     return null;
   }
 
   return Number.parseInt(res.groups.fps);
 };
 
-type CustomVideoResult = {
+interface CustomVideoResult {
   model?: string;
   manufacturer?: string;
   location?: {
@@ -138,13 +139,13 @@ type CustomVideoResult = {
     lon: number;
   };
   creationTime?: Date;
-};
+}
 
 const getKeyValueFromOutputResult = (input: string, key: string): string | null => {
   const rex = new RegExp(`${key}\\s*\\:\\s*(?<result>[-_:\\w]+)`, 'i');
   const m = rex.exec(input);
-  if (m != null && m?.groups) {
-    return m.groups['result'];
+  if (m?.groups?.result !== undefined) {
+    return m.groups.result;
   }
 
   return null;
@@ -189,10 +190,10 @@ const loadCustomVideoData = (path: string, ffprobePath?: string): CustomVideoRes
     if (ret?.location == null) {
       // get location
       const m = str.match(/location\s*:\s*(?<lat>[+-][\d.]+)(?<lon>[+-][\d.]+)/i);
-      if (m != null && m?.groups) {
+      if (m?.groups?.lat !== undefined && m?.groups?.lon !== undefined) {
         ret.location = {
-          lat: Number.parseFloat(m.groups['lat']),
-          lon: Number.parseFloat(m.groups['lon']),
+          lat: Number.parseFloat(m.groups.lat),
+          lon: Number.parseFloat(m.groups.lon),
         };
       }
     }
@@ -201,7 +202,7 @@ const loadCustomVideoData = (path: string, ffprobePath?: string): CustomVideoRes
   return ret;
 };
 
-const createThumbnailImage = (videoFilePath: string, thumbnailPath: string, size: number) => {
+const createThumbnailImage = (videoFilePath: string, thumbnailPath: string, size: number): void => {
   const executablePath = pathToFfmpeg;
   if (typeof executablePath !== 'string' || !existsSync(executablePath)) {
     return;
@@ -214,7 +215,7 @@ const createThumbnailImage = (videoFilePath: string, thumbnailPath: string, size
 
 const supportedExtensions: string[] = ['mp4', 'mkv', 'avi', 'mpg', 'mpeg', 'mov'];
 
-export const fillProcessorList = (processors: { [key: string]: FileProcessor }) => {
+export const fillProcessorList = (processors: Record<string, FileProcessor>): void => {
   supportedExtensions.forEach((ext) => {
     processors[ext] = videoFileProcessor;
   });

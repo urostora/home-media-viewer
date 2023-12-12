@@ -1,4 +1,4 @@
-import { File } from '@prisma/client';
+import { type File } from '@prisma/client';
 import { noneFileProcessor } from './none';
 import { directoryFileProcessor } from './directory';
 import { fillProcessorList as fillImageProcessors } from './image';
@@ -7,7 +7,7 @@ import { fillProcessorList as fillVideoProcessors } from './video';
 export type FileProcessor = (file: File) => Promise<boolean>;
 
 const defaultFileProcessor: FileProcessor = noneFileProcessor;
-const processors: { [key: string]: FileProcessor } = {};
+const processors: Record<string, FileProcessor> = {};
 
 // fill processors
 fillImageProcessors(processors);

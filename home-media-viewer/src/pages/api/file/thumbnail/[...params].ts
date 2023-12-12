@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { getFileIdThumbnailPath } from '@/utils/thumbnailHelper';
 import { handleFileResponseByPath } from '@/utils/responseHelper';
 
-const handler = (req: NextApiRequest, res: NextApiResponse) => {
+const handler = (req: NextApiRequest, res: NextApiResponse): void => {
   const { method } = req;
 
   switch (method) {
@@ -11,7 +11,7 @@ const handler = (req: NextApiRequest, res: NextApiResponse) => {
       try {
         const { params } = req.query;
 
-        if (!params || !Array.isArray(params) || params.length != 2) {
+        if (params === undefined || !Array.isArray(params) || params.length !== 2) {
           throw Error('Insufficient parameters provided (../fileId/size)');
         }
 

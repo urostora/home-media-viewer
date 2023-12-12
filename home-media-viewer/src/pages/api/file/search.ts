@@ -1,10 +1,11 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+
 import { HmvError, getApiResponseWithEntityList, getRequestBodyObject, handleApiError } from '@/utils/apiHelpers';
-import { FileResultType, FileSearchType } from '@/types/api/fileTypes';
+import { type FileResultType, type FileSearchType } from '@/types/api/fileTypes';
 import { getFiles } from '@/utils/fileHelper';
 import { withSessionRoute } from '@/utils/sessionRoute';
 
-const handler = async (req: NextApiRequest, res: NextApiResponse) => {
+const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
   const { method } = req;
 
   switch (method) {

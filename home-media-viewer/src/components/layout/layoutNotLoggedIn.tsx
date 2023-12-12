@@ -1,11 +1,11 @@
-import { AuthData } from "../auth/authContext";
+import { type AuthData } from "../auth/authContext";
 import Login from "../auth/login";
 
 export interface LayoutNotLoggedInProps {
-    onUserAuthenticated(ad: AuthData): void;
+    onUserAuthenticated: (ad: AuthData) => void;
 };
 
-const LayoutNotLoggedIn = (props: LayoutNotLoggedInProps) => {
+const LayoutNotLoggedIn = (props: LayoutNotLoggedInProps): JSX.Element => {
     return (<Login onUserAuthenticated={props.onUserAuthenticated} />);
 }
 

@@ -1,7 +1,8 @@
+import os from 'os';
+import { type NextApiRequest, type NextApiResponse } from 'next';
+
 import { getApiResponse } from '@/utils/apiHelpers';
 import updateMetadataProcess from '@/utils/processes/updateMetadataProcess';
-import { NextApiRequest, NextApiResponse } from 'next';
-import os from 'os';
 
 const isBackgroundProcessEnabled = Number.parseInt(process.env?.IS_BACKGROUND_PROCESS_ENABLED ?? '0') === 1;
 const processToken = process.env?.PROCESS_TOKEN ?? null;
@@ -12,7 +13,7 @@ const longProcessTimeout =
 
 const threadCount = Math.floor(os.availableParallelism() / 2);
 
-const handler = async (req: NextApiRequest, res: NextApiResponse) => {
+const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
   const { method } = req;
 
   console.log('background process called');
@@ -29,7 +30,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         break;
       }
 
-      if (req.query['token'] !== processToken) {
+      if (req.query.token !== processToken) {
         res.status(403).send(`Invalid process token`);
         break;
       }

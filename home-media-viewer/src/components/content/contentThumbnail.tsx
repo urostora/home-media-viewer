@@ -1,19 +1,19 @@
-import { FileMetadataType, FileResultType } from "@/types/api/fileTypes";
+import { type FileMetadataType, type FileResultType } from "@/types/api/fileTypes";
 import hmvStyle from '@/styles/hmv.module.scss';
 import { MetaType, contentSizeToString, durationInSecToString } from "@/utils/metaUtils";
-import { ReactElement } from "react";
+import { type ReactElement } from "react";
 import { isVideoByExtension } from "@/utils/frontend/contentUtils";
 
-export type ContentThumbnailPropsType = {
-    contentSelected?(content: FileResultType): void,
+export interface ContentThumbnailPropsType {
+    contentSelected?: (content: FileResultType) => void,
     content: FileResultType,
     displayDetails?: boolean,
 }
 
-const getMetaMap = (metaList?: FileMetadataType[] | undefined) => {
+const getMetaMap = (metaList?: FileMetadataType[] | undefined): Map<string, string | number | Date | object> => {
   return (metaList ?? []).reduce((carry: Map<string, string | number | Date | object>, meta: FileMetadataType) => {
     const key = meta.metaKey;
-    let value = undefined;
+    let value;
 
     switch (meta.type) {
       case 'Int':
@@ -46,10 +46,10 @@ const getMetaMap = (metaList?: FileMetadataType[] | undefined) => {
   }, new Map<string, string | number | Date | object>());
 };
 
-const ContentThumbnail = (props: ContentThumbnailPropsType) => {
+const ContentThumbnail = (props: ContentThumbnailPropsType): JSX.Element => {
     const { content, contentSelected, displayDetails = false } = props;
 
-    const onCardClicked = () => {
+    const onCardClicked = (): void => {
       if (typeof contentSelected === 'function') {
         contentSelected(content);
       }
@@ -91,7 +91,8 @@ const ContentThumbnail = (props: ContentThumbnailPropsType) => {
       }
       if (typeof metaMap.get(MetaType.GpsCoordinates) === 'object') {
         const coord = metaMap.get(MetaType.GpsCoordinates) as { latitude?: number, longitude?: number};
-        if (coord) {
+
+        if (typeof coord?.latitude === 'number' && typeof coord?.longitude === 'number') {
           const link = `https://www.google.com/maps/search/?api=1&query=${coord?.latitude}%2C${coord?.longitude}`;
           metaListElements.push({ name: 'Location', value: (<a href={link} target="__blank">View in Google Maps</a>)});
         }

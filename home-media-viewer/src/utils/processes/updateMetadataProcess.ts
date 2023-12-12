@@ -18,7 +18,7 @@ const updateMetadataProcess = {
 
     const startedOn = Date.now();
 
-    const parallelJobs: Promise<boolean>[] = [];
+    const parallelJobs: Array<Promise<boolean>> = [];
 
     console.log(
       `[${new Date().toLocaleDateString('hu-HU')} ${new Date().toLocaleTimeString('hu-HU')}] updateMetadataProcess${

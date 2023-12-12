@@ -1,7 +1,7 @@
 import hmvStyle from '@/styles/hmv.module.scss';
 import Link from 'next/link';
 
-const TitleArea = (props: { title?: string }) => {
+const TitleArea = (props: { title?: string }): JSX.Element => {
     return (
         <div className={hmvStyle.titleArea}>
             <Link className={hmvStyle.title} href="/">{props?.title ?? 'Home media viewer'}</Link>

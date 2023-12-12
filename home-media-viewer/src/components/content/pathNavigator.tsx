@@ -2,11 +2,11 @@ import Link from 'next/link';
 
 import hmvStyle from '@/styles/hmv.module.scss';
 
-type PathNavigatorProps = {
+interface PathNavigatorProps {
     path: string;
 }
 
-const PathNavigator = (props: PathNavigatorProps) => {
+const PathNavigator = (props: PathNavigatorProps): JSX.Element => {
     const { path } = props;
 
     if (path.length === 0) {

@@ -1,13 +1,13 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 import { getRequestBodyObject, getApiResponse, getApiResponseWithData, handleApiError } from '@/utils/apiHelpers';
-import { UserDataType, UserEditType, UserExtendedDataType } from '@/types/api/userTypes';
+import { type UserDataType, type UserEditType, type UserExtendedDataType } from '@/types/api/userTypes';
 import { deleteUser, getUserData, updateUser, userEditDataSchema } from '@/utils/userHelper';
 import { apiOnlyWithAdminUsers } from '@/utils/auth/apiHoc';
 
 import { validateData } from '@/utils/dataValidator';
 
-const handler = async (req: NextApiRequest, res: NextApiResponse) => {
+const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
   const { method, query } = req;
 
   if (typeof query?.id !== 'string' || query.id.length === 0) {
@@ -16,7 +16,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     return;
   }
 
-  const id = query.id as string;
+  const id = query.id;
 
   switch (method) {
     case 'GET': {

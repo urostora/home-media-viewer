@@ -1,16 +1,17 @@
-import { UserDataType, UserEditType, UserExtendedDataType, UserSearchType } from '@/types/api/userTypes';
-import { $Enums, Prisma, User } from '@prisma/client';
 import bcrypt from 'bcrypt';
 
 import prisma from '@/utils/prisma/prismaImporter';
-import { DataValidatorSchema, statusValues } from './dataValidator';
 import { HmvError } from './apiHelpers';
-import { EntityListResult } from '@/types/api/generalTypes';
 import { getSimpleValueOrInFilter, getStringContainOrInFilter } from './api/searchParameterHelper';
+
+import type { $Enums, Prisma, User } from '@prisma/client';
+import type { UserDataType, UserEditType, UserExtendedDataType, UserSearchType } from '@/types/api/userTypes';
+import { type DataValidatorSchema, statusValues } from './dataValidator';
+import { type EntityListResult } from '@/types/api/generalTypes';
 
 const SALT_ROUNDS = 10;
 
-export const getHashedPassword = async (password: string) => await bcrypt.hash(password, SALT_ROUNDS);
+export const getHashedPassword = async (password: string): Promise<string> => await bcrypt.hash(password, SALT_ROUNDS);
 
 export const verifyPassword = async (password: string, hashedPassword: string): Promise<boolean> =>
   await bcrypt.compare(password, hashedPassword);
@@ -120,7 +121,7 @@ export const searchUser = async (param: UserSearchType): Promise<EntityListResul
     skip,
     take,
     debug: {
-      filter: filter,
+      filter,
     },
   };
 };
@@ -128,7 +129,7 @@ export const searchUser = async (param: UserSearchType): Promise<EntityListResul
 export const getUserData = async (id: string): Promise<UserExtendedDataType | null> => {
   const user = await prisma.user.findFirst({
     where: {
-      id: id,
+      id,
     },
     select: {
       id: true,
@@ -223,12 +224,12 @@ export const updateUser = async (id: string, data: UserEditType): Promise<User> 
   });
 };
 
-export const deleteUser = async (id: string) => {
+export const deleteUser = async (id: string): Promise<User> => {
   const user = await prisma.user.findFirst({ where: { id, status: { in: ['Active', 'Disabled'] } } });
 
   if (user == null) {
     throw new HmvError(`User not found with id ${id}`, { isPublic: true });
   }
 
-  await prisma.user.update({ where: { id }, data: { status: 'Deleted' } });
+  return await prisma.user.update({ where: { id }, data: { status: 'Deleted' } });
 };

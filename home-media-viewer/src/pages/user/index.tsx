@@ -1,5 +1,5 @@
 import UserListPage from '@/components/content/userListPage';
 
-const UsersPage = () =>  <UserListPage />;
+const UsersPage = (): JSX.Element => <UserListPage />;
 
 export default UsersPage;

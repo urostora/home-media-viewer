@@ -1,10 +1,11 @@
+import { useState, useEffect, type ReactElement } from 'react'
 import Head from 'next/head'
-import styles from '@/styles/Home.module.css'
+
 import LayoutLoggedIn from '@/components/layout/layoutLoggedIn'
-import { AuthContext, AuthData } from '@/components/auth/authContext'
-import { useState, useEffect } from 'react'
-import type { ReactElement } from 'react'
+import { AuthContext, type AuthData } from '@/components/auth/authContext'
 import LayoutNotLoggedIn from '@/components/layout/layoutNotLoggedIn'
+
+import styles from '@/styles/Home.module.css'
 
 const cookieNames = {
   sessionToken: 'home-media-viewer-user-cookie',
@@ -13,7 +14,7 @@ const cookieNames = {
   isadmin: 'hmv-isadmin',
 }
 
-const getCookie = (name: string) => {
+const getCookie = (name: string): string | null => {
     // Split cookie string and get all individual name=value pairs in an array
     const cookieArr = document.cookie.split(";");
     
@@ -23,7 +24,7 @@ const getCookie = (name: string) => {
         
         /* Removing whitespace at the beginning of the cookie name
         and compare it with the given string */
-        if(name == cookiePair[0].trim()) {
+        if(name === cookiePair[0].trim()) {
             // Decode the cookie value and return
             return decodeURIComponent(cookiePair[1]);
         }
@@ -57,18 +58,18 @@ const getAuthDataFromCookie = (): AuthData => {
   return ret;
 }
 
-const clearAuthData = () => {
+const clearAuthData = (): void => {
   document.cookie = `${cookieNames.sessionToken}=; max-age=0`;
   document.cookie = `${cookieNames.email}=; max-age=0`;
   document.cookie = `${cookieNames.name}=; max-age=0`;
   document.cookie = `${cookieNames.isadmin}=; max-age=0`;
 };
 
-export default function Layout({ children }: { children: ReactElement }) {
+export default function Layout({ children }: { children: ReactElement }): JSX.Element {
     const [ isAuthProcessed, setIsAuthProcessed ] = useState<boolean>(false);
     const [ authData, setAuthData ] = useState<AuthData>({ isLoggedIn: false });
 
-    const logout = () => {
+    const logout = (): void => {
       clearAuthData();
       setIsAuthProcessed(false);
       setAuthData({ isLoggedIn: false });
@@ -85,7 +86,7 @@ export default function Layout({ children }: { children: ReactElement }) {
       setAuthData(currentAuthData);
     }, [ isAuthProcessed ]);
 
-    const userAuthenticated = (ad: AuthData) => {
+    const userAuthenticated = (ad: AuthData): void => {
         if (ad.isLoggedIn) {
             ad.logout = logout;
             setAuthData(ad);
@@ -94,7 +95,7 @@ export default function Layout({ children }: { children: ReactElement }) {
 
             document.cookie = `${cookieNames.email}=${encodeURIComponent(ad?.email ?? '')}${agePart}`;
             document.cookie = `${cookieNames.name}=${encodeURIComponent(ad?.name ?? '')}${agePart}`;
-            document.cookie = `${cookieNames.isadmin}=${encodeURIComponent(ad?.isAdmin ? '1' : '0')}${agePart}`;
+            document.cookie = `${cookieNames.isadmin}=${encodeURIComponent(ad?.isAdmin === true ? '1' : '0')}${agePart}`;
         } else {
             clearAuthData();
         }

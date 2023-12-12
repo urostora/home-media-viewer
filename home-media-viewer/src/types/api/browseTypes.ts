@@ -1,5 +1,5 @@
-import { AlbumDataType } from './albumTypes';
-import { FileResultType } from './fileTypes';
+import { type AlbumDataType } from './albumTypes';
+import { type FileResultType } from './fileTypes';
 
 export interface BrowseResult {
   relativePath: string;
@@ -10,7 +10,7 @@ export interface BrowseResult {
   /** Current path is inside a stored album path */
   albumContains: AlbumDataType | null;
   /** Files and directories found in current path */
-  content: Array<BrowseResultFile>;
+  content: BrowseResultFile[];
 }
 
 export interface BrowseResultFile {

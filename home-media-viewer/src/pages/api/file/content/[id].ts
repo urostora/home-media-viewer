@@ -1,11 +1,12 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+
 import { handleFileResponseByPath } from '@/utils/responseHelper';
 import { getFullPath } from '@/utils/fileHelper';
 import { withSessionRoute } from '@/utils/sessionRoute';
 
 import prisma from '@/utils/prisma/prismaImporter';
 
-const handler = async (req: NextApiRequest, res: NextApiResponse) => {
+const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
   const { method } = req;
 
   switch (method) {

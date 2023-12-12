@@ -1,24 +1,27 @@
-import { $Enums, Album, File, MetadataProcessingStatus, Prisma } from '@prisma/client';
 import fs from 'fs';
 import path from 'path';
+
 import { getFileProcessor } from '@/utils/fileProcessor/processorFactory';
-import { FileResultType, FileSearchType } from '@/types/api/fileTypes';
 import { getDateTimeFilter } from '@/utils/utils';
 import { getFileThumbnailInBase64 } from '@/utils/thumbnailHelper';
-
-import prisma from '@/utils/prisma/prismaImporter';
-import { EntityListResult } from '@/types/api/generalTypes';
 import { getSimpleValueOrInFilter } from './api/searchParameterHelper';
+import prisma from '@/utils/prisma/prismaImporter';
+
+import type { FileResultType, FileSearchType } from '@/types/api/fileTypes';
+import type { $Enums, Album, File, MetadataProcessingStatus, Prisma, FileMeta } from '@prisma/client';
+import type { EntityListResult } from '@/types/api/generalTypes';
 
 export const ALBUM_PATH = process.env.APP_ALBUM_ROOT_PATH ?? '/mnt/albums';
 
-export const syncFilesInAlbumAndFile = async (album: Album, parentFile?: File) => {
+export const syncFilesInAlbumAndFile = async (album: Album, parentFile?: File): Promise<void> => {
   let directoryPath = album.basePath;
-  let outerParentFile: File | undefined = undefined;
+  let outerParentFile: File | undefined;
 
   if (parentFile != null) {
     directoryPath = `${ALBUM_PATH}/${parentFile.path}`;
   }
+
+  const relativeBasePath = directoryPath.substring(ALBUM_PATH.length + 1);
 
   if (!fs.existsSync(directoryPath)) {
     throw new Error(`Element not exists at path ${directoryPath}`);
@@ -35,6 +38,12 @@ export const syncFilesInAlbumAndFile = async (album: Album, parentFile?: File) =
       (await prisma.file.findFirst({ where: { path: directoryPath.substring(ALBUM_PATH.length + 1) } })) ?? undefined;
   }
 
+  const effectiveParentFile: File | undefined = parentFile ?? outerParentFile ?? undefined;
+
+  // console.log(
+  //   `Effective parent file: ${effectiveParentFile ? `${effectiveParentFile.path} [${effectiveParentFile.id}]` : '-'}`,
+  // );
+
   // get all albums containing this directory
   const pathList = directoryPath.split('/').reduce((carry: string[], part: string) => {
     if (carry.length === 0) {
@@ -48,11 +57,30 @@ export const syncFilesInAlbumAndFile = async (album: Album, parentFile?: File) =
 
   const albumsContainingThisDirectory = await prisma.album.findMany({ where: { basePath: { in: pathList } } });
 
-  const dbFiles = await prisma.file.findMany({
-    where: { parentFile: parentFile ?? outerParentFile ?? null, albums: { some: { id: album.id } } },
-  });
+  const dbFiles = (
+    await prisma.file.findMany({
+      where: {
+        OR: [
+          {
+            path: { startsWith: relativeBasePath + '/' },
+          },
+          {
+            parentFile: parentFile ?? outerParentFile ?? null,
+            albums: { some: { id: album.id } },
+          },
+        ],
+      },
+    })
+  ).filter((f) => !f.path.substring(relativeBasePath.length + 1).includes('/'));
+
   const dbFileNames = dbFiles.map((f: File) => f.name + (f.extension.length > 0 ? `.${f.extension}` : ''));
   const dirFiles = fs.readdirSync(directoryPath);
+
+  // console.log('Directory files', dirFiles);
+  // console.log(
+  //   'DB files',
+  //   dbFiles.map((f) => `${f.path} [${f.id}]`),
+  // );
 
   const filesToDelete = dbFiles.filter((f: File) => {
     const fullName = f.name + (f.extension.length > 0 ? `.${f.extension}` : '');
@@ -61,30 +89,75 @@ export const syncFilesInAlbumAndFile = async (album: Album, parentFile?: File) =
 
   const filesToAdd = dirFiles.filter((name) => !dbFileNames.includes(name));
 
+  // console.log('Files to add', filesToAdd);
+  // console.log(
+  //   'Files to delete',
+  //   filesToDelete.map((f) => `${f.path} [${f.isDirectory ? 'DIR' : ''}] ${f.id}`),
+  // );
+
   for (const fileToDelete of filesToDelete) {
-    console.log(`  Delete file ${fileToDelete.path}`);
+    console.log(`  Delete file ${fileToDelete.path} [${fileToDelete.id}]`);
     await prisma.file.update({ where: { id: fileToDelete.id }, data: { status: 'Deleted' } });
   }
 
   const newDirectories: File[] = [];
 
+  // connect db files to parent if not connected
+  if (effectiveParentFile !== undefined) {
+    for (const dbFile of dbFiles) {
+      if (!dbFile.isDirectory && dbFile.parentFileId !== effectiveParentFile.id) {
+        console.log(
+          `  Attach file ${dbFile.path} [${dbFile.id}] to parent ${effectiveParentFile.path} [${effectiveParentFile.id}]`,
+        );
+
+        await prisma.file.update({ where: { id: dbFile.id }, data: { parentFileId: effectiveParentFile.id } });
+      }
+    }
+  }
+
   for (const fileName of filesToAdd) {
     const fullPath = `${directoryPath}/${fileName}`;
-    console.log(`  Add file ${fullPath}`);
 
-    const fileCreated = await addFile(fullPath, albumsContainingThisDirectory, parentFile ?? outerParentFile);
+    const fileCreated = await addFile(fullPath, albumsContainingThisDirectory, effectiveParentFile);
 
+    console.log(`  Add file ${fullPath} [${fileCreated.id}]`);
     if (fileCreated.isDirectory) {
       newDirectories.push(fileCreated);
     }
   }
 
-  newDirectories.forEach(async (f: File) => {
-    await syncFilesInAlbumAndFile(album, f);
-  });
+  for (const newDirectory of newDirectories) {
+    await syncFilesInAlbumAndFile(album, newDirectory);
+  }
 };
 
-export const addFile = async (filePath: string, albums: Album[], parentFile?: File) => {
+export const getFileById = async (
+  id: string,
+  userId: string | undefined = undefined,
+): Promise<(File & { metas: FileMeta[] }) | null> => {
+  const albumWhere: Prisma.AlbumListRelationFilter | undefined =
+    userId === undefined
+      ? undefined
+      : {
+          some: {
+            users: {
+              some: {
+                id: userId,
+              },
+            },
+          },
+        };
+
+  const file = await prisma.file.findFirst({ where: { id, albums: albumWhere }, include: { metas: true } });
+
+  if (file === null) {
+    return null;
+  }
+
+  return file;
+};
+
+export const addFile = async (filePath: string, albums: Album[], parentFile?: File): Promise<File> => {
   const stats = fs.statSync(filePath);
   const { name, ext } = path.parse(filePath);
   const isDirectory = stats.isDirectory();
@@ -100,9 +173,9 @@ export const addFile = async (filePath: string, albums: Album[], parentFile?: Fi
   const fileData = {
     path: relativePath,
     extension: isDirectory ? '' : getPureExtension(ext),
-    name: name,
+    name,
     size: isDirectory ? null : stats.size,
-    isDirectory: isDirectory,
+    isDirectory,
     albums: { connect: albums },
     createdAt: stats.ctime,
     modifiedAt: stats.mtime,
@@ -114,7 +187,7 @@ export const addFile = async (filePath: string, albums: Album[], parentFile?: Fi
   });
 };
 
-export const updateContentDate = async (file: File, date?: Date) => {
+export const updateContentDate = async (file: File, date?: Date): Promise<void> => {
   await prisma.file.update({
     where: {
       id: file.id,
@@ -125,7 +198,7 @@ export const updateContentDate = async (file: File, date?: Date) => {
   });
 };
 
-export const updateThumbnailDate = async (file: File) => {
+export const updateThumbnailDate = async (file: File): Promise<void> => {
   await prisma.file.update({
     where: {
       id: file.id,
@@ -141,18 +214,23 @@ export const getFiles = async (
   params: FileSearchType,
   returnThumbnails: boolean = false,
 ): Promise<EntityListResult<FileResultType>> => {
+  const albumIdSearchParameter: Prisma.AlbumWhereInput | undefined =
+    params.album !== undefined
+      ? typeof params.album.id === 'string'
+        ? { id: params.album.id }
+        : { id: { in: params.album.id } }
+      : undefined;
+
   const albumSearchParams =
     typeof params?.user !== 'string'
-      ? params?.album?.id
+      ? params?.album?.id !== undefined
         ? {
-            some: {
-              id: params.album.id,
-            },
+            some: albumIdSearchParameter,
           }
         : undefined
       : {
           some: {
-            id: params?.album?.id ? params.album.id : undefined,
+            ...albumIdSearchParameter,
             users: {
               some: {
                 id: params?.user ?? undefined,
@@ -161,9 +239,8 @@ export const getFiles = async (
           },
         };
 
-  let parentFileIdFilter: string | Prisma.StringNullableFilter | null | undefined = params?.album?.id
-    ? null
-    : undefined;
+  let parentFileIdFilter: string | Prisma.StringNullableFilter | null | undefined =
+    params?.album?.id !== undefined ? null : undefined;
   if (typeof params?.parentFileId === 'string') {
     // exact parent
     parentFileIdFilter = params?.parentFileId;
@@ -194,8 +271,8 @@ export const getFiles = async (
       (params?.contentType === undefined || params.contentType === 'all'
         ? undefined
         : params.contentType === 'video'
-        ? { in: ['mpeg', 'avi', 'mp4', 'mkv', 'mov', 'MPEG', 'AVI', 'MP4', 'MKV', 'MOV'] }
-        : { in: ['jpg', 'jpeg', 'png', 'JPG', 'JPEG', 'PNG'] }),
+          ? { in: ['mpeg', 'avi', 'mp4', 'mkv', 'mov', 'MPEG', 'AVI', 'MP4', 'MKV', 'MOV'] }
+          : { in: ['jpg', 'jpeg', 'png', 'JPG', 'JPEG', 'PNG'] }),
     modifiedAt: getDateTimeFilter(params?.fileDate),
     contentDate: getDateTimeFilter(params?.contentDate),
     metadataStatus: params.metadataStatus,
@@ -207,6 +284,8 @@ export const getFiles = async (
           : { equals: params.pathIsExactly }
         : { startsWith: params.pathBeginsWith },
   };
+
+  // console.log('getFiles final filter:', JSON.stringify(filter));
 
   const results = await prisma.$transaction([
     prisma.file.count({ where: filter }),
@@ -233,20 +312,17 @@ export const getFiles = async (
   ]);
 
   // add thumbnails if required
-  const fileList = returnThumbnails
-    ? results[1].map((fileData) => {
-        const thumbnailData = getFileThumbnailInBase64(fileData);
-        return {
-          ...fileData,
-          thumbnail: thumbnailData,
-        };
-      })
-    : results[1].map((fileData) => {
-        return {
-          ...fileData,
-          thumbnail: '',
-        };
-      });
+  const fileList = results[1].map((fileData) => {
+    return {
+      ...fileData,
+      thumbnail: returnThumbnails ? getFileThumbnailInBase64(fileData) : '',
+      // convert dates to strings for output
+      createdAt: fileData.createdAt.toString(),
+      modifiedAt: fileData.modifiedAt.toString(),
+      metadataProcessedAt: fileData.metadataProcessedAt?.toString() ?? null,
+      contentDate: fileData.contentDate?.toString() ?? null,
+    };
+  });
 
   return {
     count: results[0],
@@ -267,7 +343,7 @@ export const getPureExtension = (extension?: string): string => {
   return extension.startsWith('.') ? extension.substring(1) : extension;
 };
 
-export const loadMetadataById = async (fileId: string) => {
+export const loadMetadataById = async (fileId: string): Promise<void> => {
   const file = await prisma.file.findFirst({
     where: {
       id: fileId,
@@ -279,7 +355,7 @@ export const loadMetadataById = async (fileId: string) => {
     throw Error(`File not found with id ${fileId}`);
   }
 
-  loadMetadata(file);
+  await loadMetadata(file);
 };
 
 export const loadMetadata = async (file: File): Promise<boolean> => {
@@ -327,13 +403,16 @@ export const loadMetadata = async (file: File): Promise<boolean> => {
   return ok;
 };
 
-export const deleteMetadata = async (file: File) => {
+export const deleteMetadata = async (file: File): Promise<void> => {
   const metaIds = (await prisma.fileMeta.findMany({ where: { fileId: file.id }, select: { id: true } })).map(
     (r) => r.id,
   );
 
+  // eslint-disable-next-line @typescript-eslint/promise-function-async
+  const deleteOperations = metaIds.map((metaId) => prisma.fileMeta.delete({ where: { id: metaId } }));
+
   await prisma.$transaction([
-    ...metaIds.map((metaId) => prisma.fileMeta.delete({ where: { id: metaId } })),
+    ...deleteOperations,
     prisma.file.update({
       where: { id: file.id },
       data: { metadataStatus: 'New', metadataProcessedAt: null, metadataProcessingError: '' },

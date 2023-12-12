@@ -2,11 +2,12 @@
   "extends": [
     "next/core-web-vitals",
     "eslint:recommended",
+    "standard-with-typescript",
     "plugin:@typescript-eslint/recommended",
     "plugin:react/recommended",
     "prettier"
   ],
-  "plugins": [ "@typescript-eslint" ],
+  "plugins": [ "react", "@typescript-eslint", "prettier" ],
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
     "project": true,
@@ -14,6 +15,7 @@
   },
   "rules": {
     "@next/next/no-img-element": "off",
-    "react/react-in-jsx-scope": "off"
+    "react/react-in-jsx-scope": "off",
+    "@typescript-eslint/restrict-template-expressions": "off"
   }
 }

@@ -12,7 +12,7 @@ export const handleFileResponseByPath = (req: NextApiRequest, res: NextApiRespon
   const stat = statSync(path);
 
   const range = req.headers.range;
-  if (!range) {
+  if (range === undefined) {
     res.writeHead(200, undefined, {
       'Content-Type': mime.contentType(extname(path)) as string,
       'Content-Length': stat.size,

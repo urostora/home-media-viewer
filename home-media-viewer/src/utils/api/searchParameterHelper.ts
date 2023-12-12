@@ -1,5 +1,5 @@
 export interface InFilter<T> {
-  in: Array<T>;
+  in: T[];
 }
 
 export interface ContainsFilter {
@@ -10,9 +10,7 @@ export type SimpleValueOrInFilter<T> = undefined | T | InFilter<T>;
 
 export type StringContainsOrInFilter = undefined | ContainsFilter | InFilter<string>;
 
-export function getSimpleValueOrInFilter<T>(
-  value: undefined | null | T | Array<T> = undefined,
-): SimpleValueOrInFilter<T> {
+export function getSimpleValueOrInFilter<T>(value: undefined | null | T | T[] = undefined): SimpleValueOrInFilter<T> {
   if (value === undefined || value === null) {
     return undefined;
   }
@@ -21,11 +19,11 @@ export function getSimpleValueOrInFilter<T>(
     return { in: value };
   }
 
-  if (value as T) return value;
+  return value;
 }
 
 export function getStringContainOrInFilter(
-  value: undefined | null | string | Array<string> = undefined,
+  value: undefined | null | string | string[] = undefined,
 ): StringContainsOrInFilter {
   if (value === undefined || value === null) {
     return undefined;

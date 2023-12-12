@@ -1,17 +1,17 @@
 import { useState, useEffect } from 'react';
-import { FileResultType, FileSearchType } from "@/types/api/fileTypes";
+import { type FileResultType, type FileSearchType } from "@/types/api/fileTypes";
 import { apiLoadFiles } from '@/utils/frontend/dataSource/file';
 import ContentList from './contentList';
 
-export type FilteredContentListPropsType = {
+export interface FilteredContentListPropsType {
     albumId?: string,
     parentFileId?: string | null,
     contentType?: string,
-    onContentSelected?(content: FileResultType): void,
+    onContentSelected?: (content: FileResultType) => void,
     displayDetails?: boolean,
 }
 
-const FilteredContentList = (props: FilteredContentListPropsType) => {
+const FilteredContentList = (props: FilteredContentListPropsType): JSX.Element => {
     const { albumId, parentFileId, onContentSelected, displayDetails = false, contentType = 'all' } = props;
 
     const [ isFetchInProgress, setIsFetchInProgress ] = useState<boolean>(false);
@@ -22,8 +22,8 @@ const FilteredContentList = (props: FilteredContentListPropsType) => {
         setIsFetchInProgress(true);
 
         const filter: FileSearchType = {
-            album: (albumId ? { id: albumId } : undefined),
-            parentFileId: parentFileId,
+            album: (albumId !== undefined ? { id: albumId } : undefined),
+            parentFileId,
             contentType
         }
 
@@ -46,7 +46,7 @@ const FilteredContentList = (props: FilteredContentListPropsType) => {
         return <>Error while loading content</>;
     }
 
-    return <ContentList data={content} contentSelected={onContentSelected} displayDetails={displayDetails} />;
+    return <ContentList data={content} fileSelected={onContentSelected} displayDetails={displayDetails} />;
 }
 
 export default FilteredContentList;

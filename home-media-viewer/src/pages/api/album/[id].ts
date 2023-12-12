@@ -1,12 +1,13 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+
 import { getApiResponseWithData, getRequestBodyObject, handleApiError } from '@/utils/apiHelpers';
 import { withSessionRoute } from '@/utils/sessionRoute';
-
-import { AlbumDataType, AlbumExtendedDataType, AlbumUpdateType } from '@/types/api/albumTypes';
 import { validateData } from '@/utils/dataValidator';
 import { albumUpdateDataSchema, deleteAlbum, getAlbum, updateAlbum } from '@/utils/albumHelper';
 
-const handler = async (req: NextApiRequest, res: NextApiResponse) => {
+import type { AlbumDataType, AlbumExtendedDataType, AlbumUpdateType } from '@/types/api/albumTypes';
+
+const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
   const { query, method } = req;
 
   const id = query.id as string;

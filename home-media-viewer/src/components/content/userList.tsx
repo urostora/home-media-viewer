@@ -1,15 +1,15 @@
-import { UserDataType } from "@/types/api/userTypes";
-
-import style from '@/styles/hmv.module.scss';
+import { type UserDataType } from "@/types/api/userTypes";
 import UserRowItem from './userRowItem';
 
+import style from '@/styles/hmv.module.scss';
 
-type UserListProperties = {
+
+interface UserListProperties {
     users: UserDataType[];
-    onUserChanged?(user: UserDataType): void;
+    onUserChanged?: (user: UserDataType) => void;
 }
 
-const UserList = (props: UserListProperties) => {
+const UserList = (props: UserListProperties): JSX.Element => {
     const {users, onUserChanged} = props;
 
     console.log(users);

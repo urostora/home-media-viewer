@@ -2,7 +2,7 @@ export const getThumbnailUrl = (fileId: string, thumbnailSize: number = 200): st
   return `/api/file/thumbnail/${fileId}/${thumbnailSize}`;
 };
 
-export const getContentUrl = (fileId: string) => {
+export const getContentUrl = (fileId: string): string => {
   return `/api/file/content/${fileId}`;
 };
 

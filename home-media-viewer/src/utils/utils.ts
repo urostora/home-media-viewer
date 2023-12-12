@@ -1,5 +1,5 @@
-import { DateFilter } from '@/types/api/generalTypes';
-import { Prisma } from '@prisma/client';
+import { type DateFilter } from '@/types/api/generalTypes';
+import { type Prisma } from '@prisma/client';
 
 export const getDateObject = (dateTimeString: string | undefined | null): Date | null => {
   if (typeof dateTimeString !== 'string' || dateTimeString.length < 8) {
@@ -10,17 +10,17 @@ export const getDateObject = (dateTimeString: string | undefined | null): Date |
     /(?<year>\d{4})\D?(?<month>\d{1,2})\D?(?<day>\d{1,2})(?:\D{0,2})(?<hour>\d{1,2})?(?:\D?(?<min>\d{1,2})(?:\D?(?<sec>\d{1,2})?)?)?/i;
   const match = rex.exec(dateTimeString);
 
-  if (!match || !match.groups) {
+  if (match?.groups === undefined) {
     return null;
   }
 
   const ret = new Date(
-    Number.parseInt(match.groups['year']),
-    Number.parseInt(match.groups['month'] ?? 1) - 1,
-    Number.parseInt(match.groups['day'] ?? 1),
-    Number.parseInt(match.groups['hour'] ?? 0),
-    Number.parseInt(match.groups['min'] ?? 0),
-    Number.parseInt(match.groups['sec'] ?? 0),
+    Number.parseInt(match.groups.year),
+    Number.parseInt(match.groups.month ?? 1) - 1,
+    Number.parseInt(match.groups.day ?? 1),
+    Number.parseInt(match.groups.hour ?? 0),
+    Number.parseInt(match.groups.min ?? 0),
+    Number.parseInt(match.groups.sec ?? 0),
   );
 
   return ret;

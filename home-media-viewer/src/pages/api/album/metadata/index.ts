@@ -1,12 +1,14 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+
 import { processAlbumFilesMetadata } from '@/utils/albumHelper';
 import { getApiResponse, getEntityTypeRequestBodyObject } from '@/utils/apiHelpers';
-import { EntityType } from '@/types/api/generalTypes';
 import { apiOnlyWithAdminUsers } from '@/utils/auth/apiHoc';
+
+import type { EntityType } from '@/types/api/generalTypes';
 
 import prisma from '@/utils/prisma/prismaImporter';
 
-const handler = async (req: NextApiRequest, res: NextApiResponse) => {
+const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
   const { method } = req;
 
   switch (method) {

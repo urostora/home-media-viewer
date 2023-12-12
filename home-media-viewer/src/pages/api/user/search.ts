@@ -3,15 +3,15 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { apiOnlyWithAdminUsers } from '@/utils/auth/apiHoc';
 
 import { getRequestBodyObject, getApiResponseWithEntityList, handleApiError } from '@/utils/apiHelpers';
-import { UserDataType, UserSearchType } from '@/types/api/userTypes';
+import { type UserDataType, type UserSearchType } from '@/types/api/userTypes';
 
 import { validateData } from '@/utils/dataValidator';
 import { searchUser, userSearchDataSchema } from '@/utils/userHelper';
 
-const handler = async (req: NextApiRequest, res: NextApiResponse) => {
+const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
   const { method } = req;
 
-  if (method != 'POST') {
+  if (method !== 'POST') {
     res.setHeader('Allow', ['POST']).status(405).end(`Method ${method} Not Allowed`);
     return;
   }

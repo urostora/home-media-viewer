@@ -1,17 +1,17 @@
-import { BrowseResultFile } from "@/types/api/browseTypes"
+import { type BrowseResultFile } from "@/types/api/browseTypes"
 
 import hmvStyle from '@/styles/hmv.module.scss';
-import { MouseEventHandler, useState } from "react";
+import { type MouseEventHandler, useState } from "react";
 import { apiFileDelete, apiFileRefreshMetadata } from "@/utils/frontend/dataSource/file";
-import { AlbumResultType } from "@/types/api/albumTypes";
+import { type AlbumResultType } from "@/types/api/albumTypes";
 import { apiAlbumAdd } from "@/utils/frontend/dataSource/album";
 
-type BrowseContentMenuProps = {
+interface BrowseContentMenuProps {
     content: BrowseResultFile,
     album?: AlbumResultType,
 }
 
-type MenuItem = {
+interface MenuItem {
     key: string,
     name: string,
     clickHandler?: MouseEventHandler<HTMLLIElement>,
@@ -25,59 +25,51 @@ const OperationCode = {
     deleteAlbum: 'deleteAlbum',
 }
 
-const BrowseContentMenu = (props: BrowseContentMenuProps) => {
+const BrowseContentMenu = (props: BrowseContentMenuProps): JSX.Element => {
     const { content, album } = props;
 
     const [ isOpen, setIsOpen ] = useState<boolean>(false);
     const [ operationInProgress, setOpertationInProgress ] = useState<string | null>(null);
 
-    const placeholderClickedHandler = () => {
-        setIsOpen(isOpen ? false : true);
+    const placeholderClickedHandler = (): void => {
+        setIsOpen(!isOpen);
     };
 
-    const addAlbumHandler = async () => {
-        if (album) {
+    const addAlbumHandler = (): void => {
+        if (album === undefined) {
             return;
         }
 
-        try {
-            setOpertationInProgress(OperationCode.addAlbum);
-            await apiAlbumAdd(content.path);
-        } catch (e) {
-            // error
-        }
-
-        setOpertationInProgress(null);
+        setOpertationInProgress(OperationCode.addAlbum);
+        void apiAlbumAdd(content.path)
+        .finally(() => {
+            setOpertationInProgress(null);
+        });
     };
 
-    const refreshMetadataHandler = async () => {
+    const refreshMetadataHandler = (): void => {
         if (typeof content.storedFile?.id !== 'string') {
             return;
         }
 
-        try {
-            setOpertationInProgress(OperationCode.refreshMetadata);
-            await apiFileRefreshMetadata(content.storedFile.id);
-        } catch (e) {
-            // error
-        }
-
-        setOpertationInProgress(null);
+        setOpertationInProgress(OperationCode.refreshMetadata);
+        void apiFileRefreshMetadata(content.storedFile.id)
+        .finally(() => {
+            setOpertationInProgress(null);
+        });
     };
 
-    const deleteFileHandler = async () => {
+    const deleteFileHandler = (): void => {
         if (typeof content.storedFile?.id !== 'string') {
             return;
         }
 
-        try {
-            setOpertationInProgress(OperationCode.deleteFile);
-            await apiFileDelete(content.storedFile.id);
-        } catch (e) {
-            // error
-        }
+        setOpertationInProgress(OperationCode.deleteFile);
 
-        setOpertationInProgress(null);
+        void apiFileDelete(content.storedFile.id)
+        .finally(() => {
+            setOpertationInProgress(null);
+        });
     };
 
     // collect menu items
@@ -106,7 +98,7 @@ const BrowseContentMenu = (props: BrowseContentMenuProps) => {
     }
 
     if (menuList.length === 0) {
-        return null;
+        return <></>;
     }
 
     const menuItems = menuList.map((mi: MenuItem) => 

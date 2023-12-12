@@ -1,19 +1,21 @@
 import { useContext, useState } from 'react';
-import hmvStyle from '@/styles/hmv.module.scss';
 import Link from 'next/link';
+
 import { AuthContext } from '../auth/authContext';
 
-const MainMenu = () => {
+import hmvStyle from '@/styles/hmv.module.scss';
+
+const MainMenu = (): JSX.Element => {
     const url = window.location.href;
     const authContext = useContext(AuthContext);
 
     const [ isOpen, setIsOpen ] = useState<boolean>(false);
 
-    const handleMenuToggle = () => {
+    const handleMenuToggle = (): void => {
         setIsOpen(!isOpen);
     };
 
-    const closeMenu = () => {
+    const closeMenu = (): void => {
         setIsOpen(false);
     }
 

@@ -1,11 +1,11 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { addAlbum, albumAddDataSchema } from '@/utils/albumHelper';
 import { getApiResponseWithData, getRequestBodyObject, handleApiError } from '@/utils/apiHelpers';
-import { AlbumAddType, AlbumDataType } from '@/types/api/albumTypes';
+import { type AlbumAddType, type AlbumDataType } from '@/types/api/albumTypes';
 import { apiOnlyWithAdminUsers } from '@/utils/auth/apiHoc';
 import { validateData } from '@/utils/dataValidator';
 
-const handler = async (req: NextApiRequest, res: NextApiResponse) => {
+const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
   const { method } = req;
 
   switch (method) {

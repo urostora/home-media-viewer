@@ -1,18 +1,18 @@
-import { useState, useEffect, ReactElement } from 'react';
+import { useState, useEffect, type ReactElement } from 'react';
 
-import { AlbumDataType } from '@/types/api/albumTypes';
+import type { AlbumExtendedDataType } from '@/types/api/albumTypes';
 import { apiAlbumDetails } from '@/utils/frontend/dataSource/album';
 
 import hmvStyle from '@/styles/hmv.module.scss';
 
-export type AlbumDetailsProps = {
+export interface AlbumDetailsProps {
     albumId?: string,
 }
 
 const AlbumDetails = (props: AlbumDetailsProps): ReactElement => {
     const { albumId } = props;
 
-    const [ albumData, setAlbumData ] = useState<AlbumDataType | null>(null);
+    const [ albumData, setAlbumData ] = useState<AlbumExtendedDataType | null>(null);
     const [ isLoading, setIsLoading ] = useState<boolean>(true);
     const [ error, setError ] = useState<string | null>(null);
 
@@ -52,7 +52,12 @@ const AlbumDetails = (props: AlbumDetailsProps): ReactElement => {
 
     // data is loaded
 
-    const fileStatusData = albumData?.fileStatus?.reduce((carry, fs) => {
+    const fileStatusData: {
+        all: number,
+        new: number,
+        processed: number,
+        failed: number,
+    } = albumData?.fileStatus?.reduce((carry, fs) => {
         carry.all += fs.fileCount;
         
         if (fs.metadataStatus === 'New') {
@@ -74,15 +79,15 @@ const AlbumDetails = (props: AlbumDetailsProps): ReactElement => {
 
     let fileStatusString = `${fileStatusData?.all}`;
 
-    if (fileStatusData?.all ?? 0 > 0) {
+    if (fileStatusData.all > 0) {
         let fileStatusDetailString = '';
-        if (fileStatusData?.new ?? 0 > 0) {
+        if (fileStatusData.new > 0) {
             fileStatusDetailString += `, New: ${fileStatusData?.new}`;
         }
-        if (fileStatusData?.processed ?? 0 > 0) {
+        if (fileStatusData.processed > 0) {
             fileStatusDetailString += `, Processed: ${fileStatusData?.processed}`;
         }
-        if (fileStatusData?.failed ?? 0 > 0) {
+        if (fileStatusData.failed > 0) {
             fileStatusDetailString += `, Failed: ${fileStatusData?.failed}`;
         }
 

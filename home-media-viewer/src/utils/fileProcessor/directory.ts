@@ -1,5 +1,5 @@
-import { File } from '@prisma/client';
-import { FileProcessor } from './processorFactory';
+import { type File } from '@prisma/client';
+import { type FileProcessor } from './processorFactory';
 import { syncFilesInAlbumAndFile } from '../fileHelper';
 
 import prisma from '@/utils/prisma/prismaImporter';

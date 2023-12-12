@@ -1,6 +1,5 @@
-import { LoginRequestType, LoginResponseDataType } from '@/types/loginTypes';
-import { getApiResponse, getApiResponseWithData } from '@/utils/apiHelpers';
-import { getRequestBodyObject } from '@/utils/apiHelpers';
+import { type LoginRequestType, type LoginResponseDataType } from '@/types/loginTypes';
+import { getApiResponse, getApiResponseWithData, getRequestBodyObject } from '@/utils/apiHelpers';
 import { getIronSessionOptions } from '@/utils/sessionHelper';
 import { verifyPassword } from '@/utils/userHelper';
 import { withIronSessionApiRoute } from 'iron-session/next';
@@ -8,10 +7,10 @@ import { withIronSessionApiRoute } from 'iron-session/next';
 import prisma from '@/utils/prisma/prismaImporter';
 
 export default withIronSessionApiRoute(async function loginRoute(req, res) {
-  const loginData: LoginRequestType | null = getRequestBodyObject(req, res) as LoginRequestType;
+  const loginData: LoginRequestType | null = getRequestBodyObject(req, res);
 
   if (loginData == null) {
-    await req.session.destroy();
+    req.session.destroy();
     res.status(400).json(getApiResponse({ ok: false, error: 'Fields "email" and "password" must be set' }));
     return;
   }
@@ -20,7 +19,7 @@ export default withIronSessionApiRoute(async function loginRoute(req, res) {
 
   if (user == null) {
     // unknown user
-    await req.session.destroy();
+    req.session.destroy();
     console.warn(`Login failed - user not found ${loginData.email}`);
     res
       .setHeader('Reason', 1)
@@ -31,7 +30,7 @@ export default withIronSessionApiRoute(async function loginRoute(req, res) {
 
   if (!(await verifyPassword(loginData.password, user.password))) {
     // invalid password
-    await req.session.destroy();
+    req.session.destroy();
     res
       .setHeader('Reason', 2)
       .status(400)

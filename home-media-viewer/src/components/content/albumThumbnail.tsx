@@ -1,16 +1,16 @@
-import { AlbumResultType } from "@/types/api/albumTypes";
+import { type AlbumResultType } from "@/types/api/albumTypes";
 
 import hmvStyle from '@/styles/hmv.module.scss';
 
 interface AlbumThumbnailProps {
-    contentSelected?(content: AlbumResultType): void,
+    contentSelected?: (content: AlbumResultType) => void,
     content: AlbumResultType,
 }
 
-const AlbumThumbnail = (props: AlbumThumbnailProps) => {
+const AlbumThumbnail = (props: AlbumThumbnailProps): JSX.Element => {
     const { content, contentSelected } = props;
 
-    const onCardClicked = () => {
+    const onCardClicked = (): void => {
       if (typeof contentSelected === 'function') {
         contentSelected(content);
       }

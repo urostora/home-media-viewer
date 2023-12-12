@@ -1,11 +1,12 @@
-import { UserAlbumConnectType } from '@/types/api/userTypes';
+import { type NextApiRequest, type NextApiResponse } from 'next';
+
 import { addUserToAlbum, removeUserFromAlbum } from '@/utils/albumHelper';
 import { getApiResponse, getRequestBodyObject, handleApiError } from '@/utils/apiHelpers';
 import { apiOnlyWithAdminUsers } from '@/utils/auth/apiHoc';
-import { DataValidatorSchema, validateData } from '@/utils/dataValidator';
-import { NextApiRequest, NextApiResponse } from 'next';
+import type { UserAlbumConnectType } from '@/types/api/userTypes';
+import { type DataValidatorSchema, validateData } from '@/utils/dataValidator';
 
-const handler = async (req: NextApiRequest, res: NextApiResponse) => {
+const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
   const { method } = req;
 
   if (!['PUT', 'DELETE'].includes(req?.method ?? '')) {

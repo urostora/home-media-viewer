@@ -1,13 +1,13 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 import { getRequestBodyObject, handleApiError, getApiResponseWithData } from '@/utils/apiHelpers';
-import { UserAddType, UserDataType } from '@/types/api/userTypes';
+import { type UserAddType, type UserDataType } from '@/types/api/userTypes';
 import { addUser, userAddDataSchema } from '@/utils/userHelper';
 import { apiOnlyWithAdminUsers } from '@/utils/auth/apiHoc';
 
 import { validateData } from '@/utils/dataValidator';
 
-const handler = async (req: NextApiRequest, res: NextApiResponse) => {
+const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
   const { method } = req;
 
   switch (method) {

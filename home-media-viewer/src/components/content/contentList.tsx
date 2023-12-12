@@ -1,39 +1,48 @@
-import { FileResultType } from "@/types/api/fileTypes";
+import { type FileResultType } from "@/types/api/fileTypes";
 import ContentThumbnail from "./contentThumbnail";
 import hmvStyle from '@/styles/hmv.module.scss';
-import { AlbumResultType } from "@/types/api/albumTypes";
+import { type AlbumResultType } from "@/types/api/albumTypes";
 import AlbumThumbnail from "./albumThumbnail";
 import { useState } from "react";
 import ContentDisplay from "./contentDisplay";
 
-export type ContentListPropsType = {
-    contentSelected?(content: FileResultType | AlbumResultType): void,
-    data: FileResultType[] | AlbumResultType[],
+export interface ContentListPropsType {
+    albumSelected?: (album: AlbumResultType) => void,
+    fileSelected?: (file: FileResultType) => void,
+    contentSelected?: (content: FileResultType | AlbumResultType) => void,
+    data: Array<FileResultType | AlbumResultType>,
     displaySelectedContent?: boolean,
     displayDetails?: boolean,
 }
 
-const ContentList = (props: ContentListPropsType) => {
-    const { data, contentSelected, displaySelectedContent = true, displayDetails = false } = props;
+const ContentList = (props: ContentListPropsType): JSX.Element => {
+    const { data, contentSelected, albumSelected, fileSelected, displaySelectedContent = true, displayDetails = false } = props;
 
     const [ displayedContent, setDisplayedContent ] = useState<FileResultType>();
 
-    const onContentSelectedHandler = (content: FileResultType | AlbumResultType) => {
+    const onContentSelectedHandler = (content: FileResultType | AlbumResultType): void => {
         if (
-            typeof (content as FileResultType)?.isDirectory !== 'boolean'
-            || (content as FileResultType)?.isDirectory === true
-            || displaySelectedContent === false
+            'isDirectory' in content
+            && displaySelectedContent
         ) {
+            setDisplayedContent(content);
+        } else {
             if (typeof contentSelected === 'function') {
                 contentSelected(content);
             }
-        } else {
-            setDisplayedContent(content as FileResultType);
+
+            if ('isDirectory' in content && typeof fileSelected === 'function') {
+                fileSelected(content);
+            }
+
+            if ('files' in content && typeof albumSelected === 'function') {
+                albumSelected(content);
+            }
         }
     }
 
-    const getCurrentPosition = (currentContent: FileResultType | undefined): number | null => {
-        if (data === null || !currentContent) {
+    const getCurrentPosition = (currentContent: FileResultType | AlbumResultType | undefined): number | null => {
+        if (data === null || currentContent === undefined) {
             return null;
         }
 
@@ -41,11 +50,11 @@ const ContentList = (props: ContentListPropsType) => {
         return position === -1 ? null : position;
     };
 
-    const onDisplayedContentClosed = () => {
+    const onDisplayedContentClosed = (): void => {
         setDisplayedContent(undefined);
     };
 
-    const onPreviousContentClickedHandler = () => {
+    const onPreviousContentClickedHandler = (): void => {
         if (contentSelected === null) {
             return;
         }
@@ -61,15 +70,15 @@ const ContentList = (props: ContentListPropsType) => {
             return;
         }
 
-        const newContent = data[currentPosition - 1] as FileResultType;
-        if (!newContent || newContent?.isDirectory === true) {
+        const newContent = data[currentPosition - 1];
+        if (! ('isDirectory' in newContent)) {
             return;
         }
 
         setDisplayedContent(newContent);
     };
 
-    const onNextContentClickedHandler = () => {
+    const onNextContentClickedHandler = (): void => {
         if (contentSelected === null) {
             return;
         }
@@ -83,15 +92,15 @@ const ContentList = (props: ContentListPropsType) => {
             return;
         }
 
-        const newContent = data[currentPosition + 1] as FileResultType;
-        if (!newContent || newContent?.isDirectory === true) {
+        const newContent = data[currentPosition + 1];
+        if (! ('isDirectory' in newContent)) {
             return;
         }
 
         setDisplayedContent(newContent);
     };
 
-    const displayedContentElement = displayedContent
+    const displayedContentElement = displayedContent !== undefined
         ? <ContentDisplay
             content={displayedContent}
             closeHandler={onDisplayedContentClosed}
@@ -101,19 +110,19 @@ const ContentList = (props: ContentListPropsType) => {
         : null;
 
     const fileElements = data.map(data => {
-        if (typeof (data as FileResultType)?.metadataStatus === 'string' ) {
+        if ('metadataStatus' in data ) {
             return <ContentThumbnail
                 key={data.id}
                 data-id={data.id}
-                content={data as FileResultType}
+                content={data}
                 contentSelected={onContentSelectedHandler}
                 displayDetails={displayDetails}
             />;
-        } else if (typeof (data as AlbumResultType)?.id === 'string') {
+        } else if ('files' in data) {
             return <AlbumThumbnail key={data.id} content={data} contentSelected={onContentSelectedHandler} />;
         }
 
-        return (<></>);
+        return (null);
     });
 
     return (<div className={hmvStyle.contentsContainer}>

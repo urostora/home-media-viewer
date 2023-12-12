@@ -1,22 +1,28 @@
-import { AlbumResultType } from "@/types/api/albumTypes";
+import { type AlbumResultType } from "@/types/api/albumTypes";
 import { apiLoadAlbums } from "@/utils/frontend/dataSource/album";
 import { useEffect, useState } from "react";
 import ContentList from "./content/contentList";
 
-export type AlbumListPropsType = {
-    onAlbumSelected?(album: AlbumResultType): void,
+export interface AlbumListPropsType {
+    onAlbumSelected?: (album: AlbumResultType) => void,
 }
 
-export default function AlbumList( props: AlbumListPropsType ) {
+export default function AlbumList( props: AlbumListPropsType ): JSX.Element {
     const [ albumData, setAlbumData ] = useState<AlbumResultType[] | null>(null);
 
     const { onAlbumSelected } = props;
 
     useEffect(() => {
-        apiLoadAlbums({ take: 0 })
-        .then((result: AlbumResultType[]) => {
-            setAlbumData(result);
-        });
+        const fetchData = async (): Promise<void> => {
+            try {
+                const results = await apiLoadAlbums({ take: 0 });
+                setAlbumData(results);
+            } catch (error) {
+
+            }
+        }
+        
+        void fetchData();
     }, []);
 
     // get content

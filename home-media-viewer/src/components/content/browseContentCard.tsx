@@ -1,25 +1,26 @@
-import { BrowseResultFile } from "@/types/api/browseTypes"
-
-import hmvStyle from '@/styles/hmv.module.scss';
-import { contentSizeToString } from "@/utils/metaUtils";
 import BrowseContentMenu from "./browserContentMenu";
-import { AlbumResultType } from "@/types/api/albumTypes";
+import { contentSizeToString } from "@/utils/metaUtils";
 import { isVideoByExtension } from '@/utils/frontend/contentUtils'
 
-type BrowseContentCardProps = {
+import type { BrowseResultFile } from "@/types/api/browseTypes"
+import type { AlbumResultType } from "@/types/api/albumTypes";
+
+import hmvStyle from '@/styles/hmv.module.scss';
+
+interface BrowseContentCardProps {
     content: BrowseResultFile,
     album?: AlbumResultType,
-    contentSelected?(content: BrowseResultFile): void,
+    contentSelected?: (content: BrowseResultFile) => void,
 }
 
-const BrowseContentCard = (props: BrowseContentCardProps) => {
+const BrowseContentCard = (props: BrowseContentCardProps): JSX.Element => {
     const { content, album, contentSelected } = props;
 
     const name = content.name;
     const path = content.path;
     const details = content.isDirectory ? '' : contentSizeToString(content.size ?? 0);
 
-    const isDirectory = content?.isDirectory === true;
+    const isDirectory = content?.isDirectory;
     const isVideo = typeof content?.storedFile?.extension === 'string'
         ? isVideoByExtension(content.storedFile.extension)
         : false;
@@ -37,7 +38,7 @@ const BrowseContentCard = (props: BrowseContentCardProps) => {
         ? <img alt="play icon" src="/play.svg" className={hmvStyle.videoIcon} />
         : null;
 
-    const onContentClickedHandler = () => {
+    const onContentClickedHandler = (): void => {
         if (typeof contentSelected === 'function') {
             contentSelected(content);
         }

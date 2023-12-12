@@ -1,18 +1,19 @@
 import { useState } from 'react';
 
-import style from '@/styles/hmv.module.scss';
-import { UserDataType, UserExtendedDataType } from '@/types/api/userTypes';
 import { apiAddUser, apiEditUser, apiGetUserData, apiUserAlbumConnection } from '@/utils/frontend/dataSource/user';
-import { AlbumResultType } from '@/types/api/albumTypes';
 import { apiLoadAlbums } from '@/utils/frontend/dataSource/album';
 
+import type { AlbumResultType } from '@/types/api/albumTypes';
+import type { UserDataType, UserExtendedDataType } from '@/types/api/userTypes';
 
-type UserRowItemProperties = {
-    onUserChanged?(user: UserDataType): void;
+import style from '@/styles/hmv.module.scss';
+
+interface UserRowItemProperties {
+    onUserChanged?: (user: UserDataType) => void;
     user?: UserDataType;
 }
 
-type UserAlbumConnection = {
+interface UserAlbumConnection {
     albumId: string,
     albumName: string,
     isAlbumDeleted: boolean,
@@ -38,7 +39,7 @@ const getUserAlbumConnections = (user: UserExtendedDataType, albums: AlbumResult
         })
 };
 
-const UserRowItem = (props: UserRowItemProperties) => {
+const UserRowItem = (props: UserRowItemProperties): JSX.Element => {
     const {user, onUserChanged } = props;
 
     const [ isInEditMode, setIsInEditMode ] = useState<boolean>(typeof user !== 'object');
@@ -50,8 +51,8 @@ const UserRowItem = (props: UserRowItemProperties) => {
     const [ isLoadingAlbumData, setIsLoadingAlbumData ] = useState<boolean>(false);
     const [ albumLoadingError, setAlbumLoadingError ] = useState<string | null>(null);
 
-    const ensureAlbumConnectionsAreLoaded = () => {
-        if (!user) {
+    const ensureAlbumConnectionsAreLoaded = (): void => {
+        if (user === undefined) {
             return;
         }
 
@@ -62,7 +63,7 @@ const UserRowItem = (props: UserRowItemProperties) => {
                 .then(userData => {
                     setExtendedUserData(userData);
 
-                    if (allAlbums && extendedUserData) {
+                    if (allAlbums !== undefined && extendedUserData !== undefined) {
                         setIsLoadingAlbumData(false);
                     }
                 })
@@ -78,7 +79,7 @@ const UserRowItem = (props: UserRowItemProperties) => {
                 .then(albums => {
                     setAllAlbums(albums);
 
-                    if (allAlbums && extendedUserData) {
+                    if (albums !== undefined && extendedUserData !== undefined) {
                         setIsLoadingAlbumData(false);
                     }
                 })
@@ -89,104 +90,120 @@ const UserRowItem = (props: UserRowItemProperties) => {
         }
     };
 
-    const onEditClicked = () => {
+    const onEditClicked = (): void => {
         setIsInEditMode(true);
         ensureAlbumConnectionsAreLoaded();
     };
 
-    const onSaveClicked = async (e: React.SyntheticEvent) => {
+    const onSaveClicked = (e: React.SyntheticEvent): void => {
         const row = e.currentTarget.closest(`div.${style.row}`);
-        if (!row) {
+        if (row === null) {
             return;
         }
 
         setError(null);
         setIsInProgress(true);
 
-        const id = row.getAttribute('data-id') ?? '';
-        const name = row.querySelector<HTMLInputElement>('input[name="name"]')?.value as string;
-        const email = row.querySelector<HTMLInputElement>('input[name="email"]')?.value as string;
-        const password = row.querySelector<HTMLInputElement>('input[name="newPassword"]')?.value as string;
-        const isAdmin = row.querySelector<HTMLInputElement>('input[name="isAdmin"]')?.checked as boolean;
+        const doSaveProcess = async (rowElement: Element): Promise<void> => {
+            const id = rowElement.getAttribute('data-id') ?? '';
+            const name = rowElement.querySelector<HTMLInputElement>('input[name="name"]')?.value;
+            const email = rowElement.querySelector<HTMLInputElement>('input[name="email"]')?.value;
+            const password = rowElement.querySelector<HTMLInputElement>('input[name="newPassword"]')?.value;
+            const isAdmin = rowElement.querySelector<HTMLInputElement>('input[name="isAdmin"]')?.checked;
 
-        try {
-            let result: UserDataType | undefined;
-            if (id.length > 0) {
-                // modify user
-                const userUpdateData = {
-                    name,
-                    email,
-                    isAdmin,
-                    password: password.length > 0 ? password : undefined,
+            try {
+                let result: UserDataType | undefined;
+                if (id.length > 0) {
+                    // modify user
+                    const userUpdateData = {
+                        name,
+                        email,
+                        isAdmin,
+                        password: password !== undefined && password.length > 0 ? password : undefined,
+                    }
+
+                    result = await apiEditUser(id, userUpdateData);
+                } else {
+                    // add user
+                    if (name === undefined || email === undefined || isAdmin === undefined || password === undefined) {
+                        throw Error('Name, e-mail and password must be set');
+                    }
+
+                    const newUserData = {
+                        name,
+                        email,
+                        isAdmin,
+                        password
+                    }
+
+                    result = await apiAddUser(newUserData);
                 }
 
-                result = await apiEditUser(id, userUpdateData);
-            } else {
-                // add user
-                const newUserData = {
-                    name,
-                    email,
-                    isAdmin,
-                    password
+                if (typeof onUserChanged === 'function') {
+                    onUserChanged(result);
                 }
-
-                result = await apiAddUser(newUserData);
+            } catch (e) {
+                setError(`${e}`);
             }
-
-            if (result && typeof onUserChanged === 'function') {
-                onUserChanged(result);
+            finally {
+                setIsInProgress(false);
             }
-        } catch (e) {
-            setError(`${e}`);
         }
-        finally {
-            setIsInProgress(false);
-        }
+
+        void doSaveProcess(row);
     }
 
-    const onCancelEdit = () => {
+    const onCancelEdit = (): void => {
         setIsInEditMode(false);
     };
 
-    const onAlbumConnectionChanged = async (e: React.SyntheticEvent<HTMLInputElement>) => {
+    const onAlbumConnectionChanged = (e: React.SyntheticEvent<HTMLInputElement>): void => {
         e.preventDefault();
         const cb = e.currentTarget;
 
-        if (!user || !cb || cb.disabled) {
+        if (user === undefined) {
             return;
         }
 
-        const container = cb.closest('div') as HTMLDivElement;
-        if (!container) {
+        const container = cb.closest('div');
+        if (container === null) {
             return;
         }
 
         const userId = user.id;
-        const albumId = container.getAttribute('data-album-id') as string;
+        const albumId = container.getAttribute('data-album-id');
+        if (albumId === null) {
+            return;
+        }
+
         const connect = (e.currentTarget as HTMLInputElement).checked;
 
         cb.disabled = true;
 
-        try {
-            setAlbumLoadingError(null);
-            await apiUserAlbumConnection(userId, albumId, connect);
+        const connectProcess = async (userId: string, albumId: string, connect: boolean): Promise<void> => {
+            try {
+                setAlbumLoadingError(null);
+                await apiUserAlbumConnection(userId, albumId, connect);
 
-            cb.checked = connect;
-        } catch(e) {
-            setAlbumLoadingError(`${e}`);
-        } finally {
-            cb.disabled = false;
+                cb.checked = connect;
+            } catch(e) {
+                setAlbumLoadingError(`${e}`);
+            } finally {
+                cb.disabled = false;
+            }
         }
+        
+        void connectProcess(userId, albumId, connect);
     };
 
-    let content = null;
+    let content = <></>;
     let errorContent = null;
 
-    if (error) {
+    if (error !== null) {
         errorContent = <div className={`${style.fullWidth} ${style.errorContainer}`}>{error}</div>;
     }
     
-    if (!isInEditMode && user) {
+    if (!isInEditMode && user !== undefined) {
         content = (<div className={style.row}>
             <div className={style.emailField}>{user.name}</div>
             <div className={style.nameField}>{user.email}</div>
@@ -196,9 +213,9 @@ const UserRowItem = (props: UserRowItemProperties) => {
         </div>);
     } else if (isInEditMode) {
         let albumConnectionSection = null;
-        if (user) {
+        if (user !== undefined) {
             // load album connections
-            if (allAlbums && extendedUserData) {
+            if (Array.isArray(allAlbums) && extendedUserData !== null && extendedUserData !== undefined) {
                 const albumConnections = getUserAlbumConnections(extendedUserData, allAlbums);
 
                 const albumConnectionElements = albumConnections.map(ac => {
@@ -216,9 +233,9 @@ const UserRowItem = (props: UserRowItemProperties) => {
 
                 albumConnectionSection = <div className={style.albumConnectionContainer}>{albumConnectionElements}</div>;
             } else {
-                if (isLoadingAlbumData || allAlbums == undefined || extendedUserData == undefined) {
+                if (isLoadingAlbumData || allAlbums === undefined || extendedUserData === undefined) {
                     albumConnectionSection = <>... Loading connected albums</>;
-                } else if (albumLoadingError) {
+                } else if (albumLoadingError !== null) {
                     albumConnectionSection = <div className={`${style.fullWidth} ${style.errorContainer}`}>{albumLoadingError}</div>;
                 } else {
                     albumConnectionSection = <>... Could not load connected albums</>;
@@ -229,14 +246,14 @@ const UserRowItem = (props: UserRowItemProperties) => {
         // edit / add user data
         content = (
             <div className={`${style.isEditing} ${style.row}`} data-id={user?.id ?? ''}>
-                {user ? null : <div className={style.fullWidthField}>Add new user</div>}
+                {user === undefined ? null : <div className={style.fullWidthField}>Add new user</div>}
                 <div className={style.nameField}><span>Name</span><input type="text" name="name" required defaultValue={user?.name ?? ''} placeholder="Name" /></div>
                 <div className={style.emailField}><span>E-mail</span><input type="email" name="email" required defaultValue={user?.email ?? ''} placeholder="E-mail address" /></div>
                 <div className={style.isAdminField}><span>Admin</span><input type="checkbox" name="isAdmin" value={1} defaultChecked={user?.isAdmin ?? false} /></div>
-                <div className={style.passwordField}><span>{user ? 'Reset password' : 'Password'}</span><input type="password" name="newPassword" autoComplete="off" defaultValue="" placeholder="Password" /></div>
+                <div className={style.passwordField}><span>{user === undefined ? 'Reset password' : 'Password'}</span><input type="password" name="newPassword" autoComplete="off" defaultValue="" placeholder="Password" /></div>
                 <div className={style.fullWidthField}>
                     <button className={`${style.buttonElement} ${style.primaryButton}`} onClick={onSaveClicked} disabled={isInProgress}>Save</button>
-                    {user ? <button className={style.buttonElement} onClick={onCancelEdit}>Cancel</button> : null}
+                    {user === undefined ? <button className={style.buttonElement} onClick={onCancelEdit}>Cancel</button> : null}
                 </div>
                 {albumConnectionSection}
                 {errorContent}

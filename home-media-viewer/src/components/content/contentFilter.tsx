@@ -1,18 +1,18 @@
 import { useState } from "react";
 import hmvStyle from '@/styles/hmv.module.scss';
 
-export type ContentFilterType = {
+export interface ContentFilterType {
     dateFrom?: string;
     dateTo?: string;
     contentType: string;
 }
 
-export type ContentFilterPropsType = {
-    onFilterChanged?(filter: ContentFilterType): void,
+export interface ContentFilterPropsType {
+    onFilterChanged?: (filter: ContentFilterType) => void,
     currentFilter?: ContentFilterType
 }
 
-const ContentFilter = (props: ContentFilterPropsType) => {
+const ContentFilter = (props: ContentFilterPropsType): JSX.Element => {
     const { onFilterChanged, currentFilter = null } = props;
 
     const [ isOpen, setIsOpen ] = useState<boolean>(false);
@@ -29,7 +29,7 @@ const ContentFilter = (props: ContentFilterPropsType) => {
         contentType,
     };
 
-    const applyFilters = () => {
+    const applyFilters = (): void => {
         if (typeof onFilterChanged !== 'function') {
             return;
         }
@@ -41,19 +41,19 @@ const ContentFilter = (props: ContentFilterPropsType) => {
         });
     };
 
-    const openCloseToggleClickHandler = () => {
+    const openCloseToggleClickHandler = (): void => {
         setIsOpen(!isOpen);
     };
 
-    const dateFromChanged = (e: React.FormEvent<HTMLInputElement>) => {
+    const dateFromChanged = (e: React.FormEvent<HTMLInputElement>): void => {
         setDateFrom(e.currentTarget.value);
     };
 
-    const dateToChanged = (e: React.FormEvent<HTMLInputElement>) => {
+    const dateToChanged = (e: React.FormEvent<HTMLInputElement>): void => {
         setDateTo(e.currentTarget.value);
     };
 
-    const handleContentTypeChanged = (e: React.FormEvent<HTMLInputElement>) => {
+    const handleContentTypeChanged = (e: React.FormEvent<HTMLInputElement>): void => {
         const newContentType=e.currentTarget.value;
 
         setContentType(newContentType);
