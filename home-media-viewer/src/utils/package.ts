@@ -1,3 +1,3 @@
-import { version } from './../../package.json';
+import packageJson from './../../package.json';
 
-export const getVersionString = (): string => version ?? '0.0.0';
+export const getVersionString = (): string => packageJson.version ?? '0.0.0';
