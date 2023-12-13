@@ -16,7 +16,7 @@ services:
       - home-media-test-network
     volumes:
       - home-media-test-db-storage:/var/lib/mysql
-  
+
   migration:
     container_name: home-media-viewer-test-migration
     hostname: home-media-viewer-test-migration
@@ -67,7 +67,7 @@ services:
     container_name: home-media-viewer-test-background
     hostname: home-media-viewer-test-background
     build:
-      dockerfile: ./docker/test/app/Dockerfile
+      dockerfile: ./docker/prod/app/Dockerfile
       context: .
       target: app
     depends_on:
@@ -82,6 +82,7 @@ services:
       IS_BACKGROUND_PROCESS_ENABLED: 1
     volumes:
       - home-media-test-storage:${APP_STORAGE_PATH}
+      - ./test/files:${APP_ALBUM_ROOT_PATH}:ro
     networks:
       - home-media-test-network
 
@@ -89,7 +90,7 @@ services:
     container_name: home-media-viewer-test-app
     hostname: home-media-viewer-test-app
     build:
-      dockerfile: ./docker/test/app/Dockerfile
+      dockerfile: ./docker/prod/app/Dockerfile
       context: .
       target: app
     depends_on:
@@ -104,6 +105,7 @@ services:
       IS_BACKGROUND_PROCESS_ENABLED: 0
     volumes:
       - home-media-test-storage:${APP_STORAGE_PATH}
+      - ./test/files:${APP_ALBUM_ROOT_PATH}:ro
     ports:
       - ${WEB_PORT}:3000
     networks:
