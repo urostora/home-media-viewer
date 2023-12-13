@@ -1,4 +1,4 @@
-FROM node:20 as dependencies
+FROM node:20 as devdependencies
 
 WORKDIR /home/node/app
 COPY ./home-media-viewer .
@@ -13,4 +13,4 @@ ENV TS_NODE_PROJECT /home/node/app/tsconfig.json
 WORKDIR /home/node/app
 
 COPY ./home-media-viewer .
-COPY --from=dependencies /home/node/app/node_modules ./node_modules
+COPY --from=devdependencies /home/node/app/node_modules ./node_modules
