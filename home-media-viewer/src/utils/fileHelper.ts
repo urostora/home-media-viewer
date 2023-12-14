@@ -108,7 +108,7 @@ export const syncFilesInAlbumAndFile = async (album: Album, parentFile?: File): 
   // connect db files to parent if not connected
   if (effectiveParentFile !== undefined) {
     for (const dbFile of dbFiles) {
-      if (!dbFile.isDirectory && dbFile.parentFileId !== effectiveParentFile.id) {
+      if (dbFile.parentFileId !== effectiveParentFile.id) {
         console.log(
           `  Attach file ${dbFile.path} [${dbFile.id}] to parent ${effectiveParentFile.path} [${effectiveParentFile.id}]`,
         );
