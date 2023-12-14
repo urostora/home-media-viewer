@@ -23,6 +23,7 @@ const ContentList = (props: ContentListPropsType): JSX.Element => {
     const onContentSelectedHandler = (content: FileResultType | AlbumResultType): void => {
         if (
             'isDirectory' in content
+            && !content.isDirectory
             && displaySelectedContent
         ) {
             setDisplayedContent(content);

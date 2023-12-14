@@ -251,7 +251,9 @@ export const getAlbumsContainingPath = async (path: string): Promise<Album[]> =>
     return carry;
   }, []);
 
-  const albumsContainingThisDirectory = await prisma.album.findMany({ where: { basePath: { in: pathList } } });
+  const albumsContainingThisDirectory = await prisma.album.findMany({
+    where: { status: { in: ['Active', 'Disabled'] }, basePath: { in: pathList } },
+  });
 
   // order by path length ascending
   return albumsContainingThisDirectory.sort((a, b) => {
@@ -279,7 +281,9 @@ export const getClosestParentAlbum = async (path: string, includingPath: boolean
 };
 
 export const getChildAlbumsInPath = async (path: string): Promise<Album[]> => {
-  const albumsInThisDirectory = await prisma.album.findMany({ where: { basePath: { startsWith: `${path}/` } } });
+  const albumsInThisDirectory = await prisma.album.findMany({
+    where: { status: { in: ['Active', 'Disabled'] }, basePath: { startsWith: `${path}/` } },
+  });
 
   // order by path length descending
   return albumsInThisDirectory.sort((a, b) => {
@@ -337,6 +341,9 @@ export const addAlbum = async (data: AlbumAddType): Promise<Album> => {
       parentAlbumId: closestParentAlbum?.id ?? null,
     },
   });
+
+  // sync album files
+  await syncAlbumFiles(newAlbum.id);
 
   // connect child albums to new album
   for (const childAlbum of childAlbums) {

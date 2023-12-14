@@ -242,13 +242,9 @@ export const getFiles = async (
           },
         };
 
-  let parentFileIdFilter: string | Prisma.StringNullableFilter | null | undefined =
-    params?.album?.id !== undefined ? null : undefined;
-  if (typeof params?.parentFileId === 'string') {
-    // exact parent
-    parentFileIdFilter = params?.parentFileId;
-  } else if (params?.parentFileId == null && typeof params?.album?.id === 'string') {
-    // album root - get directory file representing the album root
+  let parentFileIdFilter: string | Prisma.StringNullableFilter | null | undefined = params?.parentFileId;
+  if (params?.parentFileId === null && typeof params?.album?.id === 'string') {
+    // album root requested - get directory file representing the album root (if any)
     const album = await prisma.album.findFirst({ where: { id: params?.album?.id } });
 
     if (album != null) {
@@ -288,7 +284,7 @@ export const getFiles = async (
         : { startsWith: params.pathBeginsWith },
   };
 
-  // console.log('getFiles final filter:', JSON.stringify(filter));
+  console.log('getFiles final filter:', JSON.stringify(filter));
 
   const results = await prisma.$transaction([
     prisma.file.count({ where: filter }),

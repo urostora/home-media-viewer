@@ -50,7 +50,7 @@ const AlbumRootPage = (): JSX.Element => {
         : null;
 
     const backLink = parentFileId !== undefined
-        ? <Link key="back" href={`/album/${albumId}`} prefetch={false}>Back</Link>
+        ? <a key="back" onClick={() => {window.history.back(); }}>Back</a>
         : null;
 
     return (<>
