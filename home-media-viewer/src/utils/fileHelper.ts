@@ -13,6 +13,8 @@ import type { FileResultType, FileSearchType } from '@/types/api/fileTypes';
 import type { $Enums, Album, File, MetadataProcessingStatus, Prisma, FileMeta } from '@prisma/client';
 import type { EntityListResult } from '@/types/api/generalTypes';
 import type { BrowseResult, BrowseResultFile } from '@/types/api/browseTypes';
+import { MetaType } from './metaUtils';
+import { getSquareAroundCoordinate } from './geoUtils';
 
 export const ALBUM_PATH = process.env.APP_ALBUM_ROOT_PATH ?? '/mnt/albums';
 
@@ -243,6 +245,13 @@ export const getFiles = async (
         };
 
   let parentFileIdFilter: string | Prisma.StringNullableFilter | null | undefined = params?.parentFileId;
+  const parentFilePathFilter =
+    typeof params?.parentFilePath === 'string'
+      ? {
+          path: params.parentFilePath,
+        }
+      : undefined;
+
   if (params?.parentFileId === null && typeof params?.album?.id === 'string') {
     // album root requested - get directory file representing the album root (if any)
     const album = await prisma.album.findFirst({ where: { id: params?.album?.id } });
@@ -255,6 +264,26 @@ export const getFiles = async (
         parentFileIdFilter = parentFile.id;
       }
     }
+  }
+
+  let metaFilter: Prisma.FileMetaListRelationFilter | undefined;
+  if (params?.location !== undefined) {
+    const { latitude, longitude, distance } = params.location;
+    const square = getSquareAroundCoordinate(latitude, longitude, distance);
+
+    metaFilter = {
+      some: {
+        metaKey: MetaType.GpsCoordinates,
+        latitude: {
+          gt: square.latMin,
+          lt: square.latMax,
+        },
+        longitude: {
+          gt: square.lonMin,
+          lt: square.lonMax,
+        },
+      },
+    };
   }
 
   const take = params?.take === 0 ? undefined : params.take ?? undefined;
@@ -282,6 +311,8 @@ export const getFiles = async (
           ? undefined
           : { equals: params.pathIsExactly }
         : { startsWith: params.pathBeginsWith },
+    parentFile: parentFilePathFilter,
+    metas: metaFilter,
   };
 
   console.log('getFiles final filter:', JSON.stringify(filter));

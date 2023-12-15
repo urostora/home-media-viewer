@@ -81,3 +81,9 @@ export interface DateFilter {
   to?: string;
   equals?: string;
 }
+
+export interface LocationFilter {
+  latitude: number;
+  longitude: number;
+  distance: number;
+}
