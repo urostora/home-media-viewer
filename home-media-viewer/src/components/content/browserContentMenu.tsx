@@ -36,7 +36,7 @@ const BrowseContentMenu = (props: BrowseContentMenuProps): JSX.Element => {
     };
 
     const addAlbumHandler = (): void => {
-        if (album === undefined) {
+        if (album !== undefined) {
             return;
         }
 
