@@ -119,12 +119,12 @@ describe('web/api/album', () => {
       'POST',
     );
 
-    console.log('FilesConnected', filesConnectedToAlbumCreated);
+    // console.log('FilesConnected', filesConnectedToAlbumCreated);
 
     // check attached files (1 file expected)
     const expectedFiles = getTestFilesInPath('testalbum02', true);
 
-    console.log('Files expected', expectedFiles);
+    // console.log('Files expected', expectedFiles);
 
     expect(filesConnectedToAlbumCreated.ok).toBe(true);
     expect(filesConnectedToAlbumCreated.count).toBe(expectedFiles.length);
