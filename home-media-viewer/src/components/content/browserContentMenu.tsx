@@ -3,12 +3,10 @@ import { type BrowseResultFile } from "@/types/api/browseTypes"
 import hmvStyle from '@/styles/hmv.module.scss';
 import { type MouseEventHandler, useState } from "react";
 import { apiFileDelete, apiFileRefreshMetadata } from "@/utils/frontend/dataSource/file";
-import { type AlbumResultType } from "@/types/api/albumTypes";
 import { apiAlbumAdd } from "@/utils/frontend/dataSource/album";
 
 interface BrowseContentMenuProps {
     content: BrowseResultFile,
-    album?: AlbumResultType,
 }
 
 interface MenuItem {
@@ -26,7 +24,7 @@ const OperationCode = {
 }
 
 const BrowseContentMenu = (props: BrowseContentMenuProps): JSX.Element => {
-    const { content, album } = props;
+    const { content } = props;
 
     const [ isOpen, setIsOpen ] = useState<boolean>(false);
     const [ operationInProgress, setOpertationInProgress ] = useState<string | null>(null);
@@ -36,7 +34,7 @@ const BrowseContentMenu = (props: BrowseContentMenuProps): JSX.Element => {
     };
 
     const addAlbumHandler = (): void => {
-        if (album !== undefined) {
+        if (content.exactAlbum !== null) {
             return;
         }
 
@@ -74,6 +72,16 @@ const BrowseContentMenu = (props: BrowseContentMenuProps): JSX.Element => {
 
     // collect menu items
     const menuList: MenuItem[] = [];
+    
+    if (content.isDirectory && content.exactAlbum === null) {
+        // directory out of an album
+
+        menuList.push({
+            key: OperationCode.addAlbum,
+            name: 'Add album',
+            clickHandler: addAlbumHandler,
+        });
+    }
 
     if (content.storedFile != null) {
         menuList.push({
@@ -86,14 +94,6 @@ const BrowseContentMenu = (props: BrowseContentMenuProps): JSX.Element => {
             key: OperationCode.deleteFile,
             name: 'Delete file',
             clickHandler: deleteFileHandler,
-        });
-    } else if (content.isDirectory && content.exactAlbum === null) {
-        // directory out of an album
-
-        menuList.push({
-            key: OperationCode.addAlbum,
-            name: 'Add album',
-            clickHandler: addAlbumHandler,
         });
     }
 

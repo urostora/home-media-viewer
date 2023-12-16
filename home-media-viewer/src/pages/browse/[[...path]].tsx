@@ -13,7 +13,7 @@ const BrowsePage = (): JSX.Element => {
         return <>{`Path id (${requestedPath}) invalid`}</>;
     }
 
-    return <Browser path={requestedPath} />;
+    return <Browser key={requestedPath} path={requestedPath} />;
 };
 
 export default BrowsePage;

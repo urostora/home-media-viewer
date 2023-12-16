@@ -3,18 +3,16 @@ import { contentSizeToString } from "@/utils/metaUtils";
 import { isVideoByExtension } from '@/utils/frontend/contentUtils'
 
 import type { BrowseResultFile } from "@/types/api/browseTypes"
-import type { AlbumResultType } from "@/types/api/albumTypes";
 
 import hmvStyle from '@/styles/hmv.module.scss';
 
 interface BrowseContentCardProps {
     content: BrowseResultFile,
-    album?: AlbumResultType,
     contentSelected?: (content: BrowseResultFile) => void,
 }
 
 const BrowseContentCard = (props: BrowseContentCardProps): JSX.Element => {
-    const { content, album, contentSelected } = props;
+    const { content, contentSelected } = props;
 
     const name = content.name;
     const path = content.path;
@@ -59,7 +57,7 @@ const BrowseContentCard = (props: BrowseContentCardProps): JSX.Element => {
         </div>
         <div className={hmvStyle.details}>
             <span>{details}</span>
-            <BrowseContentMenu content={content} album={album} />
+            <BrowseContentMenu content={content} />
         </div>
     </div>);
 }

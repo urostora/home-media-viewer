@@ -25,6 +25,9 @@ const BrowserContentList = (props: BrowserContentListProps): JSX.Element => {
     const [ contentSelected, setContentSelected ] = useState<BrowseResultFile | null>(null);
 
     useEffect(() => {
+        setContent(null);
+        setIsLoading(true);
+
         apiBrowse(path)
         .then((loadedContent) => {
             setIsLoading(false);
@@ -130,7 +133,7 @@ const BrowserContentList = (props: BrowserContentListProps): JSX.Element => {
             nextHandler={onNextContentClickedHandler}
         />;
     
-    const closestAlbum = content?.albumContains ?? content?.albumExactly;
+    const closestAlbum = content?.albumContains;
 
     const albumDetails = closestAlbum !== null && closestAlbum !== undefined
         ? <AlbumDetails albumId={closestAlbum.id} />
@@ -140,7 +143,6 @@ const BrowserContentList = (props: BrowserContentListProps): JSX.Element => {
         return <BrowseContentCard
             key={c.name}
             content={c}
-            album={closestAlbum ?? undefined}
             contentSelected={onContentSelectedHandler}
         />;
     });
