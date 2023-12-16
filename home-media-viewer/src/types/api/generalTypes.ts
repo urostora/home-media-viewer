@@ -85,5 +85,7 @@ export interface DateFilter {
 export interface LocationFilter {
   latitude: number;
   longitude: number;
-  distance: number;
+  distance?: number;
+  latitudeTreshold?: number;
+  longitudeTreshold?: number;
 }

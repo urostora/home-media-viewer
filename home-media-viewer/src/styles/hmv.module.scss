@@ -304,6 +304,11 @@ $appTextColorAlternative: #2d9649;
             }
         }
 
+        .filterSection.fullWidth {
+            width: 100%;
+            max-width: 100%;
+        }
+
         .filterTitle {
             padding-left: 10px;
             font-weight: bold;
@@ -334,6 +339,17 @@ $appTextColorAlternative: #2d9649;
             height: 400px;
             width: 100%;
             overflow: hidden;
+            position: relative;
+
+            .mapCenter {
+                margin: auto;
+                border: 2px solid black;
+
+                top: 100px;
+                width: 200px;
+                height: 200px;
+                margin-top: 100px;
+            }
         }
     }
 
@@ -346,6 +362,7 @@ $appTextColorAlternative: #2d9649;
         border: 1px solid $appBorderColor;
         border-radius: 5px;
         padding: 3px;
+        color: $appTextColorAlternative;
     }
 }
 

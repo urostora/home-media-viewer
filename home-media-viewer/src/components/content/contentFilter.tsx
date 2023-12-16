@@ -1,10 +1,19 @@
 import { useState } from "react";
+import { type Bounds, Map } from "pigeon-maps"
+
 import hmvStyle from '@/styles/hmv.module.scss';
+import type { LocationFilter } from "@/types/api/generalTypes";
 
 export interface ContentFilterType {
     dateFrom?: string;
     dateTo?: string;
     contentType: string;
+    location?: LocationFilter;
+}
+
+const defaultCenter = {
+    latitude: 47.4899,
+    longitude: 19.1173,
 }
 
 export interface ContentFilterPropsType {
@@ -20,13 +29,15 @@ const ContentFilter = (props: ContentFilterPropsType): JSX.Element => {
     const [ dateFrom, setDateFrom] = useState<string | undefined>(currentFilter?.dateFrom ?? undefined);
     const [ dateTo, setDateTo] = useState<string | undefined>(currentFilter?.dateTo ?? undefined);
     const [ contentType, setContentType] = useState<string>(currentFilter?.contentType ?? 'all');
-
+    const [ isLocationEnabled, setIsLocationEnabled ] = useState<boolean>(currentFilter?.location !== undefined);
+    const [ location, setLocation ] = useState<LocationFilter | undefined>(currentFilter?.location);
 
     const finalFilter = {
         ...currentFilter ?? {},
         dateFrom,
         dateTo,
         contentType,
+        location
     };
 
     const applyFilters = (): void => {
@@ -37,8 +48,11 @@ const ContentFilter = (props: ContentFilterPropsType): JSX.Element => {
         onFilterChanged({
             dateFrom,
             dateTo,
-            contentType
+            contentType,
+            location: isLocationEnabled ? location : undefined,
         });
+
+        setIsOpen(false);
     };
 
     const openCloseToggleClickHandler = (): void => {
@@ -59,7 +73,25 @@ const ContentFilter = (props: ContentFilterPropsType): JSX.Element => {
         setContentType(newContentType);
     };
 
-    console.log('Current filter:', currentFilter);
+    const isLocationEnabledChanged = (e: React.FormEvent<HTMLInputElement>): void => {
+        setIsLocationEnabled(e.currentTarget.checked);
+    };
+
+    const handleMapBoundsChanged = ({ center, zoom, bounds, initial }: {
+        center: [number, number];
+        bounds: Bounds;
+        zoom: number;
+        initial: boolean;
+    }): void => {
+        const treshold = bounds.sw[0] - bounds.ne[0];
+
+        setLocation({
+            latitude: center[0],
+            longitude: center[1],
+            latitudeTreshold: Math.abs(treshold),
+            longitudeTreshold: Math.abs(treshold),
+        })
+    };
 
     return (<div className={hmvStyle.contentFilterContainer}>
         <div className={hmvStyle.filterHeader}>
@@ -100,6 +132,21 @@ const ContentFilter = (props: ContentFilterPropsType): JSX.Element => {
                         <input type="radio" radioGroup="contentType" id="contentTypeVideo" value="video" onChange={handleContentTypeChanged} checked={finalFilter?.contentType === 'video'}></input>
                         <label htmlFor="contentTypeVideo">Video</label>
                     </div>
+                </div>
+            </div>
+            <div className={`${hmvStyle.filterSection} ${hmvStyle.fullWidth}`}>
+                <div className={hmvStyle.filterTitle}>Location</div>
+                <div>
+                    <label>
+                        Filter to location&nbsp;&nbsp;<input type="checkbox" name="isLocationFilterEnabled" defaultChecked={isLocationEnabled} onChange={isLocationEnabledChanged} />
+                    </label>
+                </div>
+                <div className={hmvStyle.filterMap}>
+                    <Map defaultCenter={[ finalFilter?.location?.latitude ?? defaultCenter.latitude, finalFilter?.location?.longitude ?? defaultCenter.longitude]} defaultZoom={9} onBoundsChanged={handleMapBoundsChanged}>
+                        <>
+                            <div className={hmvStyle.mapCenter}></div>
+                        </>
+                    </Map>
                 </div>
             </div>
             <div className={hmvStyle.commandContainer}>

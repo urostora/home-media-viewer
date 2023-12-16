@@ -12,7 +12,7 @@ import type { FileResultType, FileSearchType } from '@/types/api/fileTypes';
 const TAKE_VALUE = 50;
 
 export default function FileList(): JSX.Element {
-    const [ currentFilter, setCurrentFilter ] = useState<ContentFilterType>({ dateFrom: '2000-01-01', dateTo: `${new Date().getFullYear() + 1}-01-01`, contentType: 'all' });
+    const [ currentFilter, setCurrentFilter ] = useState<ContentFilterType>({ dateFrom: '2000-01-01', dateTo: `${new Date().getFullYear() + 1}-01-01`, contentType: 'all', location: undefined });
     const [ data, setData ] = useState<FileResultType[] | null>(null);
     const [ isLoading, setLoading ] = useState<boolean>(false);
     const [ isLastData, setIsLastData ] = useState<boolean>(false);
@@ -71,6 +71,7 @@ export default function FileList(): JSX.Element {
             ...getFileFilter(),
             contentDate: { from: currentFilter.dateFrom, to: currentFilter.dateTo },
             contentType: currentFilter.contentType,
+            location: currentFilter.location,
             skip: data?.length ?? 0,
         };
 
@@ -100,6 +101,7 @@ export default function FileList(): JSX.Element {
             ...getFileFilter(),
             contentDate: { from: currentFilter.dateFrom, to: currentFilter.dateTo },
             contentType: currentFilter.contentType,
+            location: currentFilter.location,
         });
 
 
@@ -116,6 +118,7 @@ export default function FileList(): JSX.Element {
         currentFilter.contentType,
         currentFilter.dateFrom,
         currentFilter.dateTo,
+        currentFilter.location,
     ]);
 
     const onContentFilterChanged = (contentFilter: ContentFilterType): void => {
@@ -128,6 +131,7 @@ export default function FileList(): JSX.Element {
             ...getFileFilter(),
             contentDate: { from: contentFilter.dateFrom, to: contentFilter.dateTo },
             contentType: contentFilter.contentType,
+            location: contentFilter.location,
             skip: 0,
         };
 

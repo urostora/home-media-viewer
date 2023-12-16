@@ -268,22 +268,43 @@ export const getFiles = async (
 
   let metaFilter: Prisma.FileMetaListRelationFilter | undefined;
   if (params?.location !== undefined) {
-    const { latitude, longitude, distance } = params.location;
-    const square = getSquareAroundCoordinate(latitude, longitude, distance);
+    const { latitude, longitude, distance, latitudeTreshold, longitudeTreshold } = params.location;
 
-    metaFilter = {
-      some: {
-        metaKey: MetaType.GpsCoordinates,
-        latitude: {
-          gt: square.latMin,
-          lt: square.latMax,
-        },
-        longitude: {
-          gt: square.lonMin,
-          lt: square.lonMax,
-        },
-      },
-    };
+    const square:
+      | {
+          latMin: number;
+          latMax: number;
+          lonMin: number;
+          lonMax: number;
+        }
+      | undefined =
+      typeof distance === 'number'
+        ? getSquareAroundCoordinate(latitude, longitude, distance)
+        : typeof latitudeTreshold === 'number' && typeof longitudeTreshold === 'number'
+          ? {
+              latMin: latitude - latitudeTreshold,
+              latMax: latitude + latitudeTreshold,
+              lonMin: longitude - longitudeTreshold,
+              lonMax: longitude + longitudeTreshold,
+            }
+          : undefined;
+
+    metaFilter =
+      square === undefined
+        ? undefined
+        : {
+            some: {
+              metaKey: MetaType.GpsCoordinates,
+              latitude: {
+                gt: square.latMin,
+                lt: square.latMax,
+              },
+              longitude: {
+                gt: square.lonMin,
+                lt: square.lonMax,
+              },
+            },
+          };
   }
 
   const take = params?.take === 0 ? undefined : params.take ?? undefined;
