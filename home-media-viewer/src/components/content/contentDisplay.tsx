@@ -37,6 +37,7 @@ const ContentDisplay = (props: ContentDisplayProps): JSX.Element => {
             <div
                 className={`${hmvStyle.navigationArea} ${hmvStyle.previousContainer}`}
                 onClick={previousHandler}>
+                    <div>&lt;</div>
             </div>
             <div className={hmvStyle.contentWrapper}>
                 {getContentElement(content)}
@@ -44,6 +45,7 @@ const ContentDisplay = (props: ContentDisplayProps): JSX.Element => {
             <div
                 className={`${hmvStyle.navigationArea} ${hmvStyle.nextContainer}`}
                 onClick={nextHandler}>
+                <div>&gt;</div>
             </div>
         </div>
     );
