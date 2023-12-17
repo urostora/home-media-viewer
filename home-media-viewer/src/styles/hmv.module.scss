@@ -289,7 +289,26 @@ $appTextColorAlternative: #2d9649;
             display: inline-block;
             font-weight: bold;
             margin-right: 15px;
+            cursor: pointer;
         }
+
+        .filterList {
+            display: flex;
+            flex-flow: row wrap;
+
+            > div {
+                margin-right: 8px;
+                padding: 5px;
+                border: 1px solid $appBorderColor;
+                border-radius: 10px;
+                color: $appTextColor;
+                background-color: $appBackgroundColor;
+            }
+        }
+    }
+
+    .filterHeader.filtered .filterCaption {
+        font-weight: bold;
     }
 
     .filterBody {
@@ -302,6 +321,10 @@ $appTextColorAlternative: #2d9649;
             input[type='radio'] {
                 margin-right: 5px;
             }
+
+            > div {
+                margin-bottom: 4px;
+            }
         }
 
         .filterSection.fullWidth {
@@ -312,6 +335,7 @@ $appTextColorAlternative: #2d9649;
         .filterTitle {
             padding-left: 10px;
             font-weight: bold;
+            font-size: large;
             margin-bottom: 5px;
         }
 

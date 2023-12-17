@@ -26,6 +26,7 @@ const ContentFilter = (props: ContentFilterPropsType): JSX.Element => {
 
     const [ isOpen, setIsOpen ] = useState<boolean>(false);
 
+    const [ isDateFilterEnabled, setIsDateFilterEnabled ] = useState<boolean>(currentFilter?.dateFrom !== undefined);
     const [ dateFrom, setDateFrom] = useState<string | undefined>(currentFilter?.dateFrom ?? undefined);
     const [ dateTo, setDateTo] = useState<string | undefined>(currentFilter?.dateTo ?? undefined);
     const [ contentType, setContentType] = useState<string>(currentFilter?.contentType ?? 'all');
@@ -45,9 +46,15 @@ const ContentFilter = (props: ContentFilterPropsType): JSX.Element => {
             return;
         }
 
+        const dateFilter = isDateFilterEnabled
+            ? {
+                dateFrom,
+                dateTo
+            }
+            : undefined;
+
         onFilterChanged({
-            dateFrom,
-            dateTo,
+            ...dateFilter,
             contentType,
             location: isLocationEnabled ? location : undefined,
         });
@@ -57,6 +64,10 @@ const ContentFilter = (props: ContentFilterPropsType): JSX.Element => {
 
     const openCloseToggleClickHandler = (): void => {
         setIsOpen(!isOpen);
+    };
+
+    const isDateFilterEnabledChanged = (e: React.FormEvent<HTMLInputElement>): void => {
+        setIsDateFilterEnabled(e.currentTarget.checked);
     };
 
     const dateFromChanged = (e: React.FormEvent<HTMLInputElement>): void => {
@@ -93,16 +104,33 @@ const ContentFilter = (props: ContentFilterPropsType): JSX.Element => {
         })
     };
 
+    const filterList = [];
+    if (currentFilter?.contentType !== 'all') {
+        filterList.push(<div key="contentType">{currentFilter?.contentType}</div>);
+    }
+    if (currentFilter?.dateFrom !== undefined) {
+        filterList.push(<div key="dateFrom">{`${currentFilter?.dateFrom}-`}</div>);
+    }
+    if (currentFilter?.dateTo !== undefined) {
+        filterList.push(<div key="dateTo">{`-${currentFilter?.dateTo}`}</div>);
+    }
+    if (currentFilter?.location !== undefined) {
+        filterList.push(<div key="location">Location</div>);
+    }
+
+
     return (<div className={hmvStyle.contentFilterContainer}>
-        <div className={hmvStyle.filterHeader}>
+        <div className={`${hmvStyle.filterHeader} ${filterList.length > 0 ? hmvStyle.filtered : ''}`}>
             <span className={hmvStyle.filterOpenToggle} onClick={openCloseToggleClickHandler}>
                 {isOpen ? String.fromCodePoint(8743) : String.fromCodePoint(8744)}
             </span>
-            <span>Detailed search</span>
+            <span className={hmvStyle.filterCaption}>Detailed search</span>
+            <div className={hmvStyle.filterList}>{filterList}</div>
         </div>
         <div className={`${hmvStyle.filterBody} ${isOpen ? hmvStyle.isOpen : ''}`}>
             <div className={hmvStyle.filterSection}>
                 <div className={hmvStyle.filterTitle}>Content date</div>
+                <div><label>Filter to content date&nbsp;&nbsp;<input type="checkbox" name="isDateFilterEnabled" onChange={isDateFilterEnabledChanged} /></label></div>
                 <div className={hmvStyle.intervalContainer}>
                     <input
                         type="date"
