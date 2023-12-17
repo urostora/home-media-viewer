@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { type Bounds, Map } from "pigeon-maps"
+import { type Bounds, Map, Marker } from "pigeon-maps"
 
 import hmvStyle from '@/styles/hmv.module.scss';
 import type { LocationFilter } from "@/types/api/generalTypes";
@@ -77,19 +77,19 @@ const ContentFilter = (props: ContentFilterPropsType): JSX.Element => {
         setIsLocationEnabled(e.currentTarget.checked);
     };
 
-    const handleMapBoundsChanged = ({ center, zoom, bounds, initial }: {
+    const handleMapBoundsChanged = ({ center, bounds }: {
         center: [number, number];
         bounds: Bounds;
         zoom: number;
         initial: boolean;
     }): void => {
-        const treshold = bounds.sw[0] - bounds.ne[0];
+        const treshold = (bounds.sw[0] - bounds.ne[0]) / 4;
 
         setLocation({
             latitude: center[0],
             longitude: center[1],
             latitudeTreshold: Math.abs(treshold),
-            longitudeTreshold: Math.abs(treshold),
+            longitudeTreshold: Math.abs(treshold) / Math.cos(center[0] / 180 * Math.PI),
         })
     };
 

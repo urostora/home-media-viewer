@@ -127,6 +127,10 @@ export default function FileList(): JSX.Element {
         setData(null);
         setIsLastData(false);
 
+        if (contentFilter.location !== undefined) {
+            console.log('Location changed to', contentFilter.location);
+        }
+
         const filter: FileSearchType = {
             ...getFileFilter(),
             contentDate: { from: contentFilter.dateFrom, to: contentFilter.dateTo },
