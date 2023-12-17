@@ -12,7 +12,7 @@ import type { FileResultType, FileSearchType } from '@/types/api/fileTypes';
 const TAKE_VALUE = 50;
 
 export default function FileList(): JSX.Element {
-    const [ currentFilter, setCurrentFilter ] = useState<ContentFilterType>({ dateFrom: '2000-01-01', dateTo: `${new Date().getFullYear() + 1}-01-01`, contentType: 'all', location: undefined });
+    const [ currentFilter, setCurrentFilter ] = useState<ContentFilterType>({ dateFrom: undefined, dateTo: undefined, contentType: 'all', location: undefined });
     const [ data, setData ] = useState<FileResultType[] | null>(null);
     const [ isLoading, setLoading ] = useState<boolean>(false);
     const [ isLastData, setIsLastData ] = useState<boolean>(false);

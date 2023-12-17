@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { type Bounds, Map, Marker } from "pigeon-maps"
+import { type Bounds, Map } from "pigeon-maps"
 
 import hmvStyle from '@/styles/hmv.module.scss';
 import type { LocationFilter } from "@/types/api/generalTypes";
@@ -27,8 +27,8 @@ const ContentFilter = (props: ContentFilterPropsType): JSX.Element => {
     const [ isOpen, setIsOpen ] = useState<boolean>(false);
 
     const [ isDateFilterEnabled, setIsDateFilterEnabled ] = useState<boolean>(currentFilter?.dateFrom !== undefined);
-    const [ dateFrom, setDateFrom] = useState<string | undefined>(currentFilter?.dateFrom ?? undefined);
-    const [ dateTo, setDateTo] = useState<string | undefined>(currentFilter?.dateTo ?? undefined);
+    const [ dateFrom, setDateFrom] = useState<string | undefined>(currentFilter?.dateFrom ?? '2000-01-01');
+    const [ dateTo, setDateTo] = useState<string | undefined>(currentFilter?.dateTo ?? `${new Date().getFullYear() + 1}-01-01`);
     const [ contentType, setContentType] = useState<string>(currentFilter?.contentType ?? 'all');
     const [ isLocationEnabled, setIsLocationEnabled ] = useState<boolean>(currentFilter?.location !== undefined);
     const [ location, setLocation ] = useState<LocationFilter | undefined>(currentFilter?.location);
@@ -108,10 +108,10 @@ const ContentFilter = (props: ContentFilterPropsType): JSX.Element => {
     if (currentFilter?.contentType !== 'all') {
         filterList.push(<div key="contentType">{currentFilter?.contentType}</div>);
     }
-    if (currentFilter?.dateFrom !== undefined) {
+    if (isDateFilterEnabled && currentFilter?.dateFrom !== undefined) {
         filterList.push(<div key="dateFrom">{`${currentFilter?.dateFrom}-`}</div>);
     }
-    if (currentFilter?.dateTo !== undefined) {
+    if (isDateFilterEnabled && currentFilter?.dateTo !== undefined) {
         filterList.push(<div key="dateTo">{`-${currentFilter?.dateTo}`}</div>);
     }
     if (currentFilter?.location !== undefined) {
