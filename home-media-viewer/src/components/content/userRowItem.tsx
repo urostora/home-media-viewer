@@ -246,14 +246,14 @@ const UserRowItem = (props: UserRowItemProperties): JSX.Element => {
         // edit / add user data
         content = (
             <div className={`${style.isEditing} ${style.row}`} data-id={user?.id ?? ''}>
-                {user === undefined ? null : <div className={style.fullWidthField}>Add new user</div>}
+                {user !== undefined ? null : <div className={style.fullWidthField}>Add new user</div>}
                 <div className={style.nameField}><span>Name</span><input type="text" name="name" required defaultValue={user?.name ?? ''} placeholder="Name" /></div>
                 <div className={style.emailField}><span>E-mail</span><input type="email" name="email" required defaultValue={user?.email ?? ''} placeholder="E-mail address" /></div>
                 <div className={style.isAdminField}><span>Admin</span><input type="checkbox" name="isAdmin" value={1} defaultChecked={user?.isAdmin ?? false} /></div>
                 <div className={style.passwordField}><span>{user === undefined ? 'Reset password' : 'Password'}</span><input type="password" name="newPassword" autoComplete="off" defaultValue="" placeholder="Password" /></div>
                 <div className={style.fullWidthField}>
                     <button className={`${style.buttonElement} ${style.primaryButton}`} onClick={onSaveClicked} disabled={isInProgress}>Save</button>
-                    {user === undefined ? <button className={style.buttonElement} onClick={onCancelEdit}>Cancel</button> : null}
+                    {user !== undefined ? <button className={style.buttonElement} onClick={onCancelEdit}>Cancel</button> : null}
                 </div>
                 {albumConnectionSection}
                 {errorContent}

@@ -49,7 +49,10 @@ const UserListPage = (): JSX.Element => {
         content = <UserList users={users} onUserChanged={onUserChanged} />;
     }
 
-    return <div className={style.generalListContainer}>{content}</div>;
+    return (<div className={style.generalListContainer}>
+        <div className={style.listTitle}>Users</div>
+        {content}
+        </div>);
 };
 
 export default UserListPage;
