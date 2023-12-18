@@ -9,6 +9,7 @@ export interface AlbumSearchType extends StatusSearchType {
   user?: string;
   status?: $Enums.Status | $Enums.Status[];
   metadataStatus?: $Enums.MetadataProcessingStatus | $Enums.MetadataProcessingStatus[];
+  returnThumbnails?: boolean;
 }
 
 export interface AlbumUpdateType extends EditEntityWithStatusType {
@@ -25,6 +26,7 @@ export interface AlbumAddType {
 export interface AlbumFile {
   id: string;
   thumbnailImage?: string;
+  contentDate?: string;
 }
 
 export interface AlbumResultType extends EntityDataWithStatusType {

@@ -34,6 +34,7 @@ export const albumSearchDataSchema: DataValidatorSchema = [
   { field: 'user' },
   { field: 'status', valuesAllowed: statusValues, isArrayAllowed: true },
   { field: 'metadataStatus', valuesAllowed: metadataProcessingStatusValues, isArrayAllowed: true },
+  { field: 'returnThumbnails', type: 'boolean' },
 ];
 
 export const albumAddDataSchema: DataValidatorSchema = [
@@ -151,10 +152,17 @@ export const getAlbums = async (params: AlbumSearchType): Promise<EntityListResu
             status: 'Active',
             metadataStatus: 'Processed',
             isDirectory: false,
+            contentDate: {
+              not: null,
+            },
+          },
+          orderBy: {
+            contentDate: 'desc',
           },
           take: 1,
           select: {
             id: true,
+            contentDate: true,
           },
         },
       },
@@ -164,20 +172,21 @@ export const getAlbums = async (params: AlbumSearchType): Promise<EntityListResu
     }),
   ]);
 
-  results[1].forEach((res) => {
-    if (Array.isArray(res?.files) && res.files.length > 0) {
-      const albumFile: AlbumFile = res.files[0];
-
-      const thumbnail = getFileThumbnailInBase64(albumFile);
-
-      if (thumbnail !== null) {
-        albumFile.thumbnailImage = thumbnail;
-      }
-    }
+  const albumsData = results[1].map((a) => {
+    return {
+      ...a,
+      files: a.files.map((f): AlbumFile => {
+        return {
+          ...f,
+          contentDate: f.contentDate?.toISOString(),
+          thumbnailImage: params.returnThumbnails === true ? getFileThumbnailInBase64(f) ?? undefined : undefined,
+        };
+      }),
+    };
   });
 
   return {
-    data: results[1],
+    data: albumsData,
     count: results[0],
     take,
     skip,

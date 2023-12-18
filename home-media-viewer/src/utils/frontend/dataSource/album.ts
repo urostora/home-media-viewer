@@ -1,7 +1,12 @@
-import type { AlbumExtendedDataType, AlbumResultType, AlbumSearchType, AlbumUpdateType } from '@/types/api/albumTypes';
+import type {
+  AlbumDataTypeWithFiles,
+  AlbumExtendedDataType,
+  AlbumSearchType,
+  AlbumUpdateType,
+} from '@/types/api/albumTypes';
 import type { GeneralEntityListResponse, GeneralResponse, GeneralResponseWithData } from '@/types/api/generalTypes';
 
-export const apiLoadAlbums = async (args: AlbumSearchType): Promise<AlbumResultType[]> => {
+export const apiLoadAlbums = async (args: AlbumSearchType): Promise<AlbumDataTypeWithFiles[]> => {
   const fetchArgs: RequestInit = {
     method: 'post',
     body: JSON.stringify({
@@ -12,7 +17,7 @@ export const apiLoadAlbums = async (args: AlbumSearchType): Promise<AlbumResultT
   };
 
   const fetchResult = await fetch('/api/album/search', fetchArgs);
-  const resultData: GeneralEntityListResponse<AlbumResultType> = await fetchResult.json();
+  const resultData: GeneralEntityListResponse<AlbumDataTypeWithFiles> = await fetchResult.json();
 
   if (!resultData.ok) {
     throw Error(resultData.error ?? 'Could not load albums');
