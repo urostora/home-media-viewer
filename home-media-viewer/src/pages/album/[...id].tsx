@@ -27,7 +27,6 @@ const AlbumRootPage = (): JSX.Element => {
         : undefined;
 
     const onContentSelectedHandler = (content: FileResultType): void => {
-        console.log('Browse album > content selected', content);
         if (!content.isDirectory) {
             return;
         }

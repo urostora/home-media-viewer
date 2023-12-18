@@ -336,8 +336,6 @@ export const getFiles = async (
     metas: metaFilter,
   };
 
-  console.log('getFiles final filter:', JSON.stringify(filter));
-
   const results = await prisma.$transaction([
     prisma.file.count({ where: filter }),
     prisma.file.findMany({

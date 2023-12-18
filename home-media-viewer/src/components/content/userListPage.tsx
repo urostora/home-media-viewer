@@ -14,7 +14,6 @@ const UserListPage = (): JSX.Element => {
     const [ error, setError ] = useState<string | null>(null);
 
     useEffect(() => {
-        console.log('UserListPage effect');
         loadUsers();
     }, []);
 
@@ -36,7 +35,6 @@ const UserListPage = (): JSX.Element => {
     }
 
     const onUserChanged = (user: UserDataType): void => {
-        console.log(user);
         loadUsers();
     }
 

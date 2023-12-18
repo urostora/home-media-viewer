@@ -16,8 +16,6 @@ const threadCount = Math.floor(os.availableParallelism() / 2);
 const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
   const { method } = req;
 
-  // console.log('background process called');
-
   switch (method) {
     case 'GET':
       if (!isBackgroundProcessEnabled) {
