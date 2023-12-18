@@ -20,11 +20,11 @@ const updateMetadataProcess = {
 
     const parallelJobs: Array<Promise<boolean>> = [];
 
-    console.log(
-      `[${new Date().toLocaleDateString('hu-HU')} ${new Date().toLocaleTimeString('hu-HU')}] updateMetadataProcess${
-        isDevEnv ? ' (DEV settings)' : ''
-      } started with ${threadCount} threads, time limit is ${processTimeout} (${activeAlbums.length} albums found)`,
-    );
+    // console.log(
+    //   `[${new Date().toLocaleDateString('hu-HU')} ${new Date().toLocaleTimeString('hu-HU')}] updateMetadataProcess${
+    //     isDevEnv ? ' (DEV settings)' : ''
+    //   } started with ${threadCount} threads, time limit is ${processTimeout} (${activeAlbums.length} albums found)`,
+    // );
 
     for (const album of activeAlbums) {
       if (typeof albumToProcess === 'string' && albumToProcess !== album.id) {
@@ -38,7 +38,7 @@ const updateMetadataProcess = {
       }
     }
 
-    console.log('  Album files syncronized, loading metadata');
+    // console.log('  Album files syncronized, loading metadata');
 
     for (const album of activeAlbums) {
       if (typeof albumToProcess === 'string' && albumToProcess !== album.id) {
@@ -101,12 +101,12 @@ const updateMetadataProcess = {
       // console.log(`  Album ${album.name} processing finished`);
     }
 
-    const processingTimeInSec = Math.floor((Date.now() - startedOn) / 1000);
-    console.log(
-      `[${new Date().toLocaleDateString('hu-HU')} ${new Date().toLocaleTimeString(
-        'hu-HU',
-      )}] updateMetadataProcess finished in ${processingTimeInSec}s`,
-    );
+    // const processingTimeInSec = Math.floor((Date.now() - startedOn) / 1000);
+    // console.log(
+    //   `[${new Date().toLocaleDateString('hu-HU')} ${new Date().toLocaleTimeString(
+    //     'hu-HU',
+    //   )}] updateMetadataProcess finished in ${processingTimeInSec}s`,
+    // );
   },
 };
 
