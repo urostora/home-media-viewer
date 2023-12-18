@@ -1,12 +1,13 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+
 import { albumSearchDataSchema, getAlbums } from '@/utils/albumHelper';
 import { HmvError, getApiResponseWithEntityList, getRequestBodyObject, handleApiError } from '@/utils/apiHelpers';
-import type { AlbumDataTypeWithFiles, AlbumSearchType } from '@/types/api/albumTypes';
 import { withSessionRoute } from '@/utils/sessionRoute';
 import { validateData } from '@/utils/dataValidator';
+import type { AlbumDataTypeWithFiles, AlbumSearchType } from '@/types/api/albumTypes';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
-  const { method } = req;
+  const { method, session } = req;
 
   switch (method) {
     case 'POST': {
@@ -20,8 +21,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
 
         validateData(postData, albumSearchDataSchema);
 
-        if (req.session?.user?.admin !== true) {
-          postData.user = req.session?.user?.id ?? '';
+        if (session?.user?.admin !== true) {
+          postData.user = session?.user?.id ?? '';
         }
 
         const results = await getAlbums(postData);
