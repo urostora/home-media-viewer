@@ -82,10 +82,12 @@ $appTextColorAlternative: #2d9649;
 
     .leftSide {
         display: flex;
-        flex-flow: row nowrap;
+        flex-flow: row wrap;
     }
 
     .rightSide {
+        display: flex;
+        flex-flow: row wrap;
         justify-content: end;
     }
 
@@ -115,6 +117,7 @@ $appTextColorAlternative: #2d9649;
 .contentsContainer {
     display: flex;
     flex-flow: row wrap;
+    justify-content: space-between;
     width: 100%;
 }
 
@@ -135,6 +138,7 @@ $appTextColorAlternative: #2d9649;
     flex-grow: 1;
     display: flex;
     flex-flow: column nowrap;
+    justify-content: space-between;
     height: 250px;
 
     .contentName {
@@ -160,7 +164,8 @@ $appTextColorAlternative: #2d9649;
     .contentDetails {
         font-size: small;
         flex-grow: 1;
-        max-width: 260px;
+        max-width: 45%;
+        text-wrap: wrap;
 
         ul {
             list-style: none;
@@ -776,7 +781,7 @@ select.roundedElement {
     }
 }
 
-@media (max-width: 599px) {
+@media (max-width: 650px) {
 
     .mainMenu {
         width: 40px;
@@ -811,7 +816,27 @@ select.roundedElement {
         }
     }
 
-    .userListContainer {
+    .contentCardContainer {
+        max-width: 100%;
+    }
 
+    .contentCardContainer.noDetails {
+        margin: 5px;
+        height: 140px;
+        max-width: 45vw;
+
+        .contentName {
+            font-size: 0.8rem;
+        }
+
+        .contentDataContainer {
+            height: 150px;
+        
+            .imageContainer {
+                min-width: 150px;
+                max-width: 43vw;
+                height: 70%;
+            }
+        }
     }
 }
