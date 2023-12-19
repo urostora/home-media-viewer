@@ -1,11 +1,7 @@
-import MainMenu from '@/components/layout/mainMenu'
-import TitleArea from '@/components/layout/titleArea';
+import { getVersionString } from "@/utils/package";
 
-const PageFooter = () => {
-    return (
-        <div className="pageFooter">
+import style from '@/styles/hmv.module.scss';
 
-        </div>);
-}
+const PageFooter = (): JSX.Element =>  <div className={style.pageFooter}>{`HMV ${getVersionString()}`}</div>;
 
 export default PageFooter;

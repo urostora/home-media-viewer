@@ -1,11 +1,10 @@
-import { ReactNode } from 'react';
+import { type ReactNode } from 'react';
 
-import MainMenu from '@/components/layout/mainMenu'
-import TitleArea from '@/components/layout/titleArea';
+import style from '@/styles/hmv.module.scss';
 
-const PageBody = (props: { children?: ReactNode }) => {
+const PageBody = (props: { children?: ReactNode }): JSX.Element => {
     return (
-        <div className="pageBody">
+        <div className={style.pageBody}>
             {props.children}
         </div>);
 }

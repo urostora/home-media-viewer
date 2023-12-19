@@ -65,6 +65,14 @@ $appTextColorAlternative: #2d9649;
     width: 100%;
 }
 
+.pageFooter {
+    height: 25px;
+    width: 100%;
+    padding: 2px;
+    background-color: $appBackgroundColor;
+    color: $appTextColor;
+}
+
 .navigationBar {
     display: flex;
     flex-flow: row nowrap;
@@ -74,11 +82,13 @@ $appTextColorAlternative: #2d9649;
 
     .leftSide {
         display: flex;
-        flex-flow: row nowrap;
+        flex-flow: row wrap;
     }
 
     .rightSide {
-        justify-content: end;
+        display: flex;
+        flex-flow: row wrap;
+        justify-content: flex-end;
     }
 
     a, button {
@@ -107,6 +117,7 @@ $appTextColorAlternative: #2d9649;
 .contentsContainer {
     display: flex;
     flex-flow: row wrap;
+    justify-content: space-between;
     width: 100%;
 }
 
@@ -127,6 +138,7 @@ $appTextColorAlternative: #2d9649;
     flex-grow: 1;
     display: flex;
     flex-flow: column nowrap;
+    justify-content: space-between;
     height: 250px;
 
     .contentName {
@@ -152,7 +164,8 @@ $appTextColorAlternative: #2d9649;
     .contentDetails {
         font-size: small;
         flex-grow: 1;
-        max-width: 260px;
+        max-width: 45%;
+        text-wrap: wrap;
 
         ul {
             list-style: none;
@@ -210,10 +223,23 @@ $appTextColorAlternative: #2d9649;
 
     .navigationArea {
         position: fixed;
-        top: 10vh;
-        bottom: 10vh;
+        display: flex;
+        flex-direction: column;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+        top: 20vh;
+        bottom: 20vh;
         z-index: 100;
         width: 15vw;
+        cursor: pointer;
+
+        > div {
+            font-size: 5rem;
+            font-weight: bold;
+            color: $appTextColorAlternative;
+            border-radius: 3rem;
+        }
     }
 
     .previousContainer {
@@ -281,7 +307,26 @@ $appTextColorAlternative: #2d9649;
             display: inline-block;
             font-weight: bold;
             margin-right: 15px;
+            cursor: pointer;
         }
+
+        .filterList {
+            display: flex;
+            flex-flow: row wrap;
+
+            > div {
+                margin-right: 8px;
+                padding: 5px;
+                border: 1px solid $appBorderColor;
+                border-radius: 10px;
+                color: $appTextColor;
+                background-color: $appBackgroundColor;
+            }
+        }
+    }
+
+    .filterHeader.filtered .filterCaption {
+        font-weight: bold;
     }
 
     .filterBody {
@@ -294,11 +339,21 @@ $appTextColorAlternative: #2d9649;
             input[type='radio'] {
                 margin-right: 5px;
             }
+
+            > div {
+                margin-bottom: 4px;
+            }
+        }
+
+        .filterSection.fullWidth {
+            width: 100%;
+            max-width: 100%;
         }
 
         .filterTitle {
             padding-left: 10px;
             font-weight: bold;
+            font-size: large;
             margin-bottom: 5px;
         }
 
@@ -326,6 +381,17 @@ $appTextColorAlternative: #2d9649;
             height: 400px;
             width: 100%;
             overflow: hidden;
+            position: relative;
+
+            .mapCenter {
+                margin: auto;
+                border: 2px solid black;
+
+                top: 100px;
+                width: 200px;
+                height: 200px;
+                margin-top: 100px;
+            }
         }
     }
 
@@ -338,6 +404,7 @@ $appTextColorAlternative: #2d9649;
         border: 1px solid $appBorderColor;
         border-radius: 5px;
         padding: 3px;
+        color: $appTextColorAlternative;
     }
 }
 
@@ -515,6 +582,19 @@ $appTextColorAlternative: #2d9649;
     }
 }
 
+.generalListContainer {
+    margin: 3rem auto;
+    max-width: 90%;
+
+    .listTitle {
+        width: 100%;
+        text-align: center;
+        font-size: x-large;
+        font-weight: bold;
+        color: $appTextColorAlternative;
+    }
+}
+
 .videoIcon {
     position: absolute;
     top: 50%;
@@ -545,6 +625,153 @@ select.roundedElement {
     color: $appBackgroundAlternative;
 }
 
+.buttonElement {
+    padding: 4px;
+    margin-right: 5px;
+    border-radius: 3px;
+    border: 1px solid $appBorderColor;
+    background-color: $appBackgroundAlternative;
+    color: $appTextColorAlternative;
+}
+
+.buttonElement:hover {
+    background-color: $appTextColorAlternative;
+    color: $appBackgroundAlternative;
+}
+
+.buttonElement.primaryButton {
+    background-color: $appTextColorAlternative;
+    color: $appBackgroundAlternative;
+}
+
+.buttonElement.primaryButton:hover {
+    background-color: $appBackgroundAlternative;
+    color: $appTextColorAlternative;
+}
+
+// user list
+.userListContainer {
+    width: 100%;
+    // display: grid;
+    // grid-template-columns: 100px 100px 100px;
+    // grid-gap: 10px;
+
+    .isEditing {
+        border: black 1px solid;
+        border-radius: 5px;
+        padding: 1rem;
+    }
+
+    .row {
+        width: 100%;
+        display: flex;
+        flex-flow: row nowrap;
+        padding: 0.5rem;
+        margin-top: 3px;
+
+        .fullWidth {
+            width: 100%;
+        }
+
+        > div {
+            overflow-wrap: break-word;
+            margin-right: 2px;
+        }
+
+        input[type="text"],
+        input[type="email"] {
+            width: 100%;
+        }
+
+        .emailField,
+        .nameField,
+        .passwordField {
+            flex-grow: 1;
+            min-width: 130px;
+        }
+
+        .isAdminField {
+            flex-grow: 0;
+            min-width: 50px;
+            text-align: center;
+        }
+
+        .actionField {
+            flex-grow: 0;
+            min-width: 50px;
+        }
+
+        div.fullWidthField {
+            width: 100%;
+        }
+    }
+
+    .row.tableHeader {
+        font-weight: bold;
+    }
+
+    .row.isEditing {
+        flex-flow: row wrap;
+        line-height: 170%;
+
+        span {
+            display: inline-block;
+            width: 100%;
+        }
+    }
+
+    .row.isDisabled {
+        color: gray;
+    }
+
+    .albumConnectionContainer {
+        margin-top: 15px;
+        display: flex;
+        flex-flow: row wrap;
+        justify-content: space-between;
+
+        .connectionElement {
+            display: flex;
+            flex-flow: row nowrap;
+            justify-content: space-between;
+            align-content: center;
+            min-width: 200px;
+            width: 12rem;
+            margin-bottom: 5px;
+
+            > span {
+                flex-grow: 0;
+                overflow: hidden;
+            }
+
+            > input {
+                flex-grow: 1;
+                width: 40px;
+            }
+        }
+
+        .connectionElement.disabled span {
+            color: lightslategray
+        }
+
+    }
+}
+
+.errorContainer {
+    border: red 1px solid;
+    border-radius: 3px;
+    background-color: rgb(255, 171, 171);
+    padding: 1rem;
+    margin: 1rem auto;
+}
+
+// large screen
+@media (min-width: 768px) {
+    .generalListContainer {
+        width: 50rem;
+    }
+}
+
 @media (max-width: 799px) {
     
     // alternative title text
@@ -558,7 +785,7 @@ select.roundedElement {
     }
 }
 
-@media (max-width: 599px) {
+@media (max-width: 650px) {
 
     .mainMenu {
         width: 40px;
@@ -590,6 +817,30 @@ select.roundedElement {
             background-color: $appBackgroundColor;
             z-index: 100;
             position: inherit;
+        }
+    }
+
+    .contentCardContainer {
+        max-width: 100%;
+    }
+
+    .contentCardContainer.noDetails {
+        margin: 5px;
+        height: 140px;
+        max-width: 45vw;
+
+        .contentName {
+            font-size: 0.8rem;
+        }
+
+        .contentDataContainer {
+            height: 150px;
+        
+            .imageContainer {
+                min-width: 150px;
+                max-width: 43vw;
+                height: 70%;
+            }
         }
     }
 }

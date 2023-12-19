@@ -1,13 +1,8 @@
 import { useRouter } from 'next/router'
 
-import FilteredContentList from '@/components/content/filteredContentList';
-import { FileResultType, FileSearchType } from '@/types/api/fileTypes';
-import Link from 'next/link';
-
-import hmvStyle from '@/styles/hmv.module.scss';
 import Browser from '@/components/browser';
 
-const BrowsePage = () => {
+const BrowsePage = (): JSX.Element => {
     const router = useRouter();
 
     const requestedPath: string | undefined = (Array.isArray(router?.query?.path)
@@ -18,7 +13,7 @@ const BrowsePage = () => {
         return <>{`Path id (${requestedPath}) invalid`}</>;
     }
 
-    return <Browser path={requestedPath} />;
+    return <Browser key={requestedPath} path={requestedPath} />;
 };
 
 export default BrowsePage;

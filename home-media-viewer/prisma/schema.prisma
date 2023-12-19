@@ -47,7 +47,12 @@ model Album {
   connectionString String          @db.Text
   basePath         String          @db.Text
   users            User[]
-  files            File[]
+  files            File[]          @relation("AlbumFiles")
+  parentAlbumId    String?
+  parent           Album?          @relation("AlbumChildren", fields: [parentAlbumId], references: [id])
+  childAlbums      Album[]         @relation("AlbumChildren")
+  thumbnailFileId  String?
+  thumbnailFile    File?           @relation("AlbumThumbnails", fields: [thumbnailFileId], references: [id])
 }
 
 model File {
@@ -67,15 +72,17 @@ model File {
   metadataProcessingError String?                  @db.Text
   thumbnailStatus         MetadataProcessingStatus @default(New)
   thumbnailProcessedAt    DateTime?
-  albumId                 String
-  album                   Album                    @relation(fields: [albumId], references: [id])
+  albums                  Album[]                  @relation("AlbumFiles")
   metas                   FileMeta[]
   parentFileId            String?
   parentFile              File?                    @relation("DirectoryContent", fields: [parentFileId], references: [id])
   files                   File[]                   @relation("DirectoryContent")
+  albumsUseAsThumbnail    Album[]                  @relation("AlbumThumbnails")
 
   @@index([extension])
   @@index([name, extension])
+  @@index([path(length: 120)])
+  @@index([contentDate])
 }
 
 enum FileMetaType {
@@ -102,4 +109,5 @@ model FileMeta {
   @@unique([fileId, metaKey])
   @@index([fileId, metaKey])
   @@index([metaKey])
+  @@index([metaKey(length: 32), latitude, longitude])
 }

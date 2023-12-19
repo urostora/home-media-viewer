@@ -1,18 +1,17 @@
-import { NextApiRequest, NextApiResponse } from 'next';
+import type { NextApiHandler, NextApiRequest, NextApiResponse } from 'next';
 import { withSessionRoute } from '../sessionRoute';
-import { getApiResponse } from '../apiHelpers';
 
-export const apiOnlyWithAdminUsers = (handler: (req: NextApiRequest, res: NextApiResponse) => void) => {
-  const hocFunction = (req: NextApiRequest, res: NextApiResponse) => {
+export const apiOnlyWithAdminUsers = (handler: (req: NextApiRequest, res: NextApiResponse) => (Promise<void> | void)): NextApiHandler => {
+  const hocFunction = async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
     // console.log('apiOnlyWithAdminUsers session', req.session);
 
     if (req.session?.user?.admin !== true) {
       // not admin user - forbidden
-      res.status(403).json(getApiResponse({ ok: false, error: 'Only administrators allowed' }));
-      return;
+      res.status(403).send('Only administrators allowed');
+      return undefined;
     }
 
-    handler(req, res);
+    await handler(req, res);
   };
 
   return withSessionRoute(hocFunction);

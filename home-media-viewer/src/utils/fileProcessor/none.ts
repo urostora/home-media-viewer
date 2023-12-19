@@ -1,4 +1,3 @@
-import { File } from '@prisma/client';
-import { FileProcessor } from './processorFactory';
+import { type FileProcessor } from './processorFactory';
 
-export const noneFileProcessor: FileProcessor = async (file: File) => true;
+export const noneFileProcessor: FileProcessor = async () => true;

@@ -1,4 +1,4 @@
-FROM node:18 as dependencies
+FROM node:20 as devdependencies
 
 WORKDIR /home/node/app
 COPY ./home-media-viewer .
@@ -6,11 +6,11 @@ RUN npm install
 RUN npx prisma generate
 
 
-FROM node:18 as migration
+FROM node:20 as migration
 
 ENV TS_NODE_PROJECT /home/node/app/tsconfig.json
 
 WORKDIR /home/node/app
 
 COPY ./home-media-viewer .
-COPY --from=dependencies /home/node/app/node_modules ./node_modules
+COPY --from=devdependencies /home/node/app/node_modules ./node_modules

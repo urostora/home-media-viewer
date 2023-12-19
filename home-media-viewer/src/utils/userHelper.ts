@@ -1,88 +1,170 @@
-import { UserEditType } from '@/types/api/userTypes';
-import { Prisma, Status, User } from '@prisma/client';
 import bcrypt from 'bcrypt';
 
 import prisma from '@/utils/prisma/prismaImporter';
+import { HmvError } from './apiHelpers';
+import { getSimpleValueOrInFilter, getStringContainOrInFilter } from './api/searchParameterHelper';
 
-export const getHashedPassword = async (password: string) => await bcrypt.hash(password, 10);
+import type { $Enums, Prisma, User } from '@prisma/client';
+import type { UserDataType, UserEditType, UserExtendedDataType, UserSearchType } from '@/types/api/userTypes';
+import { type DataValidatorSchema, statusValues } from './dataValidator';
+import { type EntityListResult } from '@/types/api/generalTypes';
 
-export const verifyPassword = async (password: string, hashedPassword: string) =>
-  bcrypt.compare(password, hashedPassword);
+const SALT_ROUNDS = 10;
 
-export const isPasswordStrong = (password: string) => {
-  const regex = /^(?!.*\s)(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[~`!@#$%^&*()--+={}\[\]|\\:;"'<>,.?/_₹]).{8,}$/;
+export const getHashedPassword = async (password: string): Promise<string> => await bcrypt.hash(password, SALT_ROUNDS);
+
+export const verifyPassword = async (password: string, hashedPassword: string): Promise<boolean> =>
+  await bcrypt.compare(password, hashedPassword);
+
+export const isPasswordStrong = (password: string): boolean => {
+  const regex = /^(?!.*\\s)(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[~!@#$%^&*()--+={}[\\]|\\:;"'<>,.?]).{8,}$/;
   return regex.test(password);
 };
 
-export const checkUserData = async (data: UserEditType, currentId: string | null = null): Promise<void> => {
-  const { name = null, email = null, password = null, status = null } = data;
+export const userSearchDataSchema: DataValidatorSchema = [
+  { field: 'id', isArrayAllowed: true },
+  { field: 'name', isArrayAllowed: true },
+  { field: 'email', isArrayAllowed: true },
+  { field: 'isAdmin', type: 'boolean' },
+  { field: 'status', isArrayAllowed: true, valuesAllowed: statusValues },
+];
 
-  let uniqueFilters: Prisma.UserWhereInput[] = [];
+export const userAddDataSchema: DataValidatorSchema = [
+  { field: 'name', isRequired: true },
+  { field: 'email', isRequired: true },
+  { field: 'password', isRequired: true },
+  { field: 'isAdmin', type: 'boolean' },
+  { field: 'status', valuesAllowed: statusValues },
+];
+
+export const userEditDataSchema: DataValidatorSchema = [
+  { field: 'name' },
+  { field: 'email' },
+  { field: 'password' },
+  { field: 'isAdmin', type: 'boolean' },
+  { field: 'status', valuesAllowed: statusValues },
+];
+
+export const checkUserData = async (data: UserEditType, currentId: string | null = null): Promise<void> => {
+  const { name = null, email = null, password = null } = data;
+
+  const uniqueFilters: Prisma.UserWhereInput[] = [];
   if (typeof name === 'string') {
     if (name.length === 0) {
-      throw Error('Parameter "name" is empty');
+      throw new HmvError('Parameter "name" is empty', { isPublic: true });
     }
     uniqueFilters.push({ name });
   }
   if (typeof email === 'string') {
     if (email.length === 0) {
-      throw Error('Parameter "email" is empty');
+      throw new HmvError('Parameter "email" is empty', { isPublic: true });
     }
     uniqueFilters.push({ email });
   }
   if (typeof password === 'string') {
     if (!isPasswordStrong(password)) {
-      throw Error('Parameter "password" does not meet password strength requirements');
+      throw new HmvError('Parameter "password" does not meet password strength requirements', { isPublic: true });
     }
   }
 
-  let notFilter: any = {};
+  const notFilter: { id?: string } = {};
   if (currentId != null) {
     notFilter.id = currentId;
   }
-
-  let statusFilter: Status[] = [];
-  if (typeof status === 'string') {
-    statusFilter = [status];
-  } else if (Array.isArray(status)) {
-    statusFilter = status;
-  }
-
-  // statusFilter = Prisma.validator<Status[]>()(statusFilter);
 
   // check if user exists with same name or email
   if (uniqueFilters.length > 0) {
     const existingUser = await prisma.user.findFirst({
       where: {
-        AND: [
-          {
-            status: {
-              in: ['Active', 'Disabled'],
-            },
-          },
-        ],
         OR: uniqueFilters,
         NOT: notFilter,
       },
     });
 
     if (existingUser != null) {
-      throw Error(`User with name ${name} or email ${email} already exists`);
+      throw new HmvError(`User with name ${name} or email ${email} already exists`, { isPublic: true });
     }
   }
+};
+
+export const searchUser = async (param: UserSearchType): Promise<EntityListResult<UserDataType>> => {
+  const filter: Prisma.UserWhereInput = {
+    id: getSimpleValueOrInFilter<string>(param?.id),
+    name: getStringContainOrInFilter(param?.name),
+    email: getStringContainOrInFilter(param?.email),
+    status: getSimpleValueOrInFilter<$Enums.Status>(param?.status) ?? { in: ['Active', 'Disabled'] },
+    isAdmin: param.isAdmin,
+  };
+
+  const take = param.take === 0 ? undefined : param.take ?? 10;
+  const skip = param.skip ?? 0;
+
+  const results = await prisma.$transaction([
+    prisma.user.count({ where: filter }),
+    prisma.user.findMany({
+      where: filter,
+      take,
+      skip,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        status: true,
+        isAdmin: true,
+      },
+    }),
+  ]);
+
+  return {
+    data: results[1],
+    count: results[0],
+    skip,
+    take,
+    debug: {
+      filter,
+    },
+  };
+};
+
+export const getUserData = async (id: string): Promise<UserExtendedDataType | null> => {
+  const user = await prisma.user.findFirst({
+    where: {
+      id,
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      status: true,
+      albums: {
+        select: {
+          id: true,
+          name: true,
+        },
+        orderBy: {
+          name: 'asc',
+        },
+      },
+      isAdmin: true,
+    },
+  });
+
+  return user;
 };
 
 export const addUser = async (data: UserEditType): Promise<User> => {
   const { name = null, email = null, password = null, isAdmin = null } = data;
 
   if (typeof name !== 'string') {
-    throw Error('Parameter "name" is not set');
+    throw new HmvError('Parameter "name" is not set', { isPublic: true });
   }
   if (typeof email !== 'string') {
-    throw Error('Parameter "email" is not set');
+    throw new HmvError('Parameter "email" is not set', { isPublic: true });
   }
   if (typeof password !== 'string') {
-    throw Error('Parameter "password" is not set');
+    throw new HmvError('Parameter "password" is not set', { isPublic: true });
+  } else if (!isPasswordStrong(password)) {
+    throw new HmvError('Parameter "password" does not match strength requirements', { isPublic: true });
   }
 
   await checkUserData(data);
@@ -97,10 +179,8 @@ export const addUser = async (data: UserEditType): Promise<User> => {
   });
 };
 
-export const updateUser = async (data: UserEditType) => {
-  const { id = null } = data;
-
-  if (id == null) {
+export const updateUser = async (id: string, data: UserEditType): Promise<User> => {
+  if (typeof id !== 'string') {
     throw Error('Parameter "id" must be a non-empty string');
   }
 
@@ -113,7 +193,7 @@ export const updateUser = async (data: UserEditType) => {
   await checkUserData(data, id);
 
   const { name = null, email = null, password = null, isAdmin = null, status = null } = data;
-  const updateData: any = {};
+  const updateData: UserEditType = {};
 
   if (typeof name === 'string') {
     updateData.name = name;
@@ -136,7 +216,7 @@ export const updateUser = async (data: UserEditType) => {
     updateData.isAdmin = isAdmin;
   }
 
-  const updatedUser = await prisma.user.update({
+  return await prisma.user.update({
     where: {
       id,
     },
@@ -144,12 +224,12 @@ export const updateUser = async (data: UserEditType) => {
   });
 };
 
-export const deleteUser = async (id: string) => {
+export const deleteUser = async (id: string): Promise<User> => {
   const user = await prisma.user.findFirst({ where: { id, status: { in: ['Active', 'Disabled'] } } });
 
   if (user == null) {
-    throw Error(`User not found with id ${id}`);
+    throw new HmvError(`User not found with id ${id}`, { isPublic: true });
   }
 
-  await prisma.user.update({ where: { id }, data: { status: 'Deleted' } });
+  return await prisma.user.update({ where: { id }, data: { status: 'Deleted' } });
 };

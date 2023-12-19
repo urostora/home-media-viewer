@@ -1,11 +1,14 @@
-import { getApiResponse } from '@/utils/apiHelpers';
+import type { NextApiRequest, NextApiResponse } from 'next';
+
+import { getApiResponse, getApiResponseWithData } from '@/utils/apiHelpers';
 import { getIronSessionOptions } from '@/utils/sessionHelper';
 import { withSessionRoute } from '@/utils/sessionRoute';
-import { NextApiRequest, NextApiResponse } from 'next';
+
+import type { LoginResponseDataType } from '@/types/loginTypes';
 
 import prisma from '@/utils/prisma/prismaImporter';
 
-const handler = async (req: NextApiRequest, res: NextApiResponse) => {
+const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
   const isAuthenticated = req?.session?.user?.id != null;
 
   if (!isAuthenticated == null) {
@@ -23,14 +26,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 
   res.send(
-    getApiResponse({
-      ok: true,
-      data: {
-        name: user.name,
-        email: user.email,
-        isAdmin: user.isAdmin,
-        sessionExpiresOn: new Date().getTime() + getIronSessionOptions().cookieOptions.ttl,
-      },
+    getApiResponseWithData<LoginResponseDataType>({
+      name: user.name,
+      email: user.email,
+      isAdmin: user.isAdmin,
+      sessionExpiresOn: new Date().getTime() + getIronSessionOptions().cookieOptions.ttl,
+      sessionExpiresInSeconds: getIronSessionOptions().cookieOptions.ttl,
     }),
   );
 };

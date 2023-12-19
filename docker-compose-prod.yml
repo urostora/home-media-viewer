@@ -3,7 +3,7 @@ services:
   db:
     container_name: home-media-viewer-db
     hostname: home-media-viewer-db
-    image: "mariadb:10"
+    image: "mariadb:11"
     environment:
       MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
       MARIADB_DATABASE: ${MARIADB_DATABASE}
@@ -28,7 +28,6 @@ services:
     user: "0"
     depends_on:
       - db
-    restart: always
     environment:
       APP_ALBUM_ROOT_PATH: ${APP_ALBUM_ROOT_PATH}
       DATABASE_URL: ${DATABASE_URL}

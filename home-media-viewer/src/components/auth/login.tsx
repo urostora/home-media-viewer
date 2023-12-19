@@ -1,23 +1,23 @@
-import { LoginRequestType } from "@/types/loginTypes";
+import { type FormEvent, useState } from "react";
+
 import { apiLogin } from "@/utils/frontend/dataSource/auth";
-import { FormEvent, useState } from "react";
-import { AuthData } from "./authContext";
+import { type AuthData } from "./authContext";
+
 import hmvStyle from '@/styles/hmv.module.scss';
 
-
 interface LoginProps {
-    onUserAuthenticated(ad: AuthData): void;
+    onUserAuthenticated: (ad: AuthData) => void;
 }
 
-const Login = (props: LoginProps) => {
+const Login = (props: LoginProps): JSX.Element => {
     const [ errorMessage, setErrorMessage ] = useState<string | null>(null);
 
     const { onUserAuthenticated } = props;
 
-    const onLoginRequest = async (event: FormEvent) => {
+    const onLoginRequest = (event: FormEvent): void => {
         event.preventDefault();
 
-        const data = new FormData(event.currentTarget as HTMLFormElement) as any;
+        const data = new FormData(event.currentTarget as HTMLFormElement);
 
         if (
             typeof data.get('email') !== 'string'
@@ -30,13 +30,12 @@ const Login = (props: LoginProps) => {
         setErrorMessage(null);
 
         const requestData = {
-            email: data.get('email'),
-            password: data.get('password'),
+            email: data.get('email') as string ?? '',
+            password: data.get('password') as string ?? '',
         }
 
-        try {
-            const result = await apiLogin(requestData);
-
+        apiLogin(requestData)
+        .then(result => {
             if (result === null) {
                 setErrorMessage('Invalid email or password');
                 return;
@@ -46,12 +45,12 @@ const Login = (props: LoginProps) => {
                 isLoggedIn: true,
                 ...result
             });
-        } catch(e) {
+        }).catch(e => {
             if (typeof e === 'string')
                 setErrorMessage(e);
             else
                 setErrorMessage('Invalid email or password');
-        }
+        });
     }
 
     return (<div className={hmvStyle.loginForm}>

@@ -1,4 +1,4 @@
-FROM node:18 as dependencies
+FROM node:20 as devdependencies
 
 WORKDIR /home/node/app
 COPY ./home-media-viewer .
@@ -6,7 +6,7 @@ RUN npm install
 RUN npx prisma generate
 
 
-FROM node:18 as testrunner
+FROM node:20 as testrunner
 
 ENV TS_NODE_PROJECT /home/node/app/tsconfig.json
 
@@ -22,7 +22,7 @@ WORKDIR /home/node/app
 
 RUN chown -R node:node /home/node
 
-COPY --from=dependencies --chown=node:node /home/node/app/node_modules ./node_modules
+COPY --from=devdependencies --chown=node:node /home/node/app/node_modules ./node_modules
 COPY --chown=node:node ./home-media-viewer .
 
 ######################################################

@@ -1,6 +1,6 @@
 import FileList from '@/components/fileList';
 
-const SearchPage = () => {
+const SearchPage = (): JSX.Element => {
   return <FileList />;
 };
 

@@ -1,25 +1,24 @@
-import { BrowseResultFile } from "@/types/api/browseTypes"
-
-import hmvStyle from '@/styles/hmv.module.scss';
-import { contentSizeToString } from "@/utils/metaUtils";
 import BrowseContentMenu from "./browserContentMenu";
-import { AlbumResultType } from "@/types/api/albumTypes";
+import { contentSizeToString } from "@/utils/metaUtils";
 import { isVideoByExtension } from '@/utils/frontend/contentUtils'
 
-type BrowseContentCardProps = {
+import type { BrowseResultFile } from "@/types/api/browseTypes"
+
+import hmvStyle from '@/styles/hmv.module.scss';
+
+interface BrowseContentCardProps {
     content: BrowseResultFile,
-    album?: AlbumResultType,
-    contentSelected?(content: BrowseResultFile): void,
+    contentSelected?: (content: BrowseResultFile) => void,
 }
 
-const BrowseContentCard = (props: BrowseContentCardProps) => {
-    const { content, album, contentSelected } = props;
+const BrowseContentCard = (props: BrowseContentCardProps): JSX.Element => {
+    const { content, contentSelected } = props;
 
     const name = content.name;
     const path = content.path;
     const details = content.isDirectory ? '' : contentSizeToString(content.size ?? 0);
 
-    const isDirectory = content?.isDirectory === true;
+    const isDirectory = content?.isDirectory;
     const isVideo = typeof content?.storedFile?.extension === 'string'
         ? isVideoByExtension(content.storedFile.extension)
         : false;
@@ -34,10 +33,10 @@ const BrowseContentCard = (props: BrowseContentCardProps) => {
     const hasThumbnailStyle = typeof thumbnailContent === 'string' || isDirectory ? hmvStyle.hasThumbnail : '';
 
     const videoIcon = isVideo
-        ? <img src="/play.svg" className={hmvStyle.videoIcon} />
+        ? <img alt="play icon" src="/play.svg" className={hmvStyle.videoIcon} />
         : null;
 
-    const onContentClickedHandler = (event: React.MouseEvent<HTMLDivElement>) => {
+    const onContentClickedHandler = (): void => {
         if (typeof contentSelected === 'function') {
             contentSelected(content);
         }
@@ -58,7 +57,7 @@ const BrowseContentCard = (props: BrowseContentCardProps) => {
         </div>
         <div className={hmvStyle.details}>
             <span>{details}</span>
-            <BrowseContentMenu content={content} album={album} />
+            <BrowseContentMenu content={content} />
         </div>
     </div>);
 }

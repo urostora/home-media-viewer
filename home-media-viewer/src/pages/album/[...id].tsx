@@ -1,14 +1,14 @@
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/router'
 
 import FilteredContentList from '@/components/content/filteredContentList';
-import { FileResultType } from '@/types/api/fileTypes';
-import Link from 'next/link';
+import { type FileResultType } from '@/types/api/fileTypes';
 
 import hmvStyle from '@/styles/hmv.module.scss';
 import AlbumDetails from '@/components/content/albumDetails';
 
-const AlbumRootPage = () => {
+const AlbumRootPage = (): JSX.Element => {
     const router = useRouter();
 
     const [ displayDetails, setDisplayDetails ] = useState<boolean>(false);
@@ -26,31 +26,30 @@ const AlbumRootPage = () => {
         ? router.query.id[1]
         : undefined;
 
-    const onContentSelectedHandler = (content: FileResultType) => {
-        console.log('Browse album > content selected', content);
+    const onContentSelectedHandler = (content: FileResultType): void => {
         if (!content.isDirectory) {
             return;
         }
 
-        router.push(`/album/${content.albumId}/${content.id}`);
+        void router.push(`/album/${albumId}/${content.id}`);
     };
 
-    const onDisplayDetailsToggleClicked = () => {
+    const onDisplayDetailsToggleClicked = (): void => {
         setDisplayDetails(!displayDetails);
     };
 
-    const onContentTypeChanged = (e: React.FormEvent<HTMLSelectElement>) => {
+    const onContentTypeChanged = (e: React.FormEvent<HTMLSelectElement>): void => {
         const newValue = e.currentTarget.value;
 
         setContentType(newValue);
     };
 
-    const backToAlbumLink = parentFileId
+    const backToAlbumLink = parentFileId !== undefined
         ? <Link key="backToAlbum" href={`/album/${albumId}`} prefetch={false} >Back to album</Link>
         : null;
 
-    const backLink = parentFileId
-        ? <Link key="back" href={`/album/${albumId}`} prefetch={false}>Back</Link>
+    const backLink = parentFileId !== undefined
+        ? <a key="back" onClick={() => {window.history.back(); }}>Back</a>
         : null;
 
     return (<>
@@ -61,10 +60,10 @@ const AlbumRootPage = () => {
                 {backLink}
             </div>
             <div className={hmvStyle.rightSide}>
-                <select className={hmvStyle.roundedElement} onChange={onContentTypeChanged}>
-                    <option value="all" selected={contentType === 'all'}>All content type</option>
-                    <option value="image" selected={contentType === 'image'}>Only images</option>
-                    <option value="video" selected={contentType === 'video'}>Only videos</option>
+                <select className={hmvStyle.roundedElement} value={contentType} onChange={onContentTypeChanged}>
+                    <option value="all">All content type</option>
+                    <option value="image">Only images</option>
+                    <option value="video">Only videos</option>
                 </select>
                 <button onClick={onDisplayDetailsToggleClicked}>{displayDetails ? 'Hide details' : 'Display details'}</button>
             </div>

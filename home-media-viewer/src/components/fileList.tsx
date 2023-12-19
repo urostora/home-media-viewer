@@ -1,16 +1,18 @@
-import { FileResultType, FileSearchType } from '@/types/api/fileTypes';
-import { Status } from '@/types/api/generalTypes';
-import { apiLoadFiles } from '@/utils/frontend/dataSource/file';
 import { useState, useEffect } from 'react'
-import ContentFilter, { ContentFilterType } from './content/contentFilter';
+
+import ContentFilter, { type ContentFilterType } from './content/contentFilter';
 import ContentList from './content/contentList';
 import ContentDisplay from './content/contentDisplay';
 
+import { apiLoadFiles } from '@/utils/frontend/dataSource/file';
+
+import { Status } from '@/types/api/generalTypes';
+import type { FileResultType, FileSearchType } from '@/types/api/fileTypes';
 
 const TAKE_VALUE = 50;
 
-export default function FileList() {
-    const [ currentFilter, setCurrentFilter ] = useState<ContentFilterType>({ dateFrom: '2000-01-01', contentType: 'all' });
+export default function FileList(): JSX.Element {
+    const [ currentFilter, setCurrentFilter ] = useState<ContentFilterType>({ dateFrom: undefined, dateTo: undefined, contentType: 'all', location: undefined });
     const [ data, setData ] = useState<FileResultType[] | null>(null);
     const [ isLoading, setLoading ] = useState<boolean>(false);
     const [ isLastData, setIsLastData ] = useState<boolean>(false);
@@ -27,11 +29,10 @@ export default function FileList() {
         };
     }
 
-    const fetchData = async (filter: FileSearchType) => {
+    const fetchData = async (filter: FileSearchType): Promise<void> => {
         setLoading(true);
 
         try {
-            console.log('Fetch data with filter', filter);
             const result = await apiLoadFiles(filter);
 
             // look for existing data
@@ -55,27 +56,26 @@ export default function FileList() {
             }
         } catch(e) {
             setData(oldData => Array.isArray(oldData) ? [ ...oldData ] : []);
-            setErrorMessage(e ? `${e}` : 'Could not load file list');
+            setErrorMessage(e !== null ? `${e}` : 'Could not load file list');
         } finally {
             setLoading(false);
         }
     };
 
-    const loadNextPage = () => {
+    const loadNextPage = (): void => {
         if (isLoading || isLastData) {
             return;
         }
-
-        console.log(`Loading next page from element ${data?.length ?? 0}`);
 
         const filter: FileSearchType = {
             ...getFileFilter(),
             contentDate: { from: currentFilter.dateFrom, to: currentFilter.dateTo },
             contentType: currentFilter.contentType,
+            location: currentFilter.location,
             skip: data?.length ?? 0,
         };
 
-        fetchData(filter);
+        void fetchData(filter);
     };
 
     if (isScrolledToTheEnd) {
@@ -85,38 +85,43 @@ export default function FileList() {
 
     useEffect(() => {
         const onScrollEventHandler =
-            () => {
+            (): void => {
                 const body = document.body;
                 const html = document.documentElement;
 
-                const scrolledToEnd = body.clientHeight - (html.scrollTop + html.clientHeight) <= 0;
+                const scrolledToEnd = body.clientHeight - (html.scrollTop + html.clientHeight) <= 40;
 
                 if (scrolledToEnd) {
-                    console.log(`Scrolled to end, skip value: ${data?.length ?? 0}`);
                     setIsScrolledToTheEnd(true);
                 }
             }
         ;
 
-        fetchData({
+        void fetchData({
             ...getFileFilter(),
             contentDate: { from: currentFilter.dateFrom, to: currentFilter.dateTo },
             contentType: currentFilter.contentType,
+            location: currentFilter.location,
         });
 
 
-        if (document) {
-            document.addEventListener('scroll', onScrollEventHandler);
+        if (typeof document === 'object') {
+            document?.addEventListener('scroll', onScrollEventHandler);
         }
 
         return () => {
-            if (document) {
-                document.removeEventListener('scroll', onScrollEventHandler);
+            if (typeof document === 'object') {
+                document?.removeEventListener('scroll', onScrollEventHandler);
             }
         }
-    }, []);
+    }, [
+        currentFilter.contentType,
+        currentFilter.dateFrom,
+        currentFilter.dateTo,
+        currentFilter.location,
+    ]);
 
-    const onContentFilterChanged = (contentFilter: ContentFilterType) => {
+    const onContentFilterChanged = (contentFilter: ContentFilterType): void => {
 
         setCurrentFilter(contentFilter);
         setData(null);
@@ -126,35 +131,33 @@ export default function FileList() {
             ...getFileFilter(),
             contentDate: { from: contentFilter.dateFrom, to: contentFilter.dateTo },
             contentType: contentFilter.contentType,
+            location: contentFilter.location,
             skip: 0,
         };
 
-        fetchData(filter);
+        void fetchData(filter);
     };
 
-    const onCardSelected = (content: FileResultType) => {
-        console.log(`Content selected: ${content.path}`);
+    const onCardSelected = (content: FileResultType): void => {
         setContentSelected(content);
     }
 
-    const onContentDisplayClosed = () => {
+    const onContentDisplayClosed = (): void => {
         setContentSelected(null);
     }
 
-    const getContentDisplay = (content: FileResultType | null = null) => {
+    const getContentDisplay = (content: FileResultType | null = null): JSX.Element => {
         if (content == null) {
-            return null;
+            return <></>;
         }
 
         return <ContentDisplay content={content} closeHandler={onContentDisplayClosed} />;
     }
 
-    console.log({ dataLength: data?.length ?? 0, isLastData });
-
     let contentList = null;
 
-    if (!isLoading && !data) contentList = <p>No files available</p>
-    else if (data != null) contentList = <ContentList data={data} contentSelected={onCardSelected} />
+    if (!isLoading && data === null) contentList = <p>No files available</p>
+    else if (data !== null) contentList = <ContentList data={data} fileSelected={onCardSelected} />
     else contentList = null;
 
     return (<div>

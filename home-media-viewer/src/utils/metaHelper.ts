@@ -1,14 +1,13 @@
-
-import { File } from '@prisma/client';
-
 import prisma from '@/utils/prisma/prismaImporter';
 
-export const addIntMeta = async (file: File, metaKey: string, value: number) => {
-  const meta = await prisma.fileMeta.upsert({
+import type { File } from '@prisma/client';
+
+export const addIntMeta = async (file: File, metaKey: string, value: number): Promise<void> => {
+  await prisma.fileMeta.upsert({
     where: {
       fileId_metaKey: {
         fileId: file.id,
-        metaKey: metaKey,
+        metaKey,
       },
     },
     update: {
@@ -34,12 +33,12 @@ export const addIntMeta = async (file: File, metaKey: string, value: number) => 
   });
 };
 
-export const addStringMeta = async (file: File, metaKey: string, value: string) => {
+export const addStringMeta = async (file: File, metaKey: string, value: string): Promise<void> => {
   await prisma.fileMeta.upsert({
     where: {
       fileId_metaKey: {
         fileId: file.id,
-        metaKey: metaKey,
+        metaKey,
       },
     },
     update: {
@@ -65,12 +64,12 @@ export const addStringMeta = async (file: File, metaKey: string, value: string) 
   });
 };
 
-export const addFloatMeta = async (file: File, metaKey: string, value: number) => {
+export const addFloatMeta = async (file: File, metaKey: string, value: number): Promise<void> => {
   await prisma.fileMeta.upsert({
     where: {
       fileId_metaKey: {
         fileId: file.id,
-        metaKey: metaKey,
+        metaKey,
       },
     },
     update: {
@@ -96,12 +95,12 @@ export const addFloatMeta = async (file: File, metaKey: string, value: number) =
   });
 };
 
-export const addDateMeta = async (file: File, metaKey: string, value: Date) => {
+export const addDateMeta = async (file: File, metaKey: string, value: Date): Promise<void> => {
   await prisma.fileMeta.upsert({
     where: {
       fileId_metaKey: {
         fileId: file.id,
-        metaKey: metaKey,
+        metaKey,
       },
     },
     update: {
@@ -127,12 +126,17 @@ export const addDateMeta = async (file: File, metaKey: string, value: Date) => {
   });
 };
 
-export const addPositionMeta = async (file: File, metaKey: string, latitude: number, longitude: number) => {
+export const addPositionMeta = async (
+  file: File,
+  metaKey: string,
+  latitude: number,
+  longitude: number,
+): Promise<void> => {
   await prisma.fileMeta.upsert({
     where: {
       fileId_metaKey: {
         fileId: file.id,
-        metaKey: metaKey,
+        metaKey,
       },
     },
     update: {

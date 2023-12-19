@@ -1,16 +1,16 @@
-import { AlbumResultType } from './albumTypes';
-import { FileResultType } from './fileTypes';
+import { type AlbumDataType } from './albumTypes';
+import { type FileResultType } from './fileTypes';
 
 export interface BrowseResult {
   relativePath: string;
   /** Current path is a directory stored as file object */
   storedDirectory: FileResultType | null;
   /** Current path is an album root directory */
-  albumExactly: AlbumResultType | null;
+  albumExactly: AlbumDataType | null;
   /** Current path is inside a stored album path */
-  albumContains: AlbumResultType | null;
+  albumContains: AlbumDataType | null;
   /** Files and directories found in current path */
-  content: Array<BrowseResultFile>;
+  content: BrowseResultFile[];
 }
 
 export interface BrowseResultFile {
@@ -21,9 +21,10 @@ export interface BrowseResultFile {
   pathRelativeToAlbum: string | null;
   isDirectory: boolean;
   size: number;
-  dateCreatedOn: string;
-  dateModifiedOn: string;
+  dateCreatedOn: Date;
+  dateModifiedOn: Date;
   /** file object stored in database */
   storedFile: FileResultType | null;
-  storedAlbum: AlbumResultType | null;
+  storedAlbum: AlbumDataType | null;
+  exactAlbum: AlbumDataType | null;
 }

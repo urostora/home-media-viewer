@@ -5,9 +5,9 @@ export interface AuthData {
   name?: string;
   email?: string;
   isAdmin?: boolean;
-  sessionExpiresOn?: Date;
+  sessionExpiresOn?: number;
   sessionExpiresInSeconds?: number;
-  logout?(): void;
+  logout?: () => void;
 }
 
 export const AuthContext = createContext<AuthData>({ isLoggedIn: false });

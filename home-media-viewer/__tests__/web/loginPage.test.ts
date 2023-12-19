@@ -2,7 +2,7 @@
  * @jest-environment puppeteer
  */
 
-import type { Page, Browser } from 'puppeteer';
+import type { Page } from 'puppeteer';
 
 describe('HMV Login page', () => {
   let testPage: Page;
@@ -27,7 +27,7 @@ describe('HMV Login page', () => {
 
     expect(requiredPropertyValue).toEqual(true);
 
-    const label = await usernameInput?.evaluateHandle(el => el.previousSibling, usernameInput, { timeout: 5000 });
+    const label = await usernameInput?.evaluateHandle((el) => el.previousSibling, usernameInput, { timeout: 5000 });
 
     expect(label?.asElement()).not.toBeNull();
 
@@ -41,13 +41,13 @@ describe('HMV Login page', () => {
     const passwordInput = await testPage.waitForSelector('input[type="password"][name=password]', { timeout: 5000 });
 
     expect(passwordInput).not.toBeNull();
-    
+
     const requiredProperty = await passwordInput?.asElement()?.getProperty('required');
     const requiredPropertyValue = await requiredProperty?.jsonValue();
 
     expect(requiredPropertyValue).toEqual(true);
 
-    const label = await passwordInput?.evaluateHandle(el => el.previousSibling, passwordInput, { timeout: 5000 });
+    const label = await passwordInput?.evaluateHandle((el) => el.previousSibling, passwordInput, { timeout: 5000 });
 
     expect(label?.asElement()).not.toBeNull();
 
@@ -57,5 +57,7 @@ describe('HMV Login page', () => {
     expect(labelText).toEqual('Password');
   }, 15_000);
 
-  afterAll(async () => { await testPage?.close(); });
+  afterAll(async () => {
+    await testPage?.close();
+  });
 });

@@ -1,9 +1,10 @@
-import { Status } from '@prisma/client';
+import { type AlbumConnectedData } from './albumTypes';
 import type { EditEntityWithStatusType, StatusSearchType, EntityWithStatusType } from './generalTypes';
 
 export interface UserSearchType extends StatusSearchType {
-  name?: string;
-  email?: string;
+  name?: string | string[];
+  email?: string | string[];
+  isAdmin?: boolean;
 }
 
 export interface UserAddType {
@@ -19,12 +20,20 @@ export interface UserEditType extends EditEntityWithStatusType {
   isAdmin?: boolean;
 }
 
-export interface UserDataType extends EntityWithStatusType {
+export interface UserConnectedDataType extends EntityWithStatusType {
   name: string;
+  isAdmin: boolean;
+}
+
+export interface UserDataType extends UserConnectedDataType {
   email: string;
 }
 
+export interface UserExtendedDataType extends UserDataType {
+  albums: AlbumConnectedData[];
+}
+
 export interface UserAlbumConnectType {
-  userId?: string;
-  albumId?: string;
+  userId: string;
+  albumId: string;
 }

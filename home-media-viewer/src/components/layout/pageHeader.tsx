@@ -3,7 +3,7 @@ import TitleArea from '@/components/layout/titleArea';
 import hmvStyle from '@/styles/hmv.module.scss';
 import UserHeader from './userHeader';
 
-const PageHeader = () => {
+const PageHeader = (): JSX.Element => {
     return (
         <div className={hmvStyle.pageHeader}>
             <MainMenu />

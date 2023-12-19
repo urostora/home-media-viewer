@@ -1,21 +1,23 @@
-import { Album, File } from '@prisma/client';
-import { FileProcessor } from './processorFactory';
+import { type File } from '@prisma/client';
+import { type FileProcessor } from './processorFactory';
 import { syncFilesInAlbumAndFile } from '../fileHelper';
 
 import prisma from '@/utils/prisma/prismaImporter';
 
-export const directoryFileProcessor: FileProcessor = async (file: File, fileAlbum?: Album) => {
+export const directoryFileProcessor: FileProcessor = async (file: File) => {
   if (!file.isDirectory) {
     throw Error(`File ${file.name} is not directory`);
   }
 
-  const album = (fileAlbum ?? (await prisma.album.findFirst({ where: { id: file.albumId } }))) as Album;
+  const albums = await prisma.album.findMany({
+    where: { status: { in: ['Active', 'Disabled'] }, files: { some: { id: file.id } } },
+  });
 
-  if (album == null) {
+  if (albums.length === 0) {
     throw Error('Album not found');
   }
 
-  await syncFilesInAlbumAndFile(album, file);
+  await syncFilesInAlbumAndFile(albums[0], file);
 
   return true;
 };

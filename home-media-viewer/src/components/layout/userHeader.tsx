@@ -1,12 +1,14 @@
 import { useContext } from 'react';
-import hmvStyle from '@/styles/hmv.module.scss';
-import Link from 'next/link';
-import { AuthContext } from '../auth/authContext';
 
-const UserHeader = () => {
+import Link from 'next/link';
+import { AuthContext } from '@/components/auth/authContext';
+
+import hmvStyle from '@/styles/hmv.module.scss';
+
+const UserHeader = (): JSX.Element => {
     const authContext = useContext(AuthContext);
 
-    const onLogoutClicked = () => {
+    const onLogoutClicked = (): void => {
         if (typeof authContext.logout === 'function') {
             authContext.logout();
         }

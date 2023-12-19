@@ -1,36 +1,57 @@
+import { type $Enums } from '@prisma/client';
+
+export type DebugType = string | string[] | object;
+
 export interface GeneralResponse {
   date: string;
   ok: boolean;
-  error?: string;
-  count?: number;
   id?: string;
+  error?: string;
+  debug?: DebugType;
+}
+
+export interface GeneralResponseParameters {
+  ok?: boolean;
+  id?: string;
+  error?: string;
+  debug?: DebugType;
 }
 
 export interface GeneralResponseWithData<T> extends GeneralResponse {
   data?: T;
 }
 
-export interface GeneralEntityListResponse<T> extends GeneralResponse {
+export interface EntityListResult<T> {
   count: number;
-  data: Array<T>;
+  take?: number;
+  skip: number;
+  data: T[];
+  debug?: DebugType;
 }
 
-export interface GeneralMutationResponse extends GeneralResponse {
-  id?: string;
-  data?: object;
+export interface GeneralEntityListResponse<T> extends GeneralResponse {
+  count: number;
+  take?: number;
+  skip: number;
+  data: T[];
+}
+
+export interface GeneralMutationResponse<T> extends GeneralResponse {
+  id: string;
+  data: T;
 }
 
 export interface GeneralSearchType {
-  take?: number | null;
-  skip?: number;
+  take?: number | undefined;
+  skip?: number | undefined;
 }
 
 export interface IdSearchType extends GeneralSearchType {
-  id?: string;
+  id?: string | string[];
 }
 
 export interface StatusSearchType extends IdSearchType {
-  status?: Status;
+  status?: $Enums.Status | $Enums.Status[];
 }
 
 export enum Status {
@@ -44,19 +65,27 @@ export interface EntityType {
 }
 
 export interface EntityWithStatusType extends EntityType {
-  status: Status;
+  status: $Enums.Status;
 }
 
-export interface EditEntityType {
-  id?: string;
+export interface EntityDataWithStatusType extends EntityType {
+  status: $Enums.Status;
 }
 
-export interface EditEntityWithStatusType extends EditEntityType {
-  status?: Status | Status[];
+export interface EditEntityWithStatusType {
+  status?: $Enums.Status;
 }
 
-export type DateFilter = {
+export interface DateFilter {
   from?: string;
   to?: string;
   equals?: string;
-};
+}
+
+export interface LocationFilter {
+  latitude: number;
+  longitude: number;
+  distance?: number;
+  latitudeTreshold?: number;
+  longitudeTreshold?: number;
+}

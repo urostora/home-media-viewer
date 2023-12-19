@@ -1,12 +1,12 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getApiResponse, getEntityTypeRequestBodyObject } from '@/utils/apiHelpers';
-import { EntityType } from '@/types/api/generalTypes';
+import { type EntityType } from '@/types/api/generalTypes';
 import { deleteMetadata, loadMetadata } from '@/utils/fileHelper';
 import { apiOnlyWithAdminUsers } from '@/utils/auth/apiHoc';
 
 import prisma from '@/utils/prisma/prismaImporter';
 
-const handler = async (req: NextApiRequest, res: NextApiResponse) => {
+const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
   const { method } = req;
 
   switch (method) {
