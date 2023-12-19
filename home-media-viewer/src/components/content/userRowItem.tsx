@@ -95,6 +95,46 @@ const UserRowItem = (props: UserRowItemProperties): JSX.Element => {
         ensureAlbumConnectionsAreLoaded();
     };
 
+    const onDisableClick = (e: React.SyntheticEvent<HTMLButtonElement>): void => {
+        if (user === undefined) {
+            return;
+        }
+
+        setIsInProgress(true);
+        void apiEditUser(user.id, { status: 'Disabled' })
+            .then(result => {
+                if (typeof onUserChanged === 'function') {
+                    onUserChanged(result);
+                }
+            })
+            .catch(e => {
+                setError(`${e}`);
+            })
+            .finally(() => {
+                setIsInProgress(false);
+            });
+    };
+
+    const onEnableClick = (): void => {
+        if (user === undefined) {
+            return;
+        }
+
+        setIsInProgress(true);
+        void apiEditUser(user.id, { status: 'Active' })
+            .then(result => {
+                if (typeof onUserChanged === 'function') {
+                    onUserChanged(result);
+                }
+            })
+            .catch(e => {
+                setError(`${e}`);
+            })
+            .finally(() => {
+                setIsInProgress(false);
+            });
+    };
+
     const onSaveClicked = (e: React.SyntheticEvent): void => {
         const row = e.currentTarget.closest(`div.${style.row}`);
         if (row === null) {
@@ -204,12 +244,13 @@ const UserRowItem = (props: UserRowItemProperties): JSX.Element => {
     }
     
     if (!isInEditMode && user !== undefined) {
-        content = (<div className={style.row}>
-            <div className={style.emailField}>{user.name}</div>
+        content = (<div className={`${style.row} ${user.status === 'Disabled' ? style.isDisabled : ''}`}>
+            <div className={style.emailField}>{`${user.name}${user.status === 'Disabled' ? ' [Disabled]' : ''}`}</div>
             <div className={style.nameField}>{user.email}</div>
             <div className={style.isAdminField}>{user.isAdmin ? String.fromCodePoint(0x2714) : ''}</div>
             <div></div>
-            <div><button className={style.buttonElement} onClick={onEditClicked}>Edit</button></div>
+            <div><button className={`${style.buttonElement} ${style.primaryButton}`} onClick={onEditClicked}>Edit</button></div>
+            <div><button className={style.buttonElement} onClick={user.status === 'Active' ? onDisableClick : onEnableClick} disabled={isInProgress}>{user.status === 'Active' ? 'Disable' : 'Enable'}</button></div>
         </div>);
     } else if (isInEditMode) {
         let albumConnectionSection = null;

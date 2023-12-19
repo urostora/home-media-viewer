@@ -1,11 +1,21 @@
-import { type GeneralEntityListResponse, type GeneralResponse, type GeneralResponseWithData } from '@/types/api/generalTypes';
-import { type UserAddType, type UserDataType, type UserEditType, type UserExtendedDataType, type UserSearchType } from '@/types/api/userTypes';
+import {
+  type GeneralEntityListResponse,
+  type GeneralResponse,
+  type GeneralResponseWithData,
+} from '@/types/api/generalTypes';
+import {
+  type UserAddType,
+  type UserDataType,
+  type UserEditType,
+  type UserExtendedDataType,
+  type UserSearchType,
+} from '@/types/api/userTypes';
 
 export const apiLoadUsers = async (args: UserSearchType): Promise<UserDataType[]> => {
   const fetchArgs: RequestInit = {
     method: 'post',
     body: JSON.stringify({
-      status: 'Active',
+      status: ['Active', 'Disabled'],
       metadataStatus: 'Processed',
       ...args,
     }),
@@ -54,7 +64,7 @@ export const apiAddUser = async (data: UserAddType): Promise<UserDataType> => {
     throw Error(resultData.error ?? 'Result empty');
   }
 
-  return resultData.data ;
+  return resultData.data;
 };
 
 export const apiEditUser = async (id: string, data: UserEditType): Promise<UserDataType> => {
@@ -80,7 +90,7 @@ export const apiEditUser = async (id: string, data: UserEditType): Promise<UserD
     throw Error(resultData.error ?? 'Result empty');
   }
 
-  return resultData.data ;
+  return resultData.data;
 };
 
 export const apiDeletetUser = async (id: string): Promise<UserDataType> => {
@@ -105,7 +115,7 @@ export const apiDeletetUser = async (id: string): Promise<UserDataType> => {
     throw Error(resultData.error ?? 'Result empty');
   }
 
-  return resultData.data ;
+  return resultData.data;
 };
 
 export const apiGetUserData = async (id: string): Promise<UserExtendedDataType> => {

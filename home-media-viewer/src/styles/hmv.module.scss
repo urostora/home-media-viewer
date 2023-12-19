@@ -720,6 +720,10 @@ select.roundedElement {
         }
     }
 
+    .row.isDisabled {
+        color: gray;
+    }
+
     .albumConnectionContainer {
         margin-top: 15px;
         display: flex;
