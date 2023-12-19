@@ -89,7 +89,7 @@ export default function FileList(): JSX.Element {
                 const body = document.body;
                 const html = document.documentElement;
 
-                const scrolledToEnd = body.clientHeight - (html.scrollTop + html.clientHeight) <= 0;
+                const scrolledToEnd = body.clientHeight - (html.scrollTop + html.clientHeight) <= 40;
 
                 if (scrolledToEnd) {
                     setIsScrolledToTheEnd(true);
