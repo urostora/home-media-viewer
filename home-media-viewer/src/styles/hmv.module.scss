@@ -88,7 +88,7 @@ $appTextColorAlternative: #2d9649;
     .rightSide {
         display: flex;
         flex-flow: row wrap;
-        justify-content: end;
+        justify-content: flex-end;
     }
 
     a, button {
