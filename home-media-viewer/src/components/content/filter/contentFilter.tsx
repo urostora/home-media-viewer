@@ -3,6 +3,7 @@ import { type Bounds, Map } from "pigeon-maps"
 
 import hmvStyle from '@/styles/hmv.module.scss';
 import type { LocationFilter } from "@/types/api/generalTypes";
+import YearSeasonFilter from "./yearSeasonFilter";
 
 export interface ContentFilterType {
     dateFrom?: string;
@@ -84,6 +85,25 @@ const ContentFilter = (props: ContentFilterPropsType): JSX.Element => {
         setDateTo(e.currentTarget.value);
     };
 
+    const onYearSelected = (year: number): void => {
+        setDateFrom(`${year}-01-01`);
+        setDateTo(`${year + 1}-01-01`);
+    };
+
+    const onSeasonSelected = (fromMonth: number, toMonth: number): void => {
+        const currentYear = dateFrom === undefined
+            ? new Date().getFullYear()
+            : Number.parseInt(dateFrom.substring(0, 4)) ?? new Date().getFullYear();
+
+        setDateFrom(`${currentYear}-${fromMonth.toString().padStart(2, '0')}-01`);
+        
+        const dateTo = fromMonth >= 10 // next year
+            ? `${currentYear + 1}-01-01`
+            : `${currentYear}-${(fromMonth + 3).toString().padStart(2, '0')}-01`;
+        
+            setDateTo(dateTo);
+    };
+
     const handleContentTypeChanged = (e: React.FormEvent<HTMLInputElement>): void => {
         const newContentType=e.currentTarget.value;
 
@@ -117,15 +137,6 @@ const ContentFilter = (props: ContentFilterPropsType): JSX.Element => {
         initial: boolean;
     }): void => {
         const treshold = (bounds.sw[0] - bounds.ne[0]) / 4;
-
-        // TODO remove test log
-        console.log({
-            latitude: center[0],
-            longitude: center[1],
-            latitudeTreshold: Math.abs(treshold),
-            longitudeTreshold: Math.abs(treshold) / Math.cos(center[0] / 180 * Math.PI),
-            zoom,
-        });
 
         setLocation({
             latitude: center[0],
@@ -176,6 +187,7 @@ const ContentFilter = (props: ContentFilterPropsType): JSX.Element => {
                         onChange={dateToChanged}
                     />
                 </div>
+                <YearSeasonFilter onYearSelected={onYearSelected} onSeasonSelected={onSeasonSelected} />
             </div>
             <div className={hmvStyle.filterSection}>
                 <div className={hmvStyle.filterTitle}>Content type</div>
