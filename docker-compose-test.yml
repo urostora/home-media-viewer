@@ -18,6 +18,7 @@ services:
       - home-media-test-db-storage:/var/lib/mysql
 
   migration:
+    image: urostora/home-media-viewer/migration-test
     container_name: home-media-viewer-test-migration
     hostname: home-media-viewer-test-migration
     build:
@@ -64,6 +65,7 @@ services:
       - home-media-test-network
 
   background:
+    image: urostora/home-media-viewer/background-test
     container_name: home-media-viewer-test-background
     hostname: home-media-viewer-test-background
     build:
@@ -87,6 +89,7 @@ services:
       - home-media-test-network
 
   app:
+    image: urostora/home-media-viewer/app-test
     container_name: home-media-viewer-test-app
     hostname: home-media-viewer-test-app
     build:
