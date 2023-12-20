@@ -102,7 +102,7 @@ const AlbumDetails = (props: AlbumDetailsProps): ReactElement => {
         </div>
         <div>
             <span className={hmvStyle.caption}>Path:</span>
-            <span className={hmvStyle.value}>{albumData.basePath}</span>
+            <span className={hmvStyle.value} dangerouslySetInnerHTML={{__html: albumData.basePath.replace('_', '_<wbr>')}}></span>
         </div>
         <div>
             <span className={hmvStyle.caption}>Files:</span>

@@ -4,6 +4,12 @@
 
 A fully Docker-based NodeJs project provides web access to media files (images and videos) attached to the container. The application creates thumbnail images for the media content and extracts related metadata from them.
 
+Media files can be filtered by extracted metadata like date or location.
+
+![Album list](https://hmv.devati.net/docs/album-page.jpg)
+
+![Search by ](https://hmv.devati.net/docs/search-by-location.jpg)
+
 ## Architecture
 
 - Web
@@ -26,9 +32,9 @@ This project requires only Docker to run.
 Media content should be arranged into directories, like the following (albums can be deeper too):
 
 ```text
-root <=== this directory should be mount to the container
+root <=== this directory should be attached to the container
  |-album1
- |  |- directory1
+ |  |- internalAlbum1
  |  |   |- image111.jpg
  |  |- image11.jpg
  |  |- video11.mp4
@@ -67,7 +73,7 @@ volumes:
 
 #### Before first use
 
-- Set environment variables in .env file
+- **Set environment variables in .env file**
 
 ```text
 # Web application port on host
@@ -81,19 +87,19 @@ ADMIN_PASSWORD=P4ssw0rd
 HOSTNAME=
 ```
 
-- Load dependencies
+- **Load dependencies**
 
 `docker-compose run --rm dependencies bash -c "npm install"`
 
-- ORM (Prisma) setup
+- **ORM (Prisma) setup**
 
 `docker-compose run --rm dependencies bash -c "npx prisma generate"`
 
-- Start containers
+- **Start containers**
 
 `docker-compose up -d`
 
-- Init database
+- **Init database**
 
 `docker-compose run --rm dependencies bash -c "npx prisma migrate reset --force"`
 
@@ -154,9 +160,9 @@ Prisma commands
 
 `docker-compose run --rm dependencies sh -c "npx prisma db push"`
 
-#### Testing
+### Testing
 
-### Run all tests on developer environment
+#### Run all tests on developer environment
 
 `docker-compose run --rm testrunner bash -c "npm run test"`
 
@@ -171,11 +177,14 @@ To use this environment, set docker-compose parameters to the following:
 
 `--file docker-compose-test.yml --env-file .env-test`.
 
-App container contains the test data suite from `./test/files` directory.
+ Test suite at `./test/files` directory are attached to the app- and background containers (`/mnt/albums`).
 
 ### Containers in test environment
 
 - app
+  - app image is built with production script- app
+- background
+  - same as app container, runs background processes
 - db
 - migration
   - Runs database update / seed scripts
@@ -183,15 +192,30 @@ App container contains the test data suite from `./test/files` directory.
   - Prepares app to run UI tests
   - Runs test suite
 
+### First use / automated test run
+
+1. **Build containers**
+  `docker-compose --file docker-compose-test.yml --env-file .env-test build`
+2. **Reset database**
+  `docker-compose --file docker-compose-test.yml --env-file .env-test run --rm migration bash -c "npx prisma migrate reset --force"`
+3. **Start containers**
+  `docker-compose --file docker-compose-test.yml --env-file .env-test up -d`
+4. **Clear previous index files**
+   `docker-compose --file docker-compose-test.yml --env-file .env-test exec app sh -c "rm -R /mnt/storage/*"`
+5. **Run test suite pre-processor script**
+   `docker-compose --file docker-compose-test.yml --env-file .env-test run --rm testrunner bash -c "./scripts/initTestData.sh"`
+6. **Run test suite**
+   `docker-compose --file docker-compose-test.yml --env-file .env-test run --rm testrunner bash -c "npm run test"`
+
 ### Start containers
 
 `docker-compose --file docker-compose-test.yml --env-file .env-test up -d`
 
-### Init test data
+### Reset test data
 
 - Initialize database
   - Update (create) tables
-  `docker-compose --file docker-compose-test.yml --env-file .env-test run --rm migration bash -c "npx prisma migrate deploy"`
+  `docker-compose --file docker-compose-test.yml --env-file .env-test run --rm migration bash -c "npx prisma migrate reset --force"`
   - Set initial data (seed)
   `docker-compose --file docker-compose-test.yml --env-file .env-test run --rm migration bash -c "npx prisma db seed"`
 - Process test data suite
@@ -201,22 +225,13 @@ App container contains the test data suite from `./test/files` directory.
 
 `docker-compose --file docker-compose-test.yml --env-file .env-test run --rm testrunner bash -c "npm run test"`
 
-### Reset test environment
-
-To clear database and index file content, do the following:
-
-- reset (clear and re-seed) the database
-  - `docker-compose --file docker-compose-test.yml --env-file .env-test run --rm migration bash -c "npx prisma migrate reset --force"`
-- remove thumbnail files
-  - `docker-compose --file docker-compose-test.yml --env-file .env-test exec app sh -c "rm -R /mnt/storage/*"`
-
-After that the test datasuite can be reprocessed.
-
 ## Production environment
 
-Before initiating running production app, change keys and passwords in the environment file (.env-prod).
+Before initiating running production app, change keys and passwords in the environment file (.env-prod) or create a new compose file with a new environment.
 
-- build app
+1. **Build app**
 `docker-compose --file docker-compose-prod.yml --env-file .env-prod build app`
-- Run production app
+2. **Run DB migration scripts**
+`docker-compose --file docker-compose-prod.yml --env-file .env-prod bash -c "npx prisma migrate deploy"`
+3. **Run production app**
 `docker-compose --file docker-compose-prod.yml --env-file .env-prod up -d`

@@ -9,6 +9,8 @@ import { apiLoadFiles } from '@/utils/frontend/dataSource/file';
 import { Status } from '@/types/api/generalTypes';
 import type { FileResultType, FileSearchType } from '@/types/api/fileTypes';
 
+import style from '@/styles/hmv.module.scss';
+
 const TAKE_VALUE = 50;
 
 export default function FileList(): JSX.Element {
@@ -53,6 +55,8 @@ export default function FileList(): JSX.Element {
                 if (result.length < TAKE_VALUE) {
                     setIsLastData(true);
                 }
+            } else {
+                setIsLastData(true);
             }
         } catch(e) {
             setData(oldData => Array.isArray(oldData) ? [ ...oldData ] : []);
@@ -89,7 +93,7 @@ export default function FileList(): JSX.Element {
                 const body = document.body;
                 const html = document.documentElement;
 
-                const scrolledToEnd = body.clientHeight - (html.scrollTop + html.clientHeight) <= 40;
+                const scrolledToEnd = body.clientHeight - (html.scrollTop + html.clientHeight) <= 100;
 
                 if (scrolledToEnd) {
                     setIsScrolledToTheEnd(true);
@@ -160,10 +164,17 @@ export default function FileList(): JSX.Element {
     else if (data !== null) contentList = <ContentList data={data} fileSelected={onCardSelected} />
     else contentList = null;
 
-    return (<div>
+    let loadingContent = null;
+    if (isLoading) {
+        loadingContent = <>Loading data...</>;
+    } else if (!isLastData) {
+        loadingContent = <div className={style.fullWidthContainer}><button className={style.buttonElement} onClick={loadNextPage}>Load more content</button></div>;
+    }
+
+    return (<div className={style.fileListContainer}>
         <ContentFilter key={1} currentFilter={currentFilter} onFilterChanged={onContentFilterChanged} />
         {contentList}
-        { isLoading ? <>Loading data...</> : null }
+        { loadingContent }
         {getContentDisplay(contentSelected)}
         {typeof errorMessage === 'string'
             ? <p className='errorMessage'>{errorMessage}</p>

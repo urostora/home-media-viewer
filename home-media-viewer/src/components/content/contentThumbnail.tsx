@@ -77,7 +77,7 @@ const ContentThumbnail = (props: ContentThumbnailPropsType): JSX.Element => {
       const metaListElements: Array<{ name: string, value: string | ReactElement}> = [];
 
       metaListElements.push({name: 'Size', value: contentSizeToString(content.size ?? 0)});
-      metaListElements.push({name: 'Path', value: content.path});
+      metaListElements.push({name: 'Path', value: content.path.replace('_', '_ ').replace('/', '/ ')});
 
       if (typeof content.contentDate === 'string' && content.contentDate.length > 0) {
         const cd = new Date(content.contentDate);
@@ -111,7 +111,7 @@ const ContentThumbnail = (props: ContentThumbnailPropsType): JSX.Element => {
     return (
         <div className={`${hmvStyle.contentCardContainer} ${displayDetails ? '' : hmvStyle.noDetails}`} onClick={onCardClicked} >
             <div className={hmvStyle.contentName}>
-                <>{contentName}</>
+                <span dangerouslySetInnerHTML={{ __html: contentName.replaceAll('_', '_<wbr>')}}></span>
             </div>
             <div className={hmvStyle.contentDataContainer}>
                 {contentDetails}
