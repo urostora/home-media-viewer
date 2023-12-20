@@ -55,6 +55,8 @@ export default function FileList(): JSX.Element {
                 if (result.length < TAKE_VALUE) {
                     setIsLastData(true);
                 }
+            } else {
+                setIsLastData(true);
             }
         } catch(e) {
             setData(oldData => Array.isArray(oldData) ? [ ...oldData ] : []);

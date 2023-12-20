@@ -11,10 +11,16 @@ export interface ContentFilterType {
     location?: LocationFilter;
 }
 
+interface InternalLocationType extends LocationFilter {
+    zoom: number;
+}
+
 const defaultCenter = {
     latitude: 47.4899,
     longitude: 19.1173,
 }
+
+const defaultZoom = 9;
 
 export interface ContentFilterPropsType {
     onFilterChanged?: (filter: ContentFilterType) => void,
@@ -31,7 +37,7 @@ const ContentFilter = (props: ContentFilterPropsType): JSX.Element => {
     const [ dateTo, setDateTo] = useState<string | undefined>(currentFilter?.dateTo ?? `${new Date().getFullYear() + 1}-01-01`);
     const [ contentType, setContentType] = useState<string>(currentFilter?.contentType ?? 'all');
     const [ isLocationEnabled, setIsLocationEnabled ] = useState<boolean>(currentFilter?.location !== undefined);
-    const [ location, setLocation ] = useState<LocationFilter | undefined>(currentFilter?.location);
+    const [ location, setLocation ] = useState<InternalLocationType>({ ...defaultCenter, ...currentFilter?.location, zoom: defaultZoom });
 
     const finalFilter = {
         ...currentFilter ?? {},
@@ -88,7 +94,23 @@ const ContentFilter = (props: ContentFilterPropsType): JSX.Element => {
         setIsLocationEnabled(e.currentTarget.checked);
     };
 
-    const handleMapBoundsChanged = ({ center, bounds }: {
+    const onZoomInClicked = (): void => {
+        setLocation((location: InternalLocationType) => {
+            return {
+            ...location,
+            zoom: location.zoom + 1
+        }});
+    };
+
+    const onZoomOutClicked = (): void => {
+        setLocation((location: InternalLocationType) => {
+            return {
+            ...location,
+            zoom: location.zoom - 1
+        }});
+    }
+
+    const handleMapBoundsChanged = ({ center, bounds, zoom }: {
         center: [number, number];
         bounds: Bounds;
         zoom: number;
@@ -96,12 +118,22 @@ const ContentFilter = (props: ContentFilterPropsType): JSX.Element => {
     }): void => {
         const treshold = (bounds.sw[0] - bounds.ne[0]) / 4;
 
+        // TODO remove test log
+        console.log({
+            latitude: center[0],
+            longitude: center[1],
+            latitudeTreshold: Math.abs(treshold),
+            longitudeTreshold: Math.abs(treshold) / Math.cos(center[0] / 180 * Math.PI),
+            zoom,
+        });
+
         setLocation({
             latitude: center[0],
             longitude: center[1],
             latitudeTreshold: Math.abs(treshold),
             longitudeTreshold: Math.abs(treshold) / Math.cos(center[0] / 180 * Math.PI),
-        })
+            zoom
+        });
     };
 
     const filterList = [];
@@ -164,13 +196,20 @@ const ContentFilter = (props: ContentFilterPropsType): JSX.Element => {
             </div>
             <div className={`${hmvStyle.filterSection} ${hmvStyle.fullWidth}`}>
                 <div className={hmvStyle.filterTitle}>Location</div>
-                <div>
-                    <label>
-                        Filter to location&nbsp;&nbsp;<input type="checkbox" name="isLocationFilterEnabled" defaultChecked={isLocationEnabled} onChange={isLocationEnabledChanged} />
-                    </label>
+                <div className={hmvStyle.filterGroup}>
+                    <div>
+                        <label>
+                            Filter to location&nbsp;&nbsp;<input type="checkbox" name="isLocationFilterEnabled" defaultChecked={isLocationEnabled} onChange={isLocationEnabledChanged} />
+                        </label>
+                    </div>
+                    <div className={hmvStyle.zoomFilter}>
+                        <button className={hmvStyle.buttonElement} onClick={onZoomOutClicked}>-</button>
+                        <span>zoom</span>
+                        <button className={hmvStyle.buttonElement} onClick={onZoomInClicked}>+</button>
+                    </div>
                 </div>
                 <div className={hmvStyle.filterMap}>
-                    <Map defaultCenter={[ finalFilter?.location?.latitude ?? defaultCenter.latitude, finalFilter?.location?.longitude ?? defaultCenter.longitude]} defaultZoom={9} onBoundsChanged={handleMapBoundsChanged}>
+                    <Map defaultCenter={[ finalFilter?.location?.latitude ?? defaultCenter.latitude, finalFilter?.location?.longitude ?? defaultCenter.longitude]} defaultZoom={defaultZoom} zoom={finalFilter?.location?.zoom ?? defaultZoom} onBoundsChanged={handleMapBoundsChanged}>
                         <>
                             <div className={hmvStyle.mapCenter}></div>
                         </>
