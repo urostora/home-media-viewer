@@ -3,15 +3,16 @@ import { useEffect, useState } from "react";
 import { apiLoadAlbums } from "@/utils/frontend/dataSource/album";
 import ContentList from "./content/contentList";
 
-import type { AlbumDataTypeWithFiles, AlbumResultType } from "@/types/api/albumTypes";
+import type { AlbumExtendedResultType, AlbumResultType } from "@/types/api/albumTypes";
 
 import hmvStyle from '@/styles/hmv.module.scss';
+
 export interface AlbumListPropsType {
     onAlbumSelected?: (album: AlbumResultType) => void,
 }
 
 export default function AlbumList( props: AlbumListPropsType ): JSX.Element {
-    const [ albumData, setAlbumData ] = useState<AlbumDataTypeWithFiles[] | null>(null);
+    const [ albumData, setAlbumData ] = useState<AlbumExtendedResultType[] | null>(null);
     const [ order, setOrder ] = useState< 'nameAsc' | 'nameDesc' | 'dateAsc' | 'dateDesc' >('dateDesc');
 
     const { onAlbumSelected } = props;
@@ -37,7 +38,7 @@ export default function AlbumList( props: AlbumListPropsType ): JSX.Element {
         }
     };
 
-    albumData?.sort((a1: AlbumDataTypeWithFiles, a2: AlbumDataTypeWithFiles) => {
+    albumData?.sort((a1: AlbumExtendedResultType, a2: AlbumExtendedResultType) => {
         if (
             ['dateAsc', 'dateDesc'].includes(order)
             && Array.isArray(a1?.files)

@@ -140,6 +140,7 @@ $appTextColorAlternative: #2d9649;
     flex-flow: column nowrap;
     justify-content: space-between;
     height: 250px;
+    min-width: 300px;
 
     .contentName {
         width: 100%;
@@ -158,7 +159,7 @@ $appTextColorAlternative: #2d9649;
         display: flex;
         flex-flow: row nowrap;
         justify-content: center;
-        height: 210px;
+        flex-grow: 1;
     }
 
     .contentDetails {
@@ -173,16 +174,20 @@ $appTextColorAlternative: #2d9649;
     }
 
     .imageContainer {
-        min-width: 220px;
-        height: 85%;
-        flex-grow: 0;
+        width: 100%;
+        height: 100%;
         position: relative;
 
         img {
             width: 100%;
             height: 100%;
             object-fit: contain;
-
+            position: absolute;
+            top: 0px;
+            bottom: 0px;
+            left: 0px;
+            right: 0px;
+            display: block;
         }
     }
 }
@@ -597,8 +602,8 @@ $appTextColorAlternative: #2d9649;
 
 .videoIcon {
     position: absolute;
-    top: 50%;
-    left: 50%;
+    top: 50% !important;
+    left: 50% !important;
     width: 70px !important;
     height: 70px !important;
     margin-left: -35px;
@@ -647,6 +652,12 @@ select.roundedElement {
 .buttonElement.primaryButton:hover {
     background-color: $appBackgroundAlternative;
     color: $appTextColorAlternative;
+}
+
+.fullWidthContainer {
+    width: 100%;
+    padding: 10px;
+    text-align: center;
 }
 
 // user list
@@ -822,25 +833,16 @@ select.roundedElement {
 
     .contentCardContainer {
         max-width: 100%;
+        min-width: 120px;
     }
 
     .contentCardContainer.noDetails {
         margin: 5px;
-        height: 140px;
-        max-width: 45vw;
+        height: 165px;
+        width: 46vw;
 
         .contentName {
             font-size: 0.8rem;
-        }
-
-        .contentDataContainer {
-            height: 150px;
-        
-            .imageContainer {
-                min-width: 150px;
-                max-width: 43vw;
-                height: 70%;
-            }
         }
     }
 }

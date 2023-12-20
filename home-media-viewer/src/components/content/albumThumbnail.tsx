@@ -1,10 +1,10 @@
-import { type AlbumResultType } from "@/types/api/albumTypes";
+import type { AlbumExtendedResultType } from "@/types/api/albumTypes";
 
 import hmvStyle from '@/styles/hmv.module.scss';
 
 interface AlbumThumbnailProps {
-    contentSelected?: (content: AlbumResultType) => void,
-    content: AlbumResultType,
+    contentSelected?: (content: AlbumExtendedResultType) => void,
+    content: AlbumExtendedResultType,
 }
 
 const AlbumThumbnail = (props: AlbumThumbnailProps): JSX.Element => {
@@ -21,12 +21,14 @@ const AlbumThumbnail = (props: AlbumThumbnailProps): JSX.Element => {
         : <></>;
 
     return (
-        <div className={`${hmvStyle.contentCardContainer} ${hmvStyle.albumCardContainer}`} onClick={onCardClicked} >
+        <div className={`${hmvStyle.contentCardContainer} ${hmvStyle.albumCardContainer} ${hmvStyle.noDetails}`} onClick={onCardClicked} >
             <div className={hmvStyle.contentName}>
-                <>{content.name}</>
+                <span dangerouslySetInnerHTML={{ __html: content.name.replaceAll('_', '_<wbr>')}}></span>
             </div>
-            <div className={hmvStyle.imageContainer}>
-                {imageContent}
+            <div className={hmvStyle.contentDataContainer}>
+                <div className={hmvStyle.imageContainer}>
+                    {imageContent}
+                </div>
             </div>
         </div>
     );

@@ -1,16 +1,19 @@
-import { type FileResultType } from "@/types/api/fileTypes";
-import ContentThumbnail from "./contentThumbnail";
-import hmvStyle from '@/styles/hmv.module.scss';
-import { type AlbumResultType } from "@/types/api/albumTypes";
-import AlbumThumbnail from "./albumThumbnail";
 import { useState } from "react";
+
+import AlbumThumbnail from "./albumThumbnail";
 import ContentDisplay from "./contentDisplay";
+import ContentThumbnail from "./contentThumbnail";
+
+import type { AlbumExtendedResultType, AlbumResultType } from "@/types/api/albumTypes";
+import { type FileResultType } from "@/types/api/fileTypes";
+
+import hmvStyle from '@/styles/hmv.module.scss';
 
 export interface ContentListPropsType {
     albumSelected?: (album: AlbumResultType) => void,
     fileSelected?: (file: FileResultType) => void,
     contentSelected?: (content: FileResultType | AlbumResultType) => void,
-    data: Array<FileResultType | AlbumResultType>,
+    data: Array<FileResultType | AlbumExtendedResultType>,
     displaySelectedContent?: boolean,
     displayDetails?: boolean,
 }
@@ -42,7 +45,7 @@ const ContentList = (props: ContentListPropsType): JSX.Element => {
         }
     }
 
-    const getCurrentPosition = (currentContent: FileResultType | AlbumResultType | undefined): number | null => {
+    const getCurrentPosition = (currentContent: FileResultType | AlbumExtendedResultType | undefined): number | null => {
         if (data === null || currentContent === undefined) {
             return null;
         }
