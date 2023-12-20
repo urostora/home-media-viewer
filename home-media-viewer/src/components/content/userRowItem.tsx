@@ -75,7 +75,7 @@ const UserRowItem = (props: UserRowItemProperties): JSX.Element => {
 
         if (allAlbums === undefined) {
             setIsLoadingAlbumData(true);
-            apiLoadAlbums({ status: ['Active', 'Disabled' ], metadataStatus: undefined})
+            apiLoadAlbums({ status: ['Active', 'Disabled' ], take: 0, metadataStatus: undefined})
                 .then(albums => {
                     setAllAlbums(albums);
 
@@ -267,8 +267,10 @@ const UserRowItem = (props: UserRowItemProperties): JSX.Element => {
                             data-album-id={ac.albumId}
                             data-user-id={ac.userId}
                         >
-                            <input type="checkbox" value={1} disabled={ac.isAlbumDeleted} defaultChecked={ac.isConnected} onChange={onAlbumConnectionChanged} />
-                            <span>{ac.albumName}</span>
+                            <label>
+                                <input type="checkbox" value={1} disabled={ac.isAlbumDeleted} defaultChecked={ac.isConnected} onChange={onAlbumConnectionChanged} />
+                                {ac.albumName}
+                            </label>
                         </div>);
                 });
 

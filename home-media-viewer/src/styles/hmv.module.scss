@@ -683,7 +683,7 @@ select.roundedElement {
     .row {
         width: 100%;
         display: flex;
-        flex-flow: row nowrap;
+        flex-flow: row wrap;
         padding: 0.5rem;
         margin-top: 3px;
 
@@ -731,6 +731,8 @@ select.roundedElement {
     .row.isEditing {
         flex-flow: row wrap;
         line-height: 170%;
+        border: 1px solid $appBorderColor;
+        border-radius: 15px;
 
         span {
             display: inline-block;
@@ -753,18 +755,21 @@ select.roundedElement {
             flex-flow: row nowrap;
             justify-content: space-between;
             align-content: center;
-            min-width: 200px;
+            min-width: 160px;
             width: 12rem;
             margin-bottom: 5px;
 
-            > span {
+            input {
+                display: inline-block;
                 flex-grow: 0;
-                overflow: hidden;
+                width: 40px;
             }
 
-            > input {
+            span {
+                display: inline-block;
                 flex-grow: 1;
-                width: 40px;
+                overflow: hidden;
+                text-wrap: pretty;
             }
         }
 
@@ -836,6 +841,10 @@ select.roundedElement {
             z-index: 100;
             position: inherit;
         }
+    }
+
+    .albumConnectionContainer .connectionElement {
+        width: 40vw !important;
     }
 
     .contentCardContainer {
