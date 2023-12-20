@@ -348,6 +348,21 @@ $appTextColorAlternative: #2d9649;
             > div {
                 margin-bottom: 4px;
             }
+
+            .filterGroup {
+                display: flex;
+                flex-flow: row wrap;
+                justify-content: space-between;
+                gap: 10px;
+            }
+
+            .zoomFilter {
+                button {
+                    width: 25px;
+                    font-size: large;
+                    font-weight: bold;
+                }
+            }
         }
 
         .filterSection.fullWidth {
@@ -457,15 +472,6 @@ $appTextColorAlternative: #2d9649;
         margin-right: 10px;
         font-size: large;
         font-weight: bold;
-    }
-
-    button {
-        border: $appBorderColor 1px solid;
-        border-radius: 5px;
-        padding: 5px;
-        background-color: $appBackgroundAlternative;
-        color: $appTextColorAlternative;
-        cursor: pointer;
     }
 }
 
@@ -613,6 +619,7 @@ $appTextColorAlternative: #2d9649;
 select.roundedElement {
     border-color: $appBorderColor;
     color: $appTextColorAlternative;
+    background-color: $appBackgroundAlternative;
     border-radius: 15px;
     padding: 10px;
 }
@@ -844,5 +851,23 @@ select.roundedElement {
         .contentName {
             font-size: 0.8rem;
         }
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    $appBackgroundAlternative: black;
+
+    .userHeaderContainer {
+        background-color: black;
+        color: white;
+    }
+
+    .contentCardContainer {
+        background-color: black;
+    }
+
+    select.roundedElement {
+        color: white;
+        background-color: black;
     }
 }

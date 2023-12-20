@@ -19,7 +19,7 @@ const UserHeader = (): JSX.Element => {
             <span className={hmvStyle.userName}>
                 <Link href="/album">{authContext.name}</Link>
             </span>
-            <button onClick={onLogoutClicked}>Logout</button>
+            <button className={hmvStyle.buttonElement} onClick={onLogoutClicked}>Logout</button>
         </div>
     );
 }
