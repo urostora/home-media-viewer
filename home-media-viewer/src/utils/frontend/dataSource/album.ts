@@ -46,7 +46,7 @@ export const apiAlbumAdd = async (path: string): Promise<void> => {
 
 export const apiAlbumUpdate = async (id: string, data: AlbumUpdateType): Promise<void> => {
   const fetchArgs: RequestInit = {
-    method: 'PUT',
+    method: 'PATCH',
     body: JSON.stringify(data),
   };
 

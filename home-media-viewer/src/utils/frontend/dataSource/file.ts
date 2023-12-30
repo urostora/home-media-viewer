@@ -15,11 +15,7 @@ export const apiGetFile = async (id: string): Promise<FileResultType | null> => 
     throw Error(resultData.error ?? 'Could not load files');
   }
 
-  if (!Array.isArray(resultData?.data)) {
-    throw Error(resultData.error ?? 'Result contains no file list');
-  }
-
-  return resultData.data;
+  return resultData.data ?? null;
 };
 
 export const apiLoadFiles = async (args: FileSearchType): Promise<FileResultType[]> => {

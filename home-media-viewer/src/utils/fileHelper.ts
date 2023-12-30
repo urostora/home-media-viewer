@@ -153,7 +153,10 @@ export const getFileById = async (
           },
         };
 
-  const file = await prisma.file.findFirst({ where: { id, albums: albumWhere }, include: { metas: true } });
+  const file = await prisma.file.findFirst({
+    where: { id, albums: albumWhere },
+    include: { metas: true, albums: true },
+  });
 
   if (file === null) {
     return null;
