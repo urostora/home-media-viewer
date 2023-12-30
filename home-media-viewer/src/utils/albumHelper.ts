@@ -414,8 +414,6 @@ export const updateAlbum = async (id: string, data: AlbumUpdateType): Promise<Al
     return null;
   }
 
-  console.log('Album update data', updateData);
-
   const updatedAlbum = await prisma.album.update({
     where: {
       id,
