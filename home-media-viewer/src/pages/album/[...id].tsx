@@ -3,10 +3,11 @@ import Link from 'next/link';
 import { useRouter } from 'next/router'
 
 import FilteredContentList from '@/components/content/filteredContentList';
-import { type FileResultType } from '@/types/api/fileTypes';
+import AlbumDetails from '@/components/content/albumDetails';
+
+import type { FileResultType } from '@/types/api/fileTypes';
 
 import hmvStyle from '@/styles/hmv.module.scss';
-import AlbumDetails from '@/components/content/albumDetails';
 
 const AlbumRootPage = (): JSX.Element => {
     const router = useRouter();
@@ -18,12 +19,18 @@ const AlbumRootPage = (): JSX.Element => {
         ? router.query.id[0]
         : router.query.id;
 
+    const queryIds: string[] = router?.query?.id !== undefined
+    ? (Array.isArray(router?.query?.id)
+        ? router.query.id
+        : [router.query.id])
+    : [];
+
     if (typeof albumId !== 'string' || albumId.length <= 10) {
         return <>{`Album id (${albumId}) invalid`}</>;
     }
 
-    const parentFileId = Array.isArray(router?.query?.id)
-        ? router.query.id[1]
+    const parentFileId = queryIds.length >= 2
+        ? queryIds[queryIds.length - 1]
         : undefined;
 
     const onContentSelectedHandler = (content: FileResultType): void => {
@@ -31,7 +38,7 @@ const AlbumRootPage = (): JSX.Element => {
             return;
         }
 
-        void router.push(`/album/${albumId}/${content.id}`);
+        void router.push(`/album/${queryIds.join('/')}/${content.id}`);
     };
 
     const onDisplayDetailsToggleClicked = (): void => {
@@ -44,18 +51,18 @@ const AlbumRootPage = (): JSX.Element => {
         setContentType(newValue);
     };
 
-    const backToAlbumLink = parentFileId !== undefined
-        ? <Link key="backToAlbum" href={`/album/${albumId}`} prefetch={false} >Back to album</Link>
+    const backToAlbumLink = queryIds.length > 1
+        ? <Link key="backToAlbum" href={`/album/${queryIds[0]}`} prefetch={false} >Back to album</Link>
         : null;
 
-    const backLink = parentFileId !== undefined
-        ? <a key="back" onClick={() => {window.history.back(); }}>Back</a>
+    const backLink = queryIds.length > 2
+        ? <Link key="back" href={`/album/${queryIds.slice(0, queryIds.length - 1).join('/')}`} prefetch={false} >Back</Link>
         : null;
 
     return (<>
         <div className={hmvStyle.navigationBar}>
             <div className={hmvStyle.leftSide}>
-                <Link key="backToAlbum" href={'/album'} prefetch={false} >Back to album list</Link>
+                <Link key="backToAlbumList" href={'/album'} prefetch={false} >Back to album list</Link>
                 {backToAlbumLink}
                 {backLink}
             </div>
