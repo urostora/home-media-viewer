@@ -59,6 +59,12 @@ export const getAlbum = async (id: string, onlyActive: boolean = true): Promise<
       sourceType: true,
       connectionString: true,
       parentAlbumId: true,
+      thumbnailFile: {
+        select: {
+          id: true,
+          contentDate: true,
+        },
+      },
       files: {
         where: {
           status: 'Active',
@@ -68,6 +74,7 @@ export const getAlbum = async (id: string, onlyActive: boolean = true): Promise<
         take: 1,
         select: {
           id: true,
+          contentDate: true,
         },
       },
       users: { select: { id: true, status: true, name: true, isAdmin: true }, orderBy: { name: 'asc' } },
@@ -101,8 +108,19 @@ export const getAlbum = async (id: string, onlyActive: boolean = true): Promise<
     };
   });
 
+  const thumbnailFile =
+    album.thumbnailFile ?? (Array.isArray(album.files) && album.files.length > 0 ? album.files[0] : undefined);
+
   return {
     ...album,
+    thumbnailFile:
+      thumbnailFile === undefined
+        ? undefined
+        : {
+            ...thumbnailFile,
+            contentDate: thumbnailFile.contentDate?.toISOString(),
+            thumbnailImage: getFileThumbnailInBase64(thumbnailFile) ?? undefined,
+          },
     fileStatus: fileStatusData,
   };
 };
@@ -155,9 +173,6 @@ export const getAlbums = async (params: AlbumSearchType): Promise<EntityListResu
             contentDate: {
               not: null,
             },
-          },
-          orderBy: {
-            contentDate: 'desc',
           },
           take: 1,
           select: {

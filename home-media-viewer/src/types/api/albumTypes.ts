@@ -55,6 +55,7 @@ export interface AlbumDataTypeWithFiles extends AlbumDataType {
 
 export interface AlbumExtendedDataType extends AlbumDataType {
   connectionString: string;
+  thumbnailFile?: AlbumFile;
   fileStatus: AlbumDetailsFileStatusType[];
   users?: UserConnectedDataType[];
 }
