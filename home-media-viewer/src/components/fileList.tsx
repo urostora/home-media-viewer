@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 
-import ContentFilter, { type ContentFilterType } from './content/contentFilter';
-import ContentList from './content/contentList';
-import ContentDisplay from './content/contentDisplay';
+import ContentFilter, { type ContentFilterType } from '@/components/content/filter/contentFilter';
+import ContentList from '@/components//content/contentList';
+import ContentDisplay from '@/components//content/contentDisplay';
 
 import { apiLoadFiles } from '@/utils/frontend/dataSource/file';
 

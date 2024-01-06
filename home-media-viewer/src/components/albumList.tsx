@@ -38,22 +38,6 @@ export default function AlbumList( props: AlbumListPropsType ): JSX.Element {
         }
     };
 
-    albumData?.sort((a1: AlbumExtendedResultType, a2: AlbumExtendedResultType) => {
-        if (
-            ['dateAsc', 'dateDesc'].includes(order)
-            && Array.isArray(a1?.files)
-            && a1.files.length > 0
-            && a1.files[0]?.contentDate !== undefined
-            && Array.isArray(a2?.files)
-            && a2.files.length > 0
-            && a2.files[0]?.contentDate !== undefined
-        ) {
-            return a1.files[0].contentDate.localeCompare(a2.files[0].contentDate) * (order === 'dateDesc' ? -1 : 1);
-        }
-
-        return a1.name.localeCompare(a2.name) * (order === 'nameDesc' ? -1 : 1);
-    });
-
     // get content
     if (albumData === null) {
         // no album selected, load albums first
@@ -63,6 +47,20 @@ export default function AlbumList( props: AlbumListPropsType ): JSX.Element {
     if (albumData.length === 0) {
         return <p>No albums found</p>;
     }
+    
+    albumData?.sort((a1: AlbumExtendedResultType, a2: AlbumExtendedResultType) => {
+        if (
+            ['dateAsc', 'dateDesc'].includes(order)
+            && a1.thumbnailFile !== null
+            && a1.thumbnailFile?.contentDate !== undefined
+            && a2?.thumbnailFile !== null
+            && a2.thumbnailFile?.contentDate !== undefined
+        ) {
+            return a1.thumbnailFile.contentDate.localeCompare(a2.thumbnailFile.contentDate) * (order === 'dateDesc' ? -1 : 1);
+        }
+
+        return a1.name.localeCompare(a2.name) * (order === 'nameDesc' ? -1 : 1);
+    });
 
     return (<>
         <div className={hmvStyle.navigationBar}>

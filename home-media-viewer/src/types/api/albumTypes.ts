@@ -15,6 +15,7 @@ export interface AlbumSearchType extends StatusSearchType {
 export interface AlbumUpdateType extends EditEntityWithStatusType {
   name?: string;
   status?: Status;
+  thumbnailFileId?: string;
 }
 
 export interface AlbumAddType {
@@ -34,7 +35,7 @@ export interface AlbumResultType extends EntityDataWithStatusType {
 }
 
 export interface AlbumExtendedResultType extends AlbumResultType {
-  files: AlbumFile[];
+  thumbnailFile?: AlbumFile;
 }
 
 export interface AlbumDetailsFileStatusType {
@@ -49,11 +50,12 @@ export interface AlbumDataType extends EntityDataWithStatusType {
 }
 
 export interface AlbumDataTypeWithFiles extends AlbumDataType {
-  files?: AlbumFile[];
+  thumbnailFile?: AlbumFile;
 }
 
 export interface AlbumExtendedDataType extends AlbumDataType {
   connectionString: string;
+  thumbnailFile?: AlbumFile;
   fileStatus: AlbumDetailsFileStatusType[];
   users?: UserConnectedDataType[];
 }

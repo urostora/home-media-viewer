@@ -58,6 +58,7 @@ COPY --from=proddependencies --chown=node:node /home/node/app/node_modules ./nod
 COPY --from=builder --chown=node:node /home/node/app/.next ./.next
 COPY --from=builder --chown=node:node /home/node/app/public ./public
 COPY --chown=node:node ./home-media-viewer/package.json .
+COPY --chown=node:node --chmod=555 ./home-media-viewer/runBackgroundProcess.sh .
 
 RUN mkdir -p /mnt/storage && chown -R node:node /mnt/storage
 

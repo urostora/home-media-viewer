@@ -8,7 +8,7 @@ export interface BrowseResult {
   /** Current path is an album root directory */
   albumExactly: AlbumDataType | null;
   /** Current path is inside a stored album path */
-  albumContains: AlbumDataType | null;
+  albumContains: AlbumDataType[];
   /** Files and directories found in current path */
   content: BrowseResultFile[];
 }

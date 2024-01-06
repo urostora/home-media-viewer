@@ -122,7 +122,7 @@ const ContentList = (props: ContentListPropsType): JSX.Element => {
                 contentSelected={onContentSelectedHandler}
                 displayDetails={displayDetails}
             />;
-        } else if ('files' in data) {
+        } else if ('thumbnailFile' in data) {
             return <AlbumThumbnail key={data.id} content={data} contentSelected={onContentSelectedHandler} />;
         }
 

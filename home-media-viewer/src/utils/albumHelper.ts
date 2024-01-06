@@ -3,7 +3,6 @@ import type {
   AlbumDataType,
   AlbumDataTypeWithFiles,
   AlbumExtendedDataType,
-  AlbumFile,
   AlbumSearchType,
   AlbumUpdateType,
 } from '@/types/api/albumTypes';
@@ -60,6 +59,12 @@ export const getAlbum = async (id: string, onlyActive: boolean = true): Promise<
       sourceType: true,
       connectionString: true,
       parentAlbumId: true,
+      thumbnailFile: {
+        select: {
+          id: true,
+          contentDate: true,
+        },
+      },
       files: {
         where: {
           status: 'Active',
@@ -69,9 +74,10 @@ export const getAlbum = async (id: string, onlyActive: boolean = true): Promise<
         take: 1,
         select: {
           id: true,
+          contentDate: true,
         },
       },
-      users: { select: { id: true, name: true, isAdmin: true }, orderBy: { name: 'asc' } },
+      users: { select: { id: true, status: true, name: true, isAdmin: true }, orderBy: { name: 'asc' } },
     },
   });
 
@@ -102,8 +108,19 @@ export const getAlbum = async (id: string, onlyActive: boolean = true): Promise<
     };
   });
 
+  const thumbnailFile =
+    album.thumbnailFile ?? (Array.isArray(album.files) && album.files.length > 0 ? album.files[0] : undefined);
+
   return {
     ...album,
+    thumbnailFile:
+      thumbnailFile === undefined
+        ? undefined
+        : {
+            ...thumbnailFile,
+            contentDate: thumbnailFile.contentDate?.toISOString(),
+            thumbnailImage: getFileThumbnailInBase64(thumbnailFile) ?? undefined,
+          },
     fileStatus: fileStatusData,
   };
 };
@@ -147,6 +164,7 @@ export const getAlbums = async (params: AlbumSearchType): Promise<EntityListResu
         sourceType: true,
         basePath: true,
         parentAlbumId: true,
+        thumbnailFile: true,
         files: {
           where: {
             status: 'Active',
@@ -155,9 +173,6 @@ export const getAlbums = async (params: AlbumSearchType): Promise<EntityListResu
             contentDate: {
               not: null,
             },
-          },
-          orderBy: {
-            contentDate: 'desc',
           },
           take: 1,
           select: {
@@ -175,13 +190,23 @@ export const getAlbums = async (params: AlbumSearchType): Promise<EntityListResu
   const albumsData = results[1].map((a) => {
     return {
       ...a,
-      files: a.files.map((f): AlbumFile => {
-        return {
-          ...f,
-          contentDate: f.contentDate?.toISOString(),
-          thumbnailImage: params.returnThumbnails === true ? getFileThumbnailInBase64(f) ?? undefined : undefined,
-        };
-      }),
+      thumbnailFile:
+        a.thumbnailFile !== null
+          ? {
+              ...a.thumbnailFile,
+              contentDate: a.thumbnailFile.contentDate?.toISOString(),
+              thumbnailImage:
+                params.returnThumbnails === true ? getFileThumbnailInBase64(a.thumbnailFile) ?? undefined : undefined,
+            }
+          : a.files.length > 0
+            ? {
+                ...a.files[0],
+                contentDate: a.files[0].contentDate?.toISOString(),
+                thumbnailImage:
+                  params.returnThumbnails === true ? getFileThumbnailInBase64(a.files[0]) ?? undefined : undefined,
+              }
+            : undefined,
+      files: undefined,
     };
   });
 
@@ -261,7 +286,13 @@ export const getAlbumsContainingPath = async (path: string): Promise<Album[]> =>
   }, []);
 
   const albumsContainingThisDirectory = await prisma.album.findMany({
-    where: { status: { in: ['Active', 'Disabled'] }, basePath: { in: pathList } },
+    where: {
+      status: { in: ['Active', 'Disabled'] },
+      basePath: { in: pathList },
+    },
+    orderBy: {
+      basePath: 'asc',
+    },
   });
 
   // order by path length ascending
@@ -377,15 +408,15 @@ export const updateAlbum = async (id: string, data: AlbumUpdateType): Promise<Al
     throw new HmvError('Parameter "id" must be a non-empty string');
   }
 
-  const user = await prisma.album.findFirst({ where: { id } });
+  const album = await prisma.album.findFirst({ where: { id } });
 
-  if (user == null) {
+  if (album == null) {
     throw Error(`Album not found with id ${id}`);
   }
 
   await checkAlbumData(data, id);
 
-  const { name = null, status = null } = data;
+  const { name = null, status = null, thumbnailFileId = null } = data;
   const updateData: AlbumUpdateType = {};
 
   if (typeof name === 'string') {
@@ -396,7 +427,11 @@ export const updateAlbum = async (id: string, data: AlbumUpdateType): Promise<Al
     updateData.status = status;
   }
 
-  if (updateData.name == null && updateData.status == null) {
+  if (typeof thumbnailFileId === 'string') {
+    updateData.thumbnailFileId = thumbnailFileId;
+  }
+
+  if (updateData.name == null && updateData.status == null && updateData.thumbnailFileId == null) {
     return null;
   }
 

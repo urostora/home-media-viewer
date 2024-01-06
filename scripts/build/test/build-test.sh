@@ -84,8 +84,8 @@ fi
 if [ ! -z $tag ]
 then
 	echo "Add tag $tag"
-	docker image tag urostora/home-media-viewer/app:latest urostora/home-media-viewer/app-test:$tag
-	docker image tag urostora/home-media-viewer/migration:latest urostora/home-media-viewer/migration-test:$tag
+	docker image tag urostora/home-media-viewer/app-test:latest urostora/home-media-viewer/app-test:$tag
+	docker image tag urostora/home-media-viewer/migration-test:latest urostora/home-media-viewer/migration-test:$tag
 fi
 
 # start containers

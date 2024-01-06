@@ -788,6 +788,17 @@ select.roundedElement {
     margin: 1rem auto;
 }
 
+.horizontalScrollableContainer {
+    display: flex;
+    flex-flow: row wrap;
+    gap: 5px;
+    overflow: auto;
+    scrollbar-width: 5px;
+    width: 100%;
+    margin-top: 10px;
+
+}
+
 // large screen
 @media (min-width: 768px) {
     .generalListContainer {
