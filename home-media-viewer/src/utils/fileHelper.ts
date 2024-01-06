@@ -88,6 +88,10 @@ export const syncFilesInAlbumAndFile = async (album: Album, parentFile?: File): 
   // );
 
   const filesToDelete = dbFiles.filter((f: File) => {
+    if (f.status === 'Deleted') {
+      return false;
+    }
+
     const fullName = f.name + (f.extension.length > 0 ? `.${f.extension}` : '');
     return !dirFiles.includes(fullName);
   });
