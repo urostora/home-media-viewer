@@ -286,7 +286,13 @@ export const getAlbumsContainingPath = async (path: string): Promise<Album[]> =>
   }, []);
 
   const albumsContainingThisDirectory = await prisma.album.findMany({
-    where: { status: { in: ['Active', 'Disabled'] }, basePath: { in: pathList } },
+    where: {
+      status: { in: ['Active', 'Disabled'] },
+      basePath: { in: pathList },
+    },
+    orderBy: {
+      basePath: 'asc',
+    },
   });
 
   // order by path length ascending

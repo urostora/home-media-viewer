@@ -132,12 +132,9 @@ const BrowserContentList = (props: BrowserContentListProps): JSX.Element => {
             previousHandler={onPreviousContentClickedHandler}
             nextHandler={onNextContentClickedHandler}
         />;
-    
-    const closestAlbum = content?.albumContains;
 
-    const albumDetails = closestAlbum !== null && closestAlbum !== undefined
-        ? <AlbumDetails albumId={closestAlbum.id} />
-        : null;
+
+    const albumDetailsList = content?.albumContains.map(ac => <AlbumDetails key={ac.id} albumId={ac.id} />);
 
     const contentElements = content?.content.map(c => {
         return <BrowseContentCard
@@ -148,7 +145,9 @@ const BrowserContentList = (props: BrowserContentListProps): JSX.Element => {
     });
 
     return <div>
-        {albumDetails}
+        <>
+            {albumDetailsList}
+        </>
         <div className={hmvStyle.browserContent}>
             {Array.isArray(contentElements) && contentElements.length > 0
                 ? contentElements

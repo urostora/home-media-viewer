@@ -505,9 +505,9 @@ export const getBrowseResult = async (directoryPath: string): Promise<BrowseResu
   const albumsContainingThisDirectory = await getAlbumsContainingPath(fullPath);
 
   const [albumExactly = null] = albumsContainingThisDirectory.filter((a) => a.basePath === fullPath);
-  const albumContains = await getClosestParentAlbum(fullPath, false);
+  const albumContains = await getAlbumsContainingPath(fullPath);
 
-  const album = albumExactly ?? albumContains;
+  const album = albumExactly ?? (albumContains.length > 0 ? albumContains[albumContains.length - 1] : null);
 
   // console.log(`Browse GET API for path ${fullPath}, Album:`, album);
 
