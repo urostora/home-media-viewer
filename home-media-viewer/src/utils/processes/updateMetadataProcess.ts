@@ -2,11 +2,42 @@ import { syncAlbumFiles } from '@/utils/albumHelper';
 import { loadMetadata } from '@/utils/fileHelper';
 
 import prisma from '@/utils/prisma/prismaImporter';
+import { isShuttingDownHandler } from '../isShuttingDown';
 
 const isDevEnv = process.env.NODE_ENV !== 'production';
 
+export interface MetadataProcessStatistics {
+  isDeveloperEnvironment: boolean;
+  threadCount: number;
+  processTimeoutInSec: number;
+  lastProcessedOn: Date;
+  processedAlbumCount: number;
+  processedDirectoryCount: number;
+  processedFileCount: number;
+  directorySyncTimeInMs: number;
+  fullProcessingTimeSec: number;
+}
+
+export const lastStatistics = (() => {
+  let lastStatistics: MetadataProcessStatistics | undefined;
+
+  const getLastStatistics = (): MetadataProcessStatistics | undefined => lastStatistics;
+  const setLastStatistics = (newStatistics: MetadataProcessStatistics): void => {
+    lastStatistics = newStatistics;
+  };
+
+  return {
+    getLastStatistics,
+    setLastStatistics,
+  };
+})();
+
 const updateMetadataProcess = {
-  update: async (processTimeout: number = 50, threadCount: number = 2, albumToProcess: string | null = null) => {
+  update: async (
+    processTimeout: number = 50,
+    threadCount: number = 2,
+    albumToProcess: string | null = null,
+  ): Promise<MetadataProcessStatistics | undefined> => {
     if (isDevEnv) {
       threadCount = 1;
     }
@@ -36,13 +67,27 @@ const updateMetadataProcess = {
       } catch (e) {
         console.error(`  ERROR while syncing album ${album.name} (${album.id}) files: ${e}`);
       }
+
+      if (isShuttingDownHandler.isShuttingDown()) {
+        console.log('Exit background process (1) - Shutting down');
+        return;
+      }
     }
 
-    // console.log('  Album files syncronized, loading metadata');
+    const directorySyncTimeInMs = Math.floor(Date.now() - startedOn);
+
+    let processedFileCount = 0;
+    let processedDirectoryCount = 0;
 
     for (const album of activeAlbums) {
       if (typeof albumToProcess === 'string' && albumToProcess !== album.id) {
         continue;
+      }
+
+      if (startedOn + processTimeout * 1000 < Date.now()) {
+        const timedOutAfter = Math.floor((Date.now() - startedOn) / 1000);
+        console.log(`UpdateMetadataProcess timed out after ${timedOutAfter}s`);
+        break;
       }
 
       const filesUnprocessed = await prisma.file.findMany({
@@ -63,6 +108,12 @@ const updateMetadataProcess = {
       }
 
       for (const file of filesUnprocessed) {
+        if (file.isDirectory) {
+          processedDirectoryCount++;
+        } else {
+          processedFileCount++;
+        }
+
         parallelJobs.push(loadMetadata(file));
 
         if (parallelJobs.length >= threadCount) {
@@ -74,11 +125,19 @@ const updateMetadataProcess = {
 
           parallelJobs.splice(0, parallelJobs.length);
 
+          if (isShuttingDownHandler.isShuttingDown()) {
+            console.log('Exit background process (2) - Shutting down');
+            return;
+          }
+
           if (startedOn + processTimeout * 1000 < Date.now()) {
             break;
           }
 
-          await new Promise((resolve) => setTimeout(resolve, 1000));
+          if (isDevEnv) {
+            // decrease load on dev environment
+            await new Promise((resolve) => setTimeout(resolve, 300));
+          }
         }
       }
 
@@ -92,10 +151,9 @@ const updateMetadataProcess = {
         parallelJobs.splice(0, parallelJobs.length);
       }
 
-      if (startedOn + processTimeout * 1000 < Date.now()) {
-        const timedOutAfter = Math.floor((Date.now() - startedOn) / 1000);
-        console.log(`UpdateMetadataProcess timed out after ${timedOutAfter}s`);
-        break;
+      if (isShuttingDownHandler.isShuttingDown()) {
+        console.log('Exit background process (3) - Shutting down');
+        return;
       }
 
       // console.log(`  Album ${album.name} processing finished`);
@@ -107,6 +165,22 @@ const updateMetadataProcess = {
     //     'hu-HU',
     //   )}] updateMetadataProcess finished in ${processingTimeInSec}s`,
     // );
+
+    const processStatistics = {
+      isDeveloperEnvironment: isDevEnv,
+      lastProcessedOn: new Date(),
+      threadCount,
+      processTimeoutInSec: processTimeout,
+      processedAlbumCount: activeAlbums.length,
+      processedDirectoryCount,
+      processedFileCount,
+      directorySyncTimeInMs,
+      fullProcessingTimeSec: Math.floor((Date.now() - startedOn) / 1000),
+    };
+
+    lastStatistics.setLastStatistics(processStatistics);
+
+    return processStatistics;
   },
 };
 

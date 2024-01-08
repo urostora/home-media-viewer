@@ -1,3 +1,6 @@
+import fs from 'fs';
+import pathModule from 'path';
+
 import type {
   AlbumAddType,
   AlbumDataType,
@@ -7,8 +10,7 @@ import type {
   AlbumUpdateType,
 } from '@/types/api/albumTypes';
 import { $Enums, type Album, AlbumSourceType, type Prisma } from '@prisma/client';
-import fs from 'fs';
-import pathModule from 'path';
+
 import { ALBUM_PATH, loadMetadata, syncFilesInAlbumAndFile } from './fileHelper';
 
 import prisma from '@/utils/prisma/prismaImporter';
@@ -17,12 +19,7 @@ import { type DataValidatorSchema, statusValues, metadataProcessingStatusValues 
 import type { EntityListResult } from '@/types/api/generalTypes';
 import { getSimpleValueOrInFilter } from './api/searchParameterHelper';
 import { HmvError } from './apiHelpers';
-
-let isAppExiting = false;
-
-process.on('SIGTERM', () => {
-  isAppExiting = true;
-});
+import { isShuttingDownHandler } from './isShuttingDown';
 
 const ALBUM_SOURCE_TYPE_VALUES = ['File', 'Ftp'];
 
@@ -483,7 +480,7 @@ export const processAlbumFilesMetadata = async (
     await loadMetadata(f);
 
     const currentTime = process.hrtime(startedOn);
-    if (isAppExiting || currentTime[0] > timeoutSec) {
+    if (isShuttingDownHandler.isShuttingDown() || currentTime[0] > timeoutSec) {
       break;
     }
   }

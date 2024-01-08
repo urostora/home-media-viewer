@@ -54,7 +54,8 @@ services:
     volumes:
       - ./home-media-viewer:/home/node/app
       - ./static:${APP_ALBUM_ROOT_PATH}
-    #  - ./test/files:${APP_ALBUM_ROOT_PATH}
+      # - "/x/Kepek:${APP_ALBUM_ROOT_PATH}:ro"
+      # - ./test/files:${APP_ALBUM_ROOT_PATH}
       - home-media-dev-storage:${APP_STORAGE_PATH}
     ports:
       - ${WEB_PORT}:3000
