@@ -28,6 +28,8 @@ export const syncFilesInAlbumAndFile = async (album: Album, parentFile?: File): 
 
   const relativeBasePath = directoryPath.substring(ALBUM_PATH.length + 1);
 
+  // console.log(`Sync files in directory ${relativeBasePath}`);
+
   if (!fs.existsSync(directoryPath)) {
     throw new Error(`Element not exists at path ${directoryPath}`);
   }
@@ -46,7 +48,9 @@ export const syncFilesInAlbumAndFile = async (album: Album, parentFile?: File): 
   const effectiveParentFile: File | undefined = parentFile ?? outerParentFile ?? undefined;
 
   // console.log(
-  //   `Effective parent file: ${effectiveParentFile ? `${effectiveParentFile.path} [${effectiveParentFile.id}]` : '-'}`,
+  //   `Effective parent file: ${
+  //     effectiveParentFile !== undefined ? `${effectiveParentFile.path} [${effectiveParentFile.id}]` : '-'
+  //   }`,
   // );
 
   // get all albums containing this directory
@@ -155,6 +159,7 @@ export const syncFilesInAlbumAndFile = async (album: Album, parentFile?: File): 
   }
 
   for (const newDirectory of newDirectories) {
+    // sync files in newly created directories recursively
     await syncFilesInAlbumAndFile(album, newDirectory);
   }
 };
@@ -198,6 +203,12 @@ export const addFile = async (filePath: string, albums: Album[], parentFile?: Fi
   // check if file already exists
   const existingFile = await prisma.file.findFirst({ where: { path: relativePath, isDirectory } });
   if (existingFile !== null) {
+    if (parentFile !== undefined && existingFile.parentFileId !== parentFile.id) {
+      // set parent file if doesn't match
+      console.log(`    Existing file [${relativePath}] connected to parent file [${parentFile.path}]`);
+      await prisma.file.update({ where: { id: existingFile.id }, data: { parentFileId: parentFile.id } });
+    }
+
     return existingFile;
   }
 
