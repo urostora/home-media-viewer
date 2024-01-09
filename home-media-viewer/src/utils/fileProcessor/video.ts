@@ -11,6 +11,7 @@ import { getFileThumbnailPath, thumbnailSizes } from '../thumbnailHelper';
 
 import { type File } from '@prisma/client';
 import { type FileProcessor } from './processorFactory';
+import { MetaType } from '../metaUtils';
 
 const videoFileProcessor: FileProcessor = async (file: File): Promise<boolean> => {
   const path = await getFullPath(file);
@@ -41,41 +42,55 @@ const videoFileProcessor: FileProcessor = async (file: File): Promise<boolean> =
   const str = videoStreams.shift();
 
   // add metadata
+  let extractedDate: Date | null = null;
   if (typeof str?.tags?.creation_time === 'string') {
-    const dateObj = getDateObject(str.tags.creation_time);
-
-    if (dateObj != null) {
-      await updateContentDate(file, dateObj);
-      await addDateMeta(file, 'dateTime', dateObj);
+    const ts = Date.parse(str.tags.creation_time);
+    if (!Number.isNaN(ts)) {
+      extractedDate = new Date(ts);
+    } else {
+      extractedDate = getDateObject(str.tags.creation_time);
     }
   }
 
+  if (extractedDate === null) {
+    // get date from file name if available
+    const dateFromFilename = getDateObject(file.name);
+    if (dateFromFilename !== null && dateFromFilename.getFullYear() > 1990 && dateFromFilename.getFullYear() < 2040) {
+      extractedDate = dateFromFilename;
+    }
+  }
+
+  if (extractedDate != null) {
+    await updateContentDate(file, extractedDate);
+    await addDateMeta(file, MetaType.DateTime, extractedDate);
+  }
+
   if (typeof str?.tags?.language === 'string') {
-    await addStringMeta(file, 'language', str.tags.language);
+    await addStringMeta(file, MetaType.Language, str.tags.language);
   }
   if (typeof str?.codec_name === 'string') {
-    await addStringMeta(file, 'codec', str.codec_name);
+    await addStringMeta(file, MetaType.Codec, str.codec_name);
   }
   if (typeof str?.codec_long_name === 'string') {
-    await addStringMeta(file, 'codec_full_name', str.codec_long_name);
+    await addStringMeta(file, MetaType.CodecFullName, str.codec_long_name);
   }
   if (typeof str?.width === 'number') {
-    await addIntMeta(file, 'resolution_x', Math.round(str.width));
+    await addIntMeta(file, MetaType.ResolutionX, Math.round(str.width));
   }
   if (typeof str?.height === 'number') {
-    await addIntMeta(file, 'resolution_y', Math.round(str.height));
+    await addIntMeta(file, MetaType.ResolutionY, Math.round(str.height));
   }
 
   if (typeof str?.duration === 'number') {
-    await addFloatMeta(file, 'duration', str.duration);
+    await addFloatMeta(file, MetaType.Duration, str.duration);
   }
   if (typeof str?.bit_rate === 'number') {
-    await addIntMeta(file, 'bitrate', Math.round(str.bit_rate));
+    await addIntMeta(file, MetaType.Bitrate, Math.round(str.bit_rate));
   }
 
   const fpsValue = getFpsValue(str?.r_frame_rate);
   if (fpsValue != null) {
-    await addIntMeta(file, 'fps', Math.round(fpsValue));
+    await addIntMeta(file, MetaType.Fps, Math.round(fpsValue));
   }
 
   const customVideoResults = loadCustomVideoData(path, ffprobeStatic.path);
@@ -84,19 +99,24 @@ const videoFileProcessor: FileProcessor = async (file: File): Promise<boolean> =
     // alternative creation date value
     if (typeof customVideoResults?.creationTime === 'object' && typeof str?.tags?.creation_time !== 'string') {
       await updateContentDate(file, customVideoResults.creationTime);
-      await addDateMeta(file, 'dateTime', customVideoResults.creationTime);
+      await addDateMeta(file, MetaType.DateTime, customVideoResults.creationTime);
     }
 
     if (typeof customVideoResults?.model === 'string') {
-      await addStringMeta(file, 'model', customVideoResults.model);
+      await addStringMeta(file, MetaType.Model, customVideoResults.model);
     }
 
     if (typeof customVideoResults?.manufacturer === 'string') {
-      await addStringMeta(file, 'make', customVideoResults.manufacturer);
+      await addStringMeta(file, MetaType.Make, customVideoResults.manufacturer);
     }
 
     if (typeof customVideoResults?.location === 'object') {
-      await addPositionMeta(file, 'gps_coordinates', customVideoResults.location.lat, customVideoResults.location.lon);
+      await addPositionMeta(
+        file,
+        MetaType.GpsCoordinates,
+        customVideoResults.location.lat,
+        customVideoResults.location.lon,
+      );
     }
   }
 

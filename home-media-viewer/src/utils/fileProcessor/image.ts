@@ -10,6 +10,7 @@ import { getFileThumbnailPath, thumbnailSizes } from '../thumbnailHelper';
 
 import type { File } from '@prisma/client';
 import type { FileProcessor } from './processorFactory';
+import { MetaType } from '../metaUtils';
 
 const imageFileProcessor: FileProcessor = async (file: File): Promise<boolean> => {
   const path = await getFullPath(file);
@@ -43,20 +44,27 @@ const imageFileProcessor: FileProcessor = async (file: File): Promise<boolean> =
       contentDate = dateObj;
     }
   }
+  if (contentDate == null) {
+    // extract date from file name
+    const dateFromFilename = getDateObject(file.name);
+    if (dateFromFilename !== null && dateFromFilename.getFullYear() > 1990 && dateFromFilename.getFullYear() < 2040) {
+      contentDate = dateFromFilename;
+    }
+  }
 
   if (contentDate != null) {
     await updateContentDate(file, contentDate);
-    await addDateMeta(file, 'dateTime', contentDate);
+    await addDateMeta(file, MetaType.DateTime, contentDate);
   }
 
   if (typeof tags?.Orientation?.value === 'number') {
-    await addIntMeta(file, 'orientation', Math.round(tags.Orientation.value));
+    await addIntMeta(file, MetaType.Orientation, Math.round(tags.Orientation.value));
   }
   if (typeof tags?.Model?.description === 'string') {
-    await addStringMeta(file, 'model', tags.Model.description);
+    await addStringMeta(file, MetaType.Model, tags.Model.description);
   }
   if (typeof tags?.Make?.description === 'string') {
-    await addStringMeta(file, 'make', tags.Make.description);
+    await addStringMeta(file, MetaType.Make, tags.Make.description);
   }
 
   if (typeof tags?.ImageWidth?.value === 'number') {
@@ -66,7 +74,7 @@ const imageFileProcessor: FileProcessor = async (file: File): Promise<boolean> =
   }
 
   if (width != null) {
-    await addIntMeta(file, 'resolution_x', width);
+    await addIntMeta(file, MetaType.ResolutionX, width);
   }
 
   if (typeof tags?.ImageLength?.value === 'number') {
@@ -76,27 +84,27 @@ const imageFileProcessor: FileProcessor = async (file: File): Promise<boolean> =
   }
 
   if (height != null) {
-    await addIntMeta(file, 'resolution_y', height);
+    await addIntMeta(file, MetaType.ResolutionY, height);
   }
 
   // GPS related metas
   if (typeof tags?.GPSLatitude?.description === 'number' && typeof tags?.GPSLongitude?.description === 'number') {
-    await addPositionMeta(file, 'gps_coordinates', tags.GPSLatitude.description, tags.GPSLongitude.description);
+    await addPositionMeta(file, MetaType.GpsCoordinates, tags.GPSLatitude.description, tags.GPSLongitude.description);
   }
 
   if (Array.isArray(tags?.GPSAltitude?.value) && typeof tags?.GPSAltitude?.value[0] === 'number') {
-    await addFloatMeta(file, 'gps_altitude', tags.GPSAltitude.value[0]);
+    await addFloatMeta(file, MetaType.GpsAltitude, tags.GPSAltitude.value[0]);
   }
 
   if (typeof tags?.GPSDateStamp?.description === 'string' && typeof tags?.GPSTimeStamp?.description === 'string') {
     const gpsDate = getDateObject(`${tags.GPSDateStamp.description} ${tags.GPSTimeStamp.description}`);
 
     if (gpsDate != null) {
-      await addDateMeta(file, 'gps_date', gpsDate);
+      await addDateMeta(file, MetaType.GpsDate, gpsDate);
     }
   }
   if (typeof tags?.GPSAltitudeRef?.description === 'string') {
-    await addStringMeta(file, 'gps_altitude_ref', tags.GPSAltitudeRef.description);
+    await addStringMeta(file, MetaType.GpsAltitudeRef, tags.GPSAltitudeRef.description);
   }
 
   if (width !== null && height !== null) {
