@@ -53,8 +53,10 @@ services:
       IS_BACKGROUND_PROCESS_ENABLED: ${IS_BACKGROUND_PROCESS_ENABLED}
     volumes:
       - ./home-media-viewer:/home/node/app
-      - ./static:${APP_ALBUM_ROOT_PATH}
-    #  - ./test/files:${APP_ALBUM_ROOT_PATH}
+      # Used while development - custom structure
+      # - ./static:${APP_ALBUM_ROOT_PATH}:ro
+      # Used by test suite
+      - ./test/files:${APP_ALBUM_ROOT_PATH}:ro
       - home-media-dev-storage:${APP_STORAGE_PATH}
     ports:
       - ${WEB_PORT}:3000
@@ -83,10 +85,12 @@ services:
       PROCESS_TOKEN: ${PROCESS_TOKEN}
       TS_NODE_PROJECT: /home/node/app/tsconfig.json
       APP_URL: http://media-viewer-dev-app:3000
+      BACKGROND_URL: http://media-viewer-dev-app:3000
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
     volumes:
       - ./home-media-viewer:/home/node/app
+      - ./scripts/test:/home/node/scripts
     networks:
       - home-media-dev-network
 

@@ -17,7 +17,7 @@ describe('HMV Login page', () => {
     await expect(testPage.title()).resolves.toMatch('Home Media Viewer');
   });
 
-  it('Username fields', async () => {
+  it('E-mail field exists', async () => {
     const usernameInput = await testPage.waitForSelector('input[type="text"][name=email]', { timeout: 5000 });
 
     expect(usernameInput).not.toBeNull();
@@ -34,10 +34,10 @@ describe('HMV Login page', () => {
     const labelHtmlProperty = await label?.asElement()?.getProperty('innerHTML');
     const labelText = await labelHtmlProperty?.jsonValue();
 
-    expect(labelText).toEqual('Username');
+    expect(labelText).toEqual('E-mail');
   }, 15_000);
 
-  it('Password fields', async () => {
+  it('Password field exists', async () => {
     const passwordInput = await testPage.waitForSelector('input[type="password"][name=password]', { timeout: 5000 });
 
     expect(passwordInput).not.toBeNull();

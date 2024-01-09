@@ -1,17 +1,10 @@
-import os from 'os';
-import { type NextApiRequest, type NextApiResponse } from 'next';
+import type { NextApiRequest, NextApiResponse } from 'next';
 
 import { getApiResponseWithData } from '@/utils/apiHelpers';
-import updateMetadataProcess, { type MetadataProcessStatistics } from '@/utils/processes/updateMetadataProcess';
+import { type MetadataProcessStatistics, lastStatistics } from '@/utils/processes/updateMetadataProcess';
 
 const isBackgroundProcessEnabled = Number.parseInt(process.env?.IS_BACKGROUND_PROCESS_ENABLED ?? '0') === 1;
 const processToken = process.env?.PROCESS_TOKEN ?? null;
-const longProcessTimeout =
-  typeof process.env?.LONG_PROCESS_TIMEOUT_SEC === 'string' && process.env?.LONG_PROCESS_TIMEOUT_SEC.length > 0
-    ? Number.parseInt(process.env.LONG_PROCESS_TIMEOUT_SEC)
-    : undefined;
-
-const threadCount = Math.floor(os.availableParallelism() / 2);
 
 const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
   const { method } = req;
@@ -34,7 +27,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
       }
 
       try {
-        const statistics = await updateMetadataProcess.update(longProcessTimeout, threadCount);
+        const statistics: MetadataProcessStatistics | undefined = lastStatistics.getLastStatistics();
 
         res.status(200).json(getApiResponseWithData<MetadataProcessStatistics | undefined>(statistics));
       } catch (e) {

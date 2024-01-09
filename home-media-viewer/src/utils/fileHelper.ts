@@ -7,7 +7,7 @@ import { getFileThumbnailInBase64 } from '@/utils/thumbnailHelper';
 import { getSimpleValueOrInFilter } from './api/searchParameterHelper';
 import prisma from '@/utils/prisma/prismaImporter';
 import { HmvError } from './apiHelpers';
-import { getAlbums, getAlbumsContainingPath, getClosestParentAlbum } from './albumHelper';
+import { getAlbums, getAlbumsContainingPath } from './albumHelper';
 
 import type { FileResultType, FileSearchType } from '@/types/api/fileTypes';
 import type { $Enums, Album, File, MetadataProcessingStatus, Prisma, FileMeta } from '@prisma/client';
@@ -28,6 +28,8 @@ export const syncFilesInAlbumAndFile = async (album: Album, parentFile?: File): 
 
   const relativeBasePath = directoryPath.substring(ALBUM_PATH.length + 1);
 
+  // console.log(`Sync files in directory ${relativeBasePath}`);
+
   if (!fs.existsSync(directoryPath)) {
     throw new Error(`Element not exists at path ${directoryPath}`);
   }
@@ -46,7 +48,9 @@ export const syncFilesInAlbumAndFile = async (album: Album, parentFile?: File): 
   const effectiveParentFile: File | undefined = parentFile ?? outerParentFile ?? undefined;
 
   // console.log(
-  //   `Effective parent file: ${effectiveParentFile ? `${effectiveParentFile.path} [${effectiveParentFile.id}]` : '-'}`,
+  //   `Effective parent file: ${
+  //     effectiveParentFile !== undefined ? `${effectiveParentFile.path} [${effectiveParentFile.id}]` : '-'
+  //   }`,
   // );
 
   // get all albums containing this directory
@@ -62,30 +66,30 @@ export const syncFilesInAlbumAndFile = async (album: Album, parentFile?: File): 
 
   const albumsContainingThisDirectory = await prisma.album.findMany({ where: { basePath: { in: pathList } } });
 
+  // get files in current directory
+  const fileWhereFilter: Prisma.FileWhereInput = {
+    status: { in: ['Active', 'Disabled'] },
+    albums: { some: { id: album.id } },
+    parentFile: effectiveParentFile ?? null,
+  };
+
   const dbFiles = (
     await prisma.file.findMany({
-      where: {
-        OR: [
-          {
-            path: { startsWith: relativeBasePath + '/' },
-          },
-          {
-            parentFile: parentFile ?? outerParentFile ?? null,
-            albums: { some: { id: album.id } },
-          },
-        ],
-      },
+      where: fileWhereFilter,
     })
   ).filter((f) => !f.path.substring(relativeBasePath.length + 1).includes('/'));
 
   const dbFileNames = dbFiles.map((f: File) => f.name + (f.extension.length > 0 ? `.${f.extension}` : ''));
   const dirFiles = fs.readdirSync(directoryPath);
 
-  // console.log('Directory files', dirFiles);
-  // console.log(
-  //   'DB files',
-  //   dbFiles.map((f) => `${f.path} [${f.id}]`),
-  // );
+  if (dirFiles.length !== dbFileNames.length) {
+    const filesNotFoundInDb = dirFiles.filter((df) => !dbFileNames.includes(df)).map((df) => `${df} - ADD`);
+    const filesNotFoundInDirectory = dbFileNames
+      .filter((dbf) => !dirFiles.includes(dbf))
+      .map((dbf) => `${dbf} - DELETE`);
+
+    console.log(`Changes in directory ${relativeBasePath}:`, [...filesNotFoundInDirectory, ...filesNotFoundInDb]);
+  }
 
   const filesToDelete = dbFiles.filter((f: File) => {
     if (f.status === 'Deleted') {
@@ -105,7 +109,26 @@ export const syncFilesInAlbumAndFile = async (album: Album, parentFile?: File): 
   // );
 
   for (const fileToDelete of filesToDelete) {
-    console.log(`  Delete file ${fileToDelete.path} [${fileToDelete.id}]`);
+    console.log(
+      `  Delete ${fileToDelete.isDirectory ? 'directory' : 'file'} ${fileToDelete.path} [${fileToDelete.id}]`,
+    );
+
+    if (fileToDelete.isDirectory) {
+      // delete all files in directory recursively
+      const filesInRemovedDirectory = await prisma.file.findMany({
+        where: { path: { startsWith: fileToDelete.path + '/' }, status: { in: ['Active', 'Disabled'] } },
+        select: { id: true },
+      });
+
+      console.log(
+        `  Directory ${fileToDelete.path} deleted, removing ${filesInRemovedDirectory.length} files recursively...`,
+      );
+
+      for (const fileInRemovedDirectory of filesInRemovedDirectory) {
+        await prisma.file.update({ where: { id: fileInRemovedDirectory.id }, data: { status: 'Deleted' } });
+      }
+    }
+
     await prisma.file.update({ where: { id: fileToDelete.id }, data: { status: 'Deleted' } });
   }
 
@@ -136,6 +159,7 @@ export const syncFilesInAlbumAndFile = async (album: Album, parentFile?: File): 
   }
 
   for (const newDirectory of newDirectories) {
+    // sync files in newly created directories recursively
     await syncFilesInAlbumAndFile(album, newDirectory);
   }
 };
@@ -179,6 +203,12 @@ export const addFile = async (filePath: string, albums: Album[], parentFile?: Fi
   // check if file already exists
   const existingFile = await prisma.file.findFirst({ where: { path: relativePath, isDirectory } });
   if (existingFile !== null) {
+    if (parentFile !== undefined && existingFile.parentFileId !== parentFile.id) {
+      // set parent file if doesn't match
+      console.log(`    Existing file [${relativePath}] connected to parent file [${parentFile.path}]`);
+      await prisma.file.update({ where: { id: existingFile.id }, data: { parentFileId: parentFile.id } });
+    }
+
     return existingFile;
   }
 

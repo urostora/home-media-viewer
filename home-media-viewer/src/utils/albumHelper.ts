@@ -1,3 +1,6 @@
+import fs from 'fs';
+import pathModule from 'path';
+
 import type {
   AlbumAddType,
   AlbumDataType,
@@ -7,8 +10,7 @@ import type {
   AlbumUpdateType,
 } from '@/types/api/albumTypes';
 import { $Enums, type Album, AlbumSourceType, type Prisma } from '@prisma/client';
-import fs from 'fs';
-import pathModule from 'path';
+
 import { ALBUM_PATH, loadMetadata, syncFilesInAlbumAndFile } from './fileHelper';
 
 import prisma from '@/utils/prisma/prismaImporter';
@@ -17,12 +19,7 @@ import { type DataValidatorSchema, statusValues, metadataProcessingStatusValues 
 import type { EntityListResult } from '@/types/api/generalTypes';
 import { getSimpleValueOrInFilter } from './api/searchParameterHelper';
 import { HmvError } from './apiHelpers';
-
-let isAppExiting = false;
-
-process.on('SIGTERM', () => {
-  isAppExiting = true;
-});
+import { isShuttingDownHandler } from './isShuttingDown';
 
 const ALBUM_SOURCE_TYPE_VALUES = ['File', 'Ftp'];
 
@@ -382,9 +379,6 @@ export const addAlbum = async (data: AlbumAddType): Promise<Album> => {
     },
   });
 
-  // sync album files
-  await syncAlbumFiles(newAlbum.id);
-
   // connect child albums to new album
   for (const childAlbum of childAlbums) {
     if (childAlbum.parentAlbumId === null || childAlbum.parentAlbumId === closestParentAlbum?.id) {
@@ -393,12 +387,15 @@ export const addAlbum = async (data: AlbumAddType): Promise<Album> => {
     }
   }
 
-  // attach all files in path to the created album
+  // attach all files under album path to the newly created album
   const filesInAlbum = await prisma.file.findMany({ where: { path: { startsWith: `${relativePath}/` } } });
 
   for (const file of filesInAlbum) {
     await prisma.file.update({ where: { id: file.id }, data: { albums: { connect: { id: newAlbum.id } } } });
   }
+
+  // sync album files
+  await syncAlbumFiles(newAlbum.id);
 
   return newAlbum;
 };
@@ -483,7 +480,7 @@ export const processAlbumFilesMetadata = async (
     await loadMetadata(f);
 
     const currentTime = process.hrtime(startedOn);
-    if (isAppExiting || currentTime[0] > timeoutSec) {
+    if (isShuttingDownHandler.isShuttingDown() || currentTime[0] > timeoutSec) {
       break;
     }
   }

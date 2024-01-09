@@ -265,11 +265,14 @@ $appTextColorAlternative: #2d9649;
     box-shadow: 1vw;
 
     .loginTitle {
+        background-color: $appBackgroundColor;
+        color: $appTextColor;
         font-size: 32px;
         font-weight: bold;
         text-align: center;
         margin-bottom: 15px;
         border-bottom: 1px solid black;
+        border-radius: 5px;
     }
 
     form {
@@ -278,6 +281,8 @@ $appTextColorAlternative: #2d9649;
         label, input {
             width: 100%;
             font-size: 22px;
+            border-radius: 5px;
+            padding: 2px;
         }
 
         .inputContainer {
