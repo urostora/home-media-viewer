@@ -44,7 +44,8 @@ curl ${BACKGROND_URL}/api/process/updateMetadata?token=${PROCESS_TOKEN}
 echo -e "\n"
 curl ${BACKGROND_URL}/api/process/updateMetadata?token=${PROCESS_TOKEN}
 
-if [ -f $COOKIES_FILE ] then
+if [ -f $COOKIES_FILE ]
+then
     rm $COOKIES_FILE
 fi
 
