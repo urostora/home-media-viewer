@@ -9,9 +9,12 @@ RUN apt update && apt install gnupg wget -y && \
 
 ENV TS_NODE_PROJECT /home/node/app/tsconfig.json
 
-USER node
+USER 0
 
 WORKDIR /home/node/app
 
+RUN mkdir /home/node/scripts
+
 VOLUME /home/node/app
+VOLUME /home/node/scripts
 
