@@ -127,20 +127,22 @@ HOSTNAME=
   - Runs background processing jobs
 - **testrunner**
   - test suite can be run in this container
-  - `docker-compose run --rm testrunner bash -c "npm run test"`
+    `docker-compose run --rm testrunner bash -c "npm run test"`
 - **dependencies**
   - Run custom node commands, like
     - Node version `docker-compose run --rm dependencies sh -c "node --version"`
     - npm install `docker-compose run --rm dependencies sh -c "npm install"`
     - Prisma commands
       - Generate schema classes
-        `docker-compose run --rm dependencies sh -c "npx prisma generate"`
+        `docker-compose run --rm dependencies bash -c "npx prisma generate"`
       - Create migrate script from schema changes
-        `docker-compose run --rm dependencies sh -c "npx prisma migrate dev --name=init"`
+        `docker-compose run --rm dependencies bash -c "npx prisma migrate dev --name=init"`
       - Apply schema changes
-        `docker-compose run --rm dependencies sh -c "npx prisma migrate deploy"`
+        `docker-compose run --rm dependencies bash -c "npx prisma migrate deploy"`
+      - Reset database
+        `docker-compose run --rm dependencies bash -c "npx prisma migrate reset --force"`
     - Run linter
-      - `docker-compose run --rm dependencies sh -c "npm run lint"`
+      - `docker-compose run --rm dependencies bash -c "npm run lint"`
 
 ##### Dependencies
 
@@ -160,15 +162,45 @@ Prisma commands
 
 `docker-compose run --rm dependencies sh -c "npx prisma db push"`
 
-### Testing
+### Test suite development
 
-#### Run all tests on developer environment
+#### Preparing environment
 
-`docker-compose run --rm testrunner bash -c "npm run test"`
+Before changing test suite, be sure, that app container uses proper test data and database.
 
-#### Run specific test on developer environment
+- **Set up test database and connect test data to albums mount point**
 
-`docker-compose run --rm testrunner bash -c "npx jest -t 'Google'"`
+  docker-compose.yml
+
+   ``` yml
+    services:
+    # ...
+    app:
+        # ...
+        volumes:
+            - ./test/files:${APP_ALBUM_ROOT_PATH}:ro
+   ```
+
+  .env
+
+  ``` text
+  # database name is only an example
+  MARIADB_DATABASE=home_media_test
+  ```
+
+- **Run database initialization script**
+   `docker-compose run --rm dependencies bash -c "npx prisma migrate reset --force"`
+- **Init test suite**
+  `docker-compose run --rm testrunner bash -c "cd ../scripts && ./initTestData.sh"`
+
+#### Run tests on developer environment
+
+Developer environment runs test cases much slower due to the attached file system.
+
+- All tests
+`docker-compose run --rm testrunner bash -c "npx jest --runInBand"`
+- Specific test(s)
+`docker-compose run --rm testrunner bash -c "npx jest --runInBand -t 'Google'"`
 
 ## Test environment
 
