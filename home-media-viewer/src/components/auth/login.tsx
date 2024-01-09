@@ -10,6 +10,7 @@ interface LoginProps {
 }
 
 const Login = (props: LoginProps): JSX.Element => {
+    const [ isOperationInProgress, setIsOperationInProgress ] = useState<boolean>(false);
     const [ errorMessage, setErrorMessage ] = useState<string | null>(null);
 
     const { onUserAuthenticated } = props;
@@ -28,6 +29,7 @@ const Login = (props: LoginProps): JSX.Element => {
         }
 
         setErrorMessage(null);
+        setIsOperationInProgress(true);
 
         const requestData = {
             email: data.get('email') as string ?? '',
@@ -50,15 +52,18 @@ const Login = (props: LoginProps): JSX.Element => {
                 setErrorMessage(e);
             else
                 setErrorMessage('Invalid email or password');
+        })
+        .finally(() => {
+            setIsOperationInProgress(false);
         });
     }
 
     return (<div className={hmvStyle.loginForm}>
-        <div className={hmvStyle.loginTitle}>Login</div>
+        <div className={hmvStyle.loginTitle}>HMV</div>
         <form onSubmit={onLoginRequest}>
             <div className={hmvStyle.inputContainer}>
                 <div>
-                    <label>Username</label>
+                    <label>E-mail</label>
                     <input type="text" name="email" required />
                 </div>
                 <div>
@@ -67,7 +72,7 @@ const Login = (props: LoginProps): JSX.Element => {
                 </div>
             </div>
             <div className={hmvStyle.controlContainer}>
-                <input type="submit" value="Log in" />
+                <input type="submit" className={`${hmvStyle.buttonElement} ${hmvStyle.primaryButton}`} value={isOperationInProgress ? 'Logging in...' : 'Log in'} disabled={isOperationInProgress} />
                 {typeof errorMessage === 'string' ? <div className="errorMessage">{errorMessage}</div> : null }
             </div>
         </form>
