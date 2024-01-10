@@ -71,42 +71,58 @@ const ContentThumbnail = (props: ContentThumbnailPropsType): JSX.Element => {
 
     let contentDetails = null;
 
-    if (displayDetails) {
-      const metaMap = getMetaMap(content.metas);
+    const metaMap = getMetaMap(content.metas);
 
-      const metaListElements: Array<{ name: string, value: string | ReactElement}> = [];
+    const metaListElements: Array<{ name: string, value: string | ReactElement}> = [];
+    const highlightedMetaValues: string[] = [];
 
-      metaListElements.push({name: 'Size', value: contentSizeToString(content.size ?? 0)});
-      metaListElements.push({name: 'Path', value: content.path.replace('_', '_ ').replace('/', '/ ')});
+    metaListElements.push({name: 'Size', value: contentSizeToString(content.size ?? 0)});
+    metaListElements.push({name: 'Path', value: content.path.replace('_', '_ ').replace('/', '/ ')});
 
-      if (typeof content.contentDate === 'string' && content.contentDate.length > 0) {
-        const cd = new Date(content.contentDate);
-        metaListElements.push({name: 'Date', value: `${cd.toLocaleDateString()} ${cd.toLocaleTimeString()}`});
+    if (typeof content.contentDate === 'string' && content.contentDate.length > 0) {
+      const cd = new Date(content.contentDate);
+      metaListElements.push({name: 'Date', value: `${cd.toLocaleDateString()} ${cd.toLocaleTimeString()}`});
+    }
+    if (typeof metaMap.get(MetaType.ResolutionX) === 'number') {
+      const size = `${metaMap.get(MetaType.ResolutionX)} x ${metaMap.get(MetaType.ResolutionY)}`;
+      metaListElements.push({name: 'Resolution', value: size});
+      highlightedMetaValues.push(size);
+    }
+    if (typeof metaMap.get(MetaType.Duration) === 'number') {
+      const durationValue = durationInSecToString(metaMap.get(MetaType.Duration) as number ?? 0);
+      metaListElements.push({name: 'Duration', value: durationValue});
+      highlightedMetaValues.push(durationValue);
+    }
+    if (typeof metaMap.get(MetaType.Fps) === 'number') {
+      const fpsValue = `${metaMap.get(MetaType.Fps) as number}fps`;
+      metaListElements.push({name: 'FPS', value: fpsValue});
+      highlightedMetaValues.push(fpsValue);
+    }
+    if (typeof metaMap.get(MetaType.GpsCoordinates) === 'object') {
+      const coord = metaMap.get(MetaType.GpsCoordinates) as { latitude?: number, longitude?: number};
+
+      if (typeof coord?.latitude === 'number' && typeof coord?.longitude === 'number') {
+        const link = `https://www.google.com/maps/search/?api=1&query=${coord?.latitude}%2C${coord?.longitude}`;
+        metaListElements.push({ name: 'Location', value: (<a href={link} target="__blank">View in Google Maps</a>)});
       }
-      if (typeof metaMap.get(MetaType.ResolutionX) === 'number') {
-          metaListElements.push({name: 'Resolution', value: `${metaMap.get(MetaType.ResolutionX)} x ${metaMap.get(MetaType.ResolutionY)}`});
-      }
-      if (typeof metaMap.get(MetaType.Duration) === 'number') {
-          metaListElements.push({name: 'Duration', value: durationInSecToString(metaMap.get(MetaType.Duration) as number ?? 0)});
-      }
-      if (typeof metaMap.get(MetaType.GpsCoordinates) === 'object') {
-        const coord = metaMap.get(MetaType.GpsCoordinates) as { latitude?: number, longitude?: number};
+    }
 
-        if (typeof coord?.latitude === 'number' && typeof coord?.longitude === 'number') {
-          const link = `https://www.google.com/maps/search/?api=1&query=${coord?.latitude}%2C${coord?.longitude}`;
-          metaListElements.push({ name: 'Location', value: (<a href={link} target="__blank">View in Google Maps</a>)});
-        }
-      }
+    if ((content?.size ?? 0) > 0) {
+      highlightedMetaValues.push(contentSizeToString(content.size ?? 0));
+    }
 
-      contentDetails = (
+    contentDetails = displayDetails
+      ? (
         <div className={hmvStyle.contentDetails}>
           <ul>
               {metaListElements.map((mle, index) => (<li key={index}>{mle.name}: {mle.value}</li>))}
           </ul>
-        </div>);
-    }
+        </div>)
+      : null;
 
     const contentName = content.name + (content.extension.length > 0 ? `.${content.extension}` : '');
+
+    const highlightedMeta = highlightedMetaValues.map((text, index) => (<div key={index}>{text}</div>));
 
     return (
         <div className={`${hmvStyle.contentCardContainer} ${displayDetails ? '' : hmvStyle.noDetails}`} onClick={onCardClicked} >
@@ -118,6 +134,9 @@ const ContentThumbnail = (props: ContentThumbnailPropsType): JSX.Element => {
                 <div className={hmvStyle.imageContainer}>
                     {imageContent}
                     {videoIcon}
+                    <div className={hmvStyle.metadataContainer}>
+                      {highlightedMeta}
+                    </div>
                 </div>
             </div>
         </div>

@@ -189,6 +189,23 @@ $appTextColorAlternative: #2d9649;
             right: 0px;
             display: block;
         }
+
+        .metadataContainer {
+            position: absolute;
+            bottom: 0px;
+            width: 100%;
+            display: flex;
+            flex-flow: row wrap;
+            gap: 10px;
+
+            > div {
+                padding: 4px;
+                border-radius: 10px;
+                font-weight: normal;
+                color: $appTextColor;
+                background-color: $appBackgroundColor;
+            }
+        }
     }
 }
 
@@ -914,6 +931,15 @@ select.roundedElement {
     .contentCardContainer {
         max-width: 100%;
         min-width: 120px;
+
+        .metadataContainer {
+            font-size: small;
+            gap: 3px !important;
+
+            > div {
+                padding: 2px;
+            }
+        }
     }
 
     .contentCardContainer.noDetails {
