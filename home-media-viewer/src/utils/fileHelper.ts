@@ -114,17 +114,9 @@ export const syncFilesInAlbumAndFile = async (album: Album, parentFile?: File): 
       continue;
     }
 
-    if (
-      f.createdAt.getTime() !== fileStats.ctime.getTime() ||
-      f.modifiedAt.getTime() !== fileStats.mtime.getTime() ||
-      f.size !== fileStats.size
-    ) {
+    if (f.size !== fileStats.size) {
       // file content changed
-      console.log(
-        `[${fullName}] changed - Created: [${f.createdAt.toISOString()} - ${fileStats.ctime.toISOString()}],  Modified: [${f.modifiedAt.toISOString()} - ${fileStats.mtime.toISOString()}], Size: [${
-          f.size
-        } - ${fileStats.size}]`,
-      );
+      console.log(`[${fullName}] changed - Size changed from ${f.size} to ${fileStats.size}]`);
       filesToUpdate.push(f);
     }
   }
