@@ -1,8 +1,10 @@
 import { type File } from '@prisma/client';
+
 import { noneFileProcessor } from './none';
 import { directoryFileProcessor } from './directory';
 import { fillProcessorList as fillImageProcessors } from './image';
 import { fillProcessorList as fillVideoProcessors } from './video';
+import { fileProcessorHoc } from './fileProcessorHoc';
 
 export type FileProcessor = (file: File) => Promise<boolean>;
 
@@ -20,5 +22,5 @@ export const getFileProcessor = (file: File): FileProcessor => {
 
   const processorFound = processors[file.extension.toLowerCase()] ?? null;
 
-  return processorFound ?? defaultFileProcessor;
+  return fileProcessorHoc(processorFound ?? defaultFileProcessor);
 };

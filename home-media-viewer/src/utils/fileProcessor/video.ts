@@ -14,7 +14,7 @@ import { type FileProcessor } from './processorFactory';
 import { MetaType } from '../metaUtils';
 
 const videoFileProcessor: FileProcessor = async (file: File): Promise<boolean> => {
-  const path = await getFullPath(file);
+  const path = getFullPath(file);
 
   if (!fs.existsSync(path)) {
     throw new Error(`File not found at path ${path}`);

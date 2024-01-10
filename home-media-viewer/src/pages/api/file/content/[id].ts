@@ -30,7 +30,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
           throw Error('Invalid or not allowed file');
         }
 
-        const filePath = await getFullPath(file);
+        const filePath = getFullPath(file);
         handleFileResponseByPath(req, res, filePath);
       } catch (e) {
         res.status(400).end(`${e}`);
