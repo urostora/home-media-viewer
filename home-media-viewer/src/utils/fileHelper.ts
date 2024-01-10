@@ -82,25 +82,70 @@ export const syncFilesInAlbumAndFile = async (album: Album, parentFile?: File): 
   const dbFileNames = dbFiles.map((f: File) => f.name + (f.extension.length > 0 ? `.${f.extension}` : ''));
   const dirFiles = fs.readdirSync(directoryPath);
 
-  if (dirFiles.length !== dbFileNames.length) {
-    const filesNotFoundInDb = dirFiles.filter((df) => !dbFileNames.includes(df)).map((df) => `${df} - ADD`);
-    const filesNotFoundInDirectory = dbFileNames
-      .filter((dbf) => !dirFiles.includes(dbf))
-      .map((dbf) => `${dbf} - DELETE`);
+  const filesToDelete: File[] = [];
+  const filesToUpdate: File[] = [];
 
-    console.log(`Changes in directory ${relativeBasePath}:`, [...filesNotFoundInDirectory, ...filesNotFoundInDb]);
-  }
-
-  const filesToDelete = dbFiles.filter((f: File) => {
+  for (const f of dbFiles) {
     if (f.status === 'Deleted') {
-      return false;
+      continue;
     }
 
+    // check if file was deleted
     const fullName = f.name + (f.extension.length > 0 ? `.${f.extension}` : '');
-    return !dirFiles.includes(fullName);
-  });
+    if (!dirFiles.includes(fullName)) {
+      filesToDelete.push(f);
+      continue;
+    }
+
+    // check if file was modified
+    if (f.isDirectory || f.metadataStatus === 'New') {
+      continue;
+    }
+
+    const fullFilePath = getFullPath(f);
+
+    if (!fs.existsSync(fullFilePath)) {
+      continue;
+    }
+
+    const fileStats = fs.statSync(fullFilePath);
+
+    if (!fileStats.isFile()) {
+      continue;
+    }
+
+    if (
+      f.createdAt.getTime() !== fileStats.ctime.getTime() ||
+      f.modifiedAt.getTime() !== fileStats.mtime.getTime() ||
+      f.size !== fileStats.size
+    ) {
+      // file content changed
+      console.log(
+        `[${fullName}] changed - Created: [${f.createdAt.toISOString()} - ${fileStats.ctime.toISOString()}],  Modified: [${f.modifiedAt.toISOString()} - ${fileStats.mtime.toISOString()}], Size: [${
+          f.size
+        } - ${fileStats.size}]`,
+      );
+      filesToUpdate.push(f);
+    }
+  }
 
   const filesToAdd = dirFiles.filter((name) => !dbFileNames.includes(name));
+
+  if (filesToAdd.length > 0 || filesToDelete.length > 0 || filesToUpdate.length > 0) {
+    const filesNotFoundInDb = filesToAdd.map((name) => `${name} - ADD`);
+    const filesNotFoundInDirectory = filesToDelete.map(
+      (file) => `${file.name}${file.extension.length > 0 ? `.${file.extension}` : ''} - DELETE`,
+    );
+    const filesUpdated = filesToUpdate.map(
+      (file) => `${file.name}${file.extension.length > 0 ? `.${file.extension}` : ''} - UPDATE`,
+    );
+
+    console.log(`Changes in directory ${relativeBasePath}:`, [
+      ...filesNotFoundInDirectory,
+      ...filesNotFoundInDb,
+      ...filesUpdated,
+    ]);
+  }
 
   // console.log('Files to add', filesToAdd);
   // console.log(
@@ -158,6 +203,10 @@ export const syncFilesInAlbumAndFile = async (album: Album, parentFile?: File): 
     }
   }
 
+  for (const fileToUpdate of filesToUpdate) {
+    await prisma.file.update({ where: { id: fileToUpdate.id }, data: { metadataStatus: 'New' } });
+  }
+
   for (const newDirectory of newDirectories) {
     // sync files in newly created directories recursively
     await syncFilesInAlbumAndFile(album, newDirectory);
@@ -203,6 +252,11 @@ export const addFile = async (filePath: string, albums: Album[], parentFile?: Fi
   // check if file already exists
   const existingFile = await prisma.file.findFirst({ where: { path: relativePath, isDirectory } });
   if (existingFile !== null) {
+    // if it was deleted, reactivate file and reload metadata
+    if (existingFile.status === 'Deleted') {
+      await prisma.file.update({ where: { id: existingFile.id }, data: { status: 'Active', metadataStatus: 'New' } });
+    }
+
     if (parentFile !== undefined && existingFile.parentFileId !== parentFile.id) {
       // set parent file if doesn't match
       console.log(`    Existing file [${relativePath}] connected to parent file [${parentFile.path}]`);
@@ -236,6 +290,24 @@ export const updateContentDate = async (file: File, date?: Date): Promise<void> 
     },
     data: {
       contentDate: date ?? null,
+    },
+  });
+};
+
+export const updateFileMetadata = async (
+  file: File,
+  createdAt: Date,
+  modifiedAt: Date,
+  size: number,
+): Promise<void> => {
+  await prisma.file.update({
+    where: {
+      id: file.id,
+    },
+    data: {
+      createdAt,
+      modifiedAt,
+      size,
     },
   });
 };
@@ -506,7 +578,7 @@ export const deleteMetadata = async (file: File): Promise<void> => {
   ]);
 };
 
-export const getFullPath = async (file: File): Promise<string> => {
+export const getFullPath = (file: File): string => {
   return `${ALBUM_PATH}/${file.path}`;
 };
 
