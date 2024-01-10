@@ -480,6 +480,12 @@ $appTextColorAlternative: #2d9649;
     }
 }
 
+.disabled {
+    .thumbnail {
+        opacity: 0.7;
+    }
+}
+
 .browseContentCard {
     display: flex;
     flex-flow: column nowrap;
@@ -494,6 +500,10 @@ $appTextColorAlternative: #2d9649;
         font-size: large;
         font-weight: bold;
         text-align: center;
+
+        abbr[title] {
+            text-decoration: none;
+        }
     }
 
     .thumbnail {
@@ -512,9 +522,25 @@ $appTextColorAlternative: #2d9649;
         display: flex;
         flex-direction: row nowrap;
         justify-content: space-between;
+        padding-top: 5px;
 
         font-size: large;
         font-weight: bold;
+
+        .metadataContainer {
+            flex-grow: 1;
+            display: flex;
+            flex-flow: row wrap;
+            gap: 10px;
+
+            > div {
+                padding: 4px;
+                border-radius: 10px;
+                font-weight: normal;
+                color: $appTextColor;
+                background-color: $appBackgroundColor;
+            }
+        }
 
         .open {
             overflow: visible;
@@ -535,6 +561,11 @@ $appTextColorAlternative: #2d9649;
                 text-align: center;
                 cursor: pointer;
 
+                .placeholder {
+                    text-align: right;
+                    color: $appTextColorAlternative;
+                }
+
                 .menuContent {
                     display: none;
                 }
@@ -546,6 +577,11 @@ $appTextColorAlternative: #2d9649;
                 position: absolute;
                 top: 0px;
                 right: 0px;
+                min-width: 140px;
+
+                .placeholder {
+                    margin-bottom: 10px;
+                }
 
                 .menuContent {
                     display: block;
@@ -553,7 +589,13 @@ $appTextColorAlternative: #2d9649;
 
                     li {
                         list-style-type: none;
-                        line-height: 1.3;
+                        margin-bottom: 7px;
+                        color: $appTextColorAlternative;
+                    }
+
+                    li:hover {
+                        color: $appTextColor;
+                        background-color: $appBackgroundColor;
                     }
 
                     .operationInProgress {
@@ -564,6 +606,12 @@ $appTextColorAlternative: #2d9649;
                 }
             }
         }
+    }
+}
+
+.browseContentCard.disabled {
+    .thumbnail {
+        opacity: 0.7;
     }
 }
 
@@ -811,7 +859,7 @@ select.roundedElement {
     }
 }
 
-@media (max-width: 799px) {
+@media (max-width: 899px) {
     
     // alternative title text
     .titleArea {
