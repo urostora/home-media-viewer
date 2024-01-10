@@ -1,11 +1,14 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 
-import { getApiResponse, getApiResponseWithData, handleApiError } from '@/utils/apiHelpers';
-import { deleteFile, getFileById } from '@/utils/fileHelper';
+import { getApiResponse, getApiResponseWithData, getRequestBodyObject, handleApiError } from '@/utils/apiHelpers';
+import { deleteFile, fileUpdateDataSchema, getFileById, updateFile } from '@/utils/fileHelper';
 import { getFileThumbnailInBase64 } from '@/utils/thumbnailHelper';
 import { withSessionRoute } from '@/utils/sessionRoute';
 
 import type { File } from '@prisma/client';
+import { validateData } from '@/utils/dataValidator';
+
+import type { FileUpdateType } from '@/types/api/fileTypes';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
   const { method, query } = req;
@@ -41,6 +44,15 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
       }
       break;
     }
+    case 'PATCH': {
+      const updateData: FileUpdateType = getRequestBodyObject(req, res);
+      validateData(updateData, fileUpdateDataSchema);
+
+      const updateResult = await updateFile(id, updateData);
+
+      res.status(200).json(getApiResponseWithData<File>(updateResult));
+      break;
+    }
     case 'DELETE': {
       if (req.session.user?.admin !== true) {
         // forbidden
@@ -57,7 +69,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
       break;
     }
     default:
-      res.setHeader('Allow', ['GET', 'DELETE']);
+      res.setHeader('Allow', ['GET', 'PATCH', 'DELETE']);
       res.status(405).end(`Method ${method} Not Allowed`);
   }
 };

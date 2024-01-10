@@ -8,15 +8,18 @@ import { getSimpleValueOrInFilter } from './api/searchParameterHelper';
 import prisma from '@/utils/prisma/prismaImporter';
 import { HmvError } from './apiHelpers';
 import { getAlbums, getAlbumsContainingPath } from './albumHelper';
-
-import type { FileResultType, FileSearchType } from '@/types/api/fileTypes';
-import type { $Enums, Album, File, MetadataProcessingStatus, Prisma, FileMeta } from '@prisma/client';
-import type { EntityListResult } from '@/types/api/generalTypes';
-import type { BrowseResult, BrowseResultFile } from '@/types/api/browseTypes';
 import { MetaType } from './metaUtils';
 import { getSquareAroundCoordinate } from './geoUtils';
 
+import type { FileResultType, FileSearchType, FileUpdateType } from '@/types/api/fileTypes';
+import type { $Enums, Album, File, MetadataProcessingStatus, Prisma, FileMeta } from '@prisma/client';
+import type { EntityListResult } from '@/types/api/generalTypes';
+import type { BrowseResult, BrowseResultFile } from '@/types/api/browseTypes';
+import { statusValues, type DataValidatorSchema } from './dataValidator';
+
 export const ALBUM_PATH = process.env.APP_ALBUM_ROOT_PATH ?? '/mnt/albums';
+
+export const fileUpdateDataSchema: DataValidatorSchema = [{ field: 'status', valuesAllowed: statusValues }];
 
 export const syncFilesInAlbumAndFile = async (album: Album, parentFile?: File): Promise<void> => {
   let directoryPath = album.basePath;
@@ -272,6 +275,17 @@ export const addFile = async (filePath: string, albums: Album[], parentFile?: Fi
 
   return await prisma.file.create({
     data: fileData,
+  });
+};
+
+export const updateFile = async (id: string, data: FileUpdateType): Promise<File> => {
+  return await prisma.file.update({
+    where: {
+      id,
+    },
+    data: {
+      status: data.status,
+    },
   });
 };
 

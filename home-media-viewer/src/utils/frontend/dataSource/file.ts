@@ -42,6 +42,38 @@ export const apiLoadFiles = async (args: FileSearchType): Promise<FileResultType
   return resultData.data;
 };
 
+export const apiFileDisable = async (id: string): Promise<void> => {
+  const fetchArgs: RequestInit = {
+    method: 'PATCH',
+    body: JSON.stringify({
+      status: 'Disabled',
+    }),
+  };
+
+  const fetchResult = await fetch(`/api/file/${id}`, fetchArgs);
+  const resultData: GeneralEntityListResponse<FileResultType> = await fetchResult.json();
+
+  if (!resultData.ok) {
+    throw Error(resultData.error ?? 'Could not disable file');
+  }
+};
+
+export const apiFileActivate = async (id: string): Promise<void> => {
+  const fetchArgs: RequestInit = {
+    method: 'PATCH',
+    body: JSON.stringify({
+      status: 'Active',
+    }),
+  };
+
+  const fetchResult = await fetch(`/api/file/${id}`, fetchArgs);
+  const resultData: GeneralEntityListResponse<FileResultType> = await fetchResult.json();
+
+  if (!resultData.ok) {
+    throw Error(resultData.error ?? 'Could not disable file');
+  }
+};
+
 export const apiFileDelete = async (id: string): Promise<void> => {
   const fetchArgs: RequestInit = {
     method: 'DELETE',
