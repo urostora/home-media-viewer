@@ -123,7 +123,7 @@ const updateMetadataProcess = {
             console.error(`  ERROR while loading metadata: ${e}`);
           }
 
-          parallelJobs.splice(0, parallelJobs.length);
+          void parallelJobs.splice(0, parallelJobs.length);
 
           if (isShuttingDownHandler.isShuttingDown()) {
             console.log('Exit background process (2) - Shutting down');
@@ -148,7 +148,7 @@ const updateMetadataProcess = {
           console.error(`  ERROR whole loading metadata: ${e}`);
         }
 
-        parallelJobs.splice(0, parallelJobs.length);
+        void parallelJobs.splice(0, parallelJobs.length);
       }
 
       if (isShuttingDownHandler.isShuttingDown()) {
