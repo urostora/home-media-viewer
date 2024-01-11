@@ -672,6 +672,7 @@ $appTextColorAlternative: #2d9649;
     width: 40px;
     height: 40px !important;
     margin-top: -5px;
+    margin-left: 5px;
     background-color: transparent !important;
     cursor: pointer;
 
@@ -951,23 +952,32 @@ select.roundedElement {
         max-width: 100%;
         min-width: 120px;
 
-        .metadataContainer {
-            font-size: small;
-            gap: 3px !important;
-
-            > div {
-                padding: 2px;
-            }
-        }
+        
     }
 
     .contentCardContainer.noDetails {
         margin: 5px;
-        height: 165px;
+        height: 175px;
         width: 46vw;
 
         .contentName {
             font-size: 0.8rem;
+        }
+    }
+    
+    .metadataContainer {
+        font-size: small;
+        gap: 3px !important;
+
+        > div {
+            padding: 3px !important;
+            height: 20px !important;
+        }
+
+        .locationIcon {
+            width: 20px !important;
+            height: 20px !important;
+            margin-top: -1px !important;
         }
     }
 }
