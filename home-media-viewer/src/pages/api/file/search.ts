@@ -23,7 +23,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
           postData.user = req.session?.user?.id ?? '';
         }
 
-        const results = await getFiles(postData, true);
+        const results = await getFiles(postData);
         res.status(200).json(getApiResponseWithEntityList<FileResultType>(results));
       } catch (e) {
         handleApiError(res, 'search files', e, { filter: postData });

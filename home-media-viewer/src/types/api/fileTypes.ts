@@ -24,6 +24,7 @@ export interface FileSearchType extends StatusSearchType {
   isDirectory?: boolean;
   user?: string;
   location?: LocationFilter;
+  returnThumbnails?: boolean;
 }
 
 export interface FileMetadataType {

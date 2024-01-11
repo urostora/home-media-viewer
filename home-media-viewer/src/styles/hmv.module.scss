@@ -1,4 +1,4 @@
-$appBackgroundColor: #2d9649;
+$appBackgroundColor: rgb(45, 150, 73);
 $appBorderColor: #1b5a2b;
 $appBackgroundAlternative: white;
 $appTextColor: white;
@@ -147,6 +147,10 @@ $appTextColorAlternative: #2d9649;
         text-align: center;
         padding: 3px;
         font-weight: bold;
+
+        abbr[title] {
+            text-decoration: none;
+        }
     }
 
     .noDetails {
@@ -178,7 +182,7 @@ $appTextColorAlternative: #2d9649;
         height: 100%;
         position: relative;
 
-        img {
+        .thumbnailImage {
             width: 100%;
             height: 100%;
             object-fit: contain;
@@ -200,6 +204,7 @@ $appTextColorAlternative: #2d9649;
 
             > div {
                 padding: 4px;
+                height: 30px;
                 border-radius: 10px;
                 font-weight: normal;
                 color: $appTextColor;
@@ -660,6 +665,20 @@ $appTextColorAlternative: #2d9649;
 
     .failed {
         color: red;
+    }
+}
+
+.locationIcon {
+    width: 40px;
+    height: 40px !important;
+    margin-top: -5px;
+    background-color: transparent !important;
+    cursor: pointer;
+
+    img {
+        display: block;
+        width: 100%;
+        height: 100%;
     }
 }
 

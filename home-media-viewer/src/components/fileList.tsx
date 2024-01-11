@@ -11,7 +11,7 @@ import type { FileResultType, FileSearchType } from '@/types/api/fileTypes';
 
 import style from '@/styles/hmv.module.scss';
 
-const TAKE_VALUE = 50;
+const TAKE_VALUE = 20;
 
 export default function FileList(): JSX.Element {
     const [ currentFilter, setCurrentFilter ] = useState<ContentFilterType>({ dateFrom: undefined, dateTo: undefined, contentType: 'all', location: undefined });

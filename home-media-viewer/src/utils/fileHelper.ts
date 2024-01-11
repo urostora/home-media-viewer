@@ -330,10 +330,7 @@ export const updateThumbnailDate = async (file: File): Promise<void> => {
   });
 };
 
-export const getFiles = async (
-  params: FileSearchType,
-  returnThumbnails: boolean = false,
-): Promise<EntityListResult<FileResultType>> => {
+export const getFiles = async (params: FileSearchType): Promise<EntityListResult<FileResultType>> => {
   const albumIdSearchParameter: Prisma.AlbumWhereInput | undefined =
     params.album !== undefined
       ? typeof params.album.id === 'string'
@@ -479,7 +476,7 @@ export const getFiles = async (
   const fileList = results[1].map((fileData) => {
     return {
       ...fileData,
-      thumbnail: returnThumbnails ? getFileThumbnailInBase64(fileData) : '',
+      thumbnail: params?.returnThumbnails === true ? getFileThumbnailInBase64(fileData) : null,
       // convert dates to strings for output
       createdAt: fileData.createdAt.toString(),
       modifiedAt: fileData.modifiedAt.toString(),
@@ -647,20 +644,16 @@ export const getBrowseResult = async (directoryPath: string): Promise<BrowseResu
 
   let storedFilesInDirectory: EntityListResult<FileResultType> | null = null;
   if (storedDirectoryObject !== null) {
-    storedFilesInDirectory = await getFiles(
-      {
-        parentFileId: storedDirectoryObject.id,
-      },
-      true,
-    );
+    storedFilesInDirectory = await getFiles({
+      parentFileId: storedDirectoryObject.id,
+      returnThumbnails: false,
+    });
   } else if (albumExactly !== null) {
-    storedFilesInDirectory = await getFiles(
-      {
-        album: { id: albumExactly.id },
-        parentFileId: null,
-      },
-      true,
-    );
+    storedFilesInDirectory = await getFiles({
+      album: { id: albumExactly.id },
+      parentFileId: null,
+      returnThumbnails: false,
+    });
   }
 
   // console.log(

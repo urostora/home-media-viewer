@@ -1,8 +1,12 @@
-import { type FileMetadataType, type FileResultType } from "@/types/api/fileTypes";
-import hmvStyle from '@/styles/hmv.module.scss';
-import { MetaType, contentSizeToString, durationInSecToString } from "@/utils/metaUtils";
+import Image from "next/image";
 import { type ReactElement } from "react";
+
+import { type FileMetadataType, type FileResultType } from "@/types/api/fileTypes";
+import { MetaType, contentSizeToString, durationInSecToString } from "@/utils/metaUtils";
 import { isVideoByExtension } from "@/utils/frontend/contentUtils";
+
+import hmvStyle from '@/styles/hmv.module.scss';
+import globus from 'public/globus.png';
 
 export interface ContentThumbnailPropsType {
     contentSelected?: (content: FileResultType) => void,
@@ -55,15 +59,34 @@ const ContentThumbnail = (props: ContentThumbnailPropsType): JSX.Element => {
       }
     }
 
+    const onLocationClicked = (e: React.SyntheticEvent): void => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const locationMeta = content.metas.find(m => m.metaKey === MetaType.GpsCoordinates);
+      if (locationMeta === undefined) {
+        return;
+      }
+
+      const url = `https://www.google.com/maps/search/?api=1&query=${locationMeta.latitude}%2C${locationMeta.longitude}`;
+      window.open(url, '__blank');
+    }
+
     const isVideo = typeof content?.extension === 'string'
         ? isVideoByExtension(content.extension)
         : false;
 
-    const imageContent = content.isDirectory
-      ? <img alt={content.name} src="/directory.png" />
-      : (content.thumbnail == null
-        ? null
-        : (<img alt={content.name} src={`data:image/jpeg;base64,${content.thumbnail}`} />));
+    const imageSrc: string | null = content.isDirectory
+      ? '/directory.png'
+      : (content.thumbnail === null
+        ? (content.thumbnailStatus === 'Processed'
+          ? `/api/file/thumbnail/${content.id}/200`
+          : null)
+        : `data:image/jpeg;base64,${content.thumbnail}`);
+
+    const imageContent = typeof imageSrc === 'string'
+      ? <img className={hmvStyle.thumbnailImage} alt={content.name} src={imageSrc} />
+      : null;
 
     const videoIcon = isVideo
       ? <img alt="play" src="/play.svg" className={hmvStyle.videoIcon} />
@@ -78,6 +101,8 @@ const ContentThumbnail = (props: ContentThumbnailPropsType): JSX.Element => {
 
     metaListElements.push({name: 'Size', value: contentSizeToString(content.size ?? 0)});
     metaListElements.push({name: 'Path', value: content.path.replace('_', '_ ').replace('/', '/ ')});
+
+    let coordinates: { latitude?: number, longitude?: number} | undefined;
 
     if (typeof content.contentDate === 'string' && content.contentDate.length > 0) {
       const cd = new Date(content.contentDate);
@@ -104,6 +129,7 @@ const ContentThumbnail = (props: ContentThumbnailPropsType): JSX.Element => {
       if (typeof coord?.latitude === 'number' && typeof coord?.longitude === 'number') {
         const link = `https://www.google.com/maps/search/?api=1&query=${coord?.latitude}%2C${coord?.longitude}`;
         metaListElements.push({ name: 'Location', value: (<a href={link} target="__blank">View in Google Maps</a>)});
+        coordinates = coord;
       }
     }
 
@@ -122,12 +148,18 @@ const ContentThumbnail = (props: ContentThumbnailPropsType): JSX.Element => {
 
     const contentName = content.name + (content.extension.length > 0 ? `.${content.extension}` : '');
 
-    const highlightedMeta = highlightedMetaValues.map((text, index) => (<div key={index}>{text}</div>));
+    const highlightedMetaElements = highlightedMetaValues.map((text, index) => (<div key={index}>{text}</div>));
+
+    if (coordinates !== undefined) {
+      highlightedMetaElements.push(<div key="location" onClick={onLocationClicked} className={hmvStyle.locationIcon}><Image src={globus} alt="" /></div>);
+    }
 
     return (
         <div className={`${hmvStyle.contentCardContainer} ${displayDetails ? '' : hmvStyle.noDetails}`} onClick={onCardClicked} >
             <div className={hmvStyle.contentName}>
-                <span dangerouslySetInnerHTML={{ __html: contentName.replaceAll('_', '_<wbr>')}}></span>
+                <abbr title={content.path}>
+                  <span dangerouslySetInnerHTML={{ __html: contentName.replaceAll('_', '_<wbr>')}}></span>
+                </abbr>
             </div>
             <div className={hmvStyle.contentDataContainer}>
                 {contentDetails}
@@ -135,7 +167,7 @@ const ContentThumbnail = (props: ContentThumbnailPropsType): JSX.Element => {
                     {imageContent}
                     {videoIcon}
                     <div className={hmvStyle.metadataContainer}>
-                      {highlightedMeta}
+                      {highlightedMetaElements}
                     </div>
                 </div>
             </div>

@@ -20,7 +20,7 @@ export default function AlbumList( props: AlbumListPropsType ): JSX.Element {
     useEffect(() => {
         const fetchData = async (): Promise<void> => {
             try {
-                const results = await apiLoadAlbums({ take: 0, returnThumbnails: true });
+                const results = await apiLoadAlbums({ take: 0, returnThumbnails: false });
                 setAlbumData(results);
             } catch (error) {
 
