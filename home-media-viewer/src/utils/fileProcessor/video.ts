@@ -83,6 +83,11 @@ const videoFileProcessor: FileProcessor = async (file: File): Promise<boolean> =
 
   if (typeof str?.duration === 'number') {
     await addFloatMeta(file, MetaType.Duration, str.duration);
+  } else if (typeof str?.duration === 'string' && str?.duration.length > 0) {
+    const durationNumber = Number.parseFloat(str?.duration);
+    if (!Number.isNaN(durationNumber)) {
+      await addFloatMeta(file, MetaType.Duration, durationNumber);
+    }
   }
   if (typeof str?.bit_rate === 'number') {
     await addIntMeta(file, MetaType.Bitrate, Math.round(str.bit_rate));

@@ -1,4 +1,4 @@
-$appBackgroundColor: #2d9649;
+$appBackgroundColor: rgb(45, 150, 73);
 $appBorderColor: #1b5a2b;
 $appBackgroundAlternative: white;
 $appTextColor: white;
@@ -147,6 +147,10 @@ $appTextColorAlternative: #2d9649;
         text-align: center;
         padding: 3px;
         font-weight: bold;
+
+        abbr[title] {
+            text-decoration: none;
+        }
     }
 
     .noDetails {
@@ -178,7 +182,7 @@ $appTextColorAlternative: #2d9649;
         height: 100%;
         position: relative;
 
-        img {
+        .thumbnailImage {
             width: 100%;
             height: 100%;
             object-fit: contain;
@@ -188,6 +192,24 @@ $appTextColorAlternative: #2d9649;
             left: 0px;
             right: 0px;
             display: block;
+        }
+
+        .metadataContainer {
+            position: absolute;
+            bottom: 0px;
+            width: 100%;
+            display: flex;
+            flex-flow: row wrap;
+            gap: 10px;
+
+            > div {
+                padding: 4px;
+                height: 30px;
+                border-radius: 10px;
+                font-weight: normal;
+                color: $appTextColor;
+                background-color: $appBackgroundColor;
+            }
         }
     }
 }
@@ -480,6 +502,12 @@ $appTextColorAlternative: #2d9649;
     }
 }
 
+.disabled {
+    .thumbnail {
+        opacity: 0.7;
+    }
+}
+
 .browseContentCard {
     display: flex;
     flex-flow: column nowrap;
@@ -494,6 +522,10 @@ $appTextColorAlternative: #2d9649;
         font-size: large;
         font-weight: bold;
         text-align: center;
+
+        abbr[title] {
+            text-decoration: none;
+        }
     }
 
     .thumbnail {
@@ -512,9 +544,25 @@ $appTextColorAlternative: #2d9649;
         display: flex;
         flex-direction: row nowrap;
         justify-content: space-between;
+        padding-top: 5px;
 
         font-size: large;
         font-weight: bold;
+
+        .metadataContainer {
+            flex-grow: 1;
+            display: flex;
+            flex-flow: row wrap;
+            gap: 10px;
+
+            > div {
+                padding: 4px;
+                border-radius: 10px;
+                font-weight: normal;
+                color: $appTextColor;
+                background-color: $appBackgroundColor;
+            }
+        }
 
         .open {
             overflow: visible;
@@ -535,6 +583,11 @@ $appTextColorAlternative: #2d9649;
                 text-align: center;
                 cursor: pointer;
 
+                .placeholder {
+                    text-align: right;
+                    color: $appTextColorAlternative;
+                }
+
                 .menuContent {
                     display: none;
                 }
@@ -546,6 +599,11 @@ $appTextColorAlternative: #2d9649;
                 position: absolute;
                 top: 0px;
                 right: 0px;
+                min-width: 140px;
+
+                .placeholder {
+                    margin-bottom: 10px;
+                }
 
                 .menuContent {
                     display: block;
@@ -553,7 +611,13 @@ $appTextColorAlternative: #2d9649;
 
                     li {
                         list-style-type: none;
-                        line-height: 1.3;
+                        margin-bottom: 7px;
+                        color: $appTextColorAlternative;
+                    }
+
+                    li:hover {
+                        color: $appTextColor;
+                        background-color: $appBackgroundColor;
                     }
 
                     .operationInProgress {
@@ -564,6 +628,12 @@ $appTextColorAlternative: #2d9649;
                 }
             }
         }
+    }
+}
+
+.browseContentCard.disabled {
+    .thumbnail {
+        opacity: 0.7;
     }
 }
 
@@ -595,6 +665,21 @@ $appTextColorAlternative: #2d9649;
 
     .failed {
         color: red;
+    }
+}
+
+.locationIcon {
+    width: 40px;
+    height: 40px !important;
+    margin-top: -5px;
+    margin-left: 5px;
+    background-color: transparent !important;
+    cursor: pointer;
+
+    img {
+        display: block;
+        width: 100%;
+        height: 100%;
     }
 }
 
@@ -811,7 +896,7 @@ select.roundedElement {
     }
 }
 
-@media (max-width: 799px) {
+@media (max-width: 899px) {
     
     // alternative title text
     .titleArea {
@@ -866,15 +951,33 @@ select.roundedElement {
     .contentCardContainer {
         max-width: 100%;
         min-width: 120px;
+
+        
     }
 
     .contentCardContainer.noDetails {
         margin: 5px;
-        height: 165px;
+        height: 175px;
         width: 46vw;
 
         .contentName {
             font-size: 0.8rem;
+        }
+    }
+    
+    .metadataContainer {
+        font-size: small;
+        gap: 3px !important;
+
+        > div {
+            padding: 3px !important;
+            height: 20px !important;
+        }
+
+        .locationIcon {
+            width: 20px !important;
+            height: 20px !important;
+            margin-top: -1px !important;
         }
     }
 }

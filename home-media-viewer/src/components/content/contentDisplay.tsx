@@ -1,7 +1,7 @@
 import { type FileResultType } from "@/types/api/fileTypes"
 import hmvStyle from '@/styles/hmv.module.scss';
 import { type ReactElement } from "react";
-import { getContentUrl, getThumbnailUrl, isImageByExtension, isVideoByExtension } from "@/utils/frontend/contentUtils";
+import { getContentUrl, isImageByExtension, isVideoByExtension } from "@/utils/frontend/contentUtils";
 
 interface ContentDisplayProps {
     content?: FileResultType,
@@ -19,7 +19,7 @@ const ContentDisplay = (props: ContentDisplayProps): JSX.Element => {
 
     const getContentElement = (content: FileResultType): ReactElement => {
         if (isImageByExtension(content.extension)) {
-            const thumbnailLink = getThumbnailUrl(content.id, 1280);
+            const thumbnailLink = getContentUrl(content.id);
             // eslint-disable-next-line @next/next/no-img-element
             return (<img src={thumbnailLink} alt={content.path} />);
         } else if (isVideoByExtension(content.extension)) {

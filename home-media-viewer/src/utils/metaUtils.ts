@@ -17,16 +17,16 @@ export const MetaType = {
   Fps: 'fps',
 };
 
-export const durationInSecToString = (duration: number = 0): string => {
+export const durationInSecToString = (duration: number = 0, hideZeroParts: boolean = false): string => {
   let ret = '';
 
-  if (duration / (60 * 60) > 0) {
+  if (duration / (60 * 60) >= 1) {
     const hours = Math.floor(duration / (60 * 60));
     ret += ` ${hours}h`;
     duration -= hours * (60 * 60);
   }
 
-  if (duration / 60 > 0) {
+  if (duration / 60 >= 1) {
     const minutes = Math.floor(duration / 60);
     ret += ` ${minutes}m`;
     duration -= minutes * 60;
@@ -44,14 +44,14 @@ export const contentSizeToString = (size: number): string => {
   if (size > 2 ** 20 * 10) {
     // display megabytes
     const megabytes = Math.floor(size / 2 ** 20);
-    return `${megabytes} MB`;
+    return `${megabytes}MB`;
   }
 
   if (size > 2 ** 10 * 10) {
     // display megabytes
     const megabytes = Math.floor(size / 2 ** 10);
-    return `${megabytes} kB`;
+    return `${megabytes}kB`;
   }
 
-  return `${Math.floor(size)} byte`;
+  return `${Math.floor(size)}B`;
 };

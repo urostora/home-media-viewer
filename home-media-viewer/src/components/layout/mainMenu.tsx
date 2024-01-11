@@ -23,22 +23,22 @@ const MainMenu = (): JSX.Element => {
         <div className={hmvStyle.mainMenu}>
             <div onClick={handleMenuToggle} className={hmvStyle.mainMenuToggle}>{isOpen ? 'X' : String.fromCodePoint(0x2630)}</div>
             <div className={`${hmvStyle.mainMenuElements} ${isOpen ? hmvStyle.isOpen : ''}`}>
-                <div className={`${hmvStyle.linkItem} ${(url.includes('/album') ? hmvStyle.activeLinkItem : null)}`}>
+                <div className={`${hmvStyle.linkItem} ${/\/\/[^/]+\/album/.test(url) ? hmvStyle.activeLinkItem : null}`}>
                     <Link href="/album" onClick={closeMenu}>Albums</Link>
                 </div>
-                <div className={`${hmvStyle.linkItem} ${(url.includes('/search') ? hmvStyle.activeLinkItem : null)}`}>
+                <div className={`${hmvStyle.linkItem} ${/\/\/[^/]+\/search/.test(url) ? hmvStyle.activeLinkItem : null}`}>
                     <Link href="/search" onClick={closeMenu}>Search</Link>
                 </div>
                 {
                     authContext?.isAdmin === true
-                    ? (<div className={`${hmvStyle.linkItem} ${(url.includes('/browse') ? hmvStyle.activeLinkItem : null)}`}>
+                    ? (<div className={`${hmvStyle.linkItem} ${/\/\/[^/]+\/browse/.test(url) ? hmvStyle.activeLinkItem : null}`}>
                         <Link href="/browse" onClick={closeMenu}>Browse</Link>
                     </div>)
                     : null
                 }
                 {
                     authContext?.isAdmin === true
-                    ? (<div className={`${hmvStyle.linkItem} ${(url.includes('/user') ? hmvStyle.activeLinkItem : null)}`}>
+                    ? (<div className={`${hmvStyle.linkItem} ${/\/\/[^/]+\/users/.test(url) ? hmvStyle.activeLinkItem : null}`}>
                         <Link href="/user" onClick={closeMenu}>Users</Link>
                     </div>)
                     : null

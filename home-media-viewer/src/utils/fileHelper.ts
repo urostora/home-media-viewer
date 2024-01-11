@@ -8,15 +8,18 @@ import { getSimpleValueOrInFilter } from './api/searchParameterHelper';
 import prisma from '@/utils/prisma/prismaImporter';
 import { HmvError } from './apiHelpers';
 import { getAlbums, getAlbumsContainingPath } from './albumHelper';
-
-import type { FileResultType, FileSearchType } from '@/types/api/fileTypes';
-import type { $Enums, Album, File, MetadataProcessingStatus, Prisma, FileMeta } from '@prisma/client';
-import type { EntityListResult } from '@/types/api/generalTypes';
-import type { BrowseResult, BrowseResultFile } from '@/types/api/browseTypes';
 import { MetaType } from './metaUtils';
 import { getSquareAroundCoordinate } from './geoUtils';
 
+import type { FileResultType, FileSearchType, FileUpdateType } from '@/types/api/fileTypes';
+import type { $Enums, Album, File, MetadataProcessingStatus, Prisma, FileMeta } from '@prisma/client';
+import type { EntityListResult } from '@/types/api/generalTypes';
+import type { BrowseResult, BrowseResultFile } from '@/types/api/browseTypes';
+import { statusValues, type DataValidatorSchema } from './dataValidator';
+
 export const ALBUM_PATH = process.env.APP_ALBUM_ROOT_PATH ?? '/mnt/albums';
+
+export const fileUpdateDataSchema: DataValidatorSchema = [{ field: 'status', valuesAllowed: statusValues }];
 
 export const syncFilesInAlbumAndFile = async (album: Album, parentFile?: File): Promise<void> => {
   let directoryPath = album.basePath;
@@ -114,17 +117,9 @@ export const syncFilesInAlbumAndFile = async (album: Album, parentFile?: File): 
       continue;
     }
 
-    if (
-      f.createdAt.getTime() !== fileStats.ctime.getTime() ||
-      f.modifiedAt.getTime() !== fileStats.mtime.getTime() ||
-      f.size !== fileStats.size
-    ) {
+    if (f.size !== fileStats.size) {
       // file content changed
-      console.log(
-        `[${fullName}] changed - Created: [${f.createdAt.toISOString()} - ${fileStats.ctime.toISOString()}],  Modified: [${f.modifiedAt.toISOString()} - ${fileStats.mtime.toISOString()}], Size: [${
-          f.size
-        } - ${fileStats.size}]`,
-      );
+      console.log(`[${fullName}] changed - Size changed from ${f.size} to ${fileStats.size}]`);
       filesToUpdate.push(f);
     }
   }
@@ -283,6 +278,17 @@ export const addFile = async (filePath: string, albums: Album[], parentFile?: Fi
   });
 };
 
+export const updateFile = async (id: string, data: FileUpdateType): Promise<File> => {
+  return await prisma.file.update({
+    where: {
+      id,
+    },
+    data: {
+      status: data.status,
+    },
+  });
+};
+
 export const updateContentDate = async (file: File, date?: Date): Promise<void> => {
   await prisma.file.update({
     where: {
@@ -324,10 +330,7 @@ export const updateThumbnailDate = async (file: File): Promise<void> => {
   });
 };
 
-export const getFiles = async (
-  params: FileSearchType,
-  returnThumbnails: boolean = false,
-): Promise<EntityListResult<FileResultType>> => {
+export const getFiles = async (params: FileSearchType): Promise<EntityListResult<FileResultType>> => {
   const albumIdSearchParameter: Prisma.AlbumWhereInput | undefined =
     params.album !== undefined
       ? typeof params.album.id === 'string'
@@ -473,7 +476,7 @@ export const getFiles = async (
   const fileList = results[1].map((fileData) => {
     return {
       ...fileData,
-      thumbnail: returnThumbnails ? getFileThumbnailInBase64(fileData) : '',
+      thumbnail: params?.returnThumbnails === true ? getFileThumbnailInBase64(fileData) : null,
       // convert dates to strings for output
       createdAt: fileData.createdAt.toString(),
       modifiedAt: fileData.modifiedAt.toString(),
@@ -641,20 +644,16 @@ export const getBrowseResult = async (directoryPath: string): Promise<BrowseResu
 
   let storedFilesInDirectory: EntityListResult<FileResultType> | null = null;
   if (storedDirectoryObject !== null) {
-    storedFilesInDirectory = await getFiles(
-      {
-        parentFileId: storedDirectoryObject.id,
-      },
-      true,
-    );
+    storedFilesInDirectory = await getFiles({
+      parentFileId: storedDirectoryObject.id,
+      returnThumbnails: false,
+    });
   } else if (albumExactly !== null) {
-    storedFilesInDirectory = await getFiles(
-      {
-        album: { id: albumExactly.id },
-        parentFileId: null,
-      },
-      true,
-    );
+    storedFilesInDirectory = await getFiles({
+      album: { id: albumExactly.id },
+      parentFileId: null,
+      returnThumbnails: false,
+    });
   }
 
   // console.log(

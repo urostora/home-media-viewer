@@ -24,11 +24,10 @@ const BrowserContentList = (props: BrowserContentListProps): JSX.Element => {
     const [ content, setContent ] = useState<BrowseResult | null>(null);
     const [ contentSelected, setContentSelected ] = useState<BrowseResultFile | null>(null);
 
-    useEffect(() => {
-        setContent(null);
+    const reloadContent = (directoryPath: string): void => {
         setIsLoading(true);
 
-        apiBrowse(path)
+        apiBrowse(directoryPath)
         .then((loadedContent) => {
             setIsLoading(false);
             setContent(loadedContent);
@@ -37,11 +36,16 @@ const BrowserContentList = (props: BrowserContentListProps): JSX.Element => {
             setIsLoading(false);
             setError(`${e}`);
         });
+    };
+
+    useEffect(() => {
+        reloadContent(path);
     }, [ path ]);
 
     if (
         isLoading
-        || (content === null && error === null)
+        && content === null
+        && error === null
     ) {
         return <>Loading content...</>
     }
@@ -123,6 +127,10 @@ const BrowserContentList = (props: BrowserContentListProps): JSX.Element => {
         setContentSelected(content);
     };
 
+    const onContentChanged = (id: string): void => {
+        reloadContent(path);
+    };
+
     const displayContent = contentSelected?.storedFile === null
         ? null
         : <ContentDisplay
@@ -141,6 +149,7 @@ const BrowserContentList = (props: BrowserContentListProps): JSX.Element => {
             key={c.name}
             content={c}
             contentSelected={onContentSelectedHandler}
+            contentChanged={onContentChanged}
         />;
     });
 

@@ -1,6 +1,6 @@
 import { type MouseEventHandler, useState } from "react";
 
-import { apiFileDelete, apiFileRefreshMetadata, apiGetFile } from "@/utils/frontend/dataSource/file";
+import { apiFileActivate, apiFileDelete, apiFileDisable, apiFileRefreshMetadata, apiGetFile } from "@/utils/frontend/dataSource/file";
 import { apiAlbumAdd, apiAlbumUpdate } from "@/utils/frontend/dataSource/album";
 
 import type { FileResultType } from "@/types/api/fileTypes";
@@ -10,6 +10,7 @@ import hmvStyle from '@/styles/hmv.module.scss';
 
 interface BrowseContentMenuProps {
     content: BrowseResultFile,
+    onFileChanged?: (id: string) => void,
 }
 
 interface MenuItem {
@@ -30,6 +31,8 @@ const OperationCode = {
     addAlbum: 'addAlbum',
     deleteAlbum: 'deleteAlbum',
     setThumbnail: 'setThumbnail',
+    disableFile: 'disableFile',
+    activateFile: 'activateFile',
 }
 
 const getDataObjectFromElement = <T extends object>(element: HTMLElement): T | null => {
@@ -47,7 +50,7 @@ const getDataObjectFromElement = <T extends object>(element: HTMLElement): T | n
 }
 
 const BrowseContentMenu = (props: BrowseContentMenuProps): JSX.Element => {
-    const { content } = props;
+    const { content, onFileChanged } = props;
 
     const [ isOpen, setIsOpen ] = useState<boolean>(false);
     const [ operationInProgress, setOpertationInProgress ] = useState<string | null>(null);
@@ -102,6 +105,11 @@ const BrowseContentMenu = (props: BrowseContentMenuProps): JSX.Element => {
 
         setOpertationInProgress(OperationCode.refreshMetadata);
         void apiFileRefreshMetadata(content.storedFile.id)
+        .then(() => {
+            if (content.storedFile !== null && typeof onFileChanged === 'function') {
+                onFileChanged(content.storedFile?.id);
+            }
+        })
         .finally(() => {
             setOpertationInProgress(null);
         });
@@ -115,6 +123,47 @@ const BrowseContentMenu = (props: BrowseContentMenuProps): JSX.Element => {
         setOpertationInProgress(OperationCode.deleteFile);
 
         void apiFileDelete(content.storedFile.id)
+        .then(() => {
+            if (content.storedFile !== null && typeof onFileChanged === 'function') {
+                onFileChanged(content.storedFile?.id);
+            }
+        })
+        .finally(() => {
+            setOpertationInProgress(null);
+        });
+    };
+
+    const disableFileHandler = (): void => {
+        if (typeof content.storedFile?.id !== 'string') {
+            return;
+        }
+
+        setOpertationInProgress(OperationCode.disableFile);
+
+        void apiFileDisable(content.storedFile.id)
+        .then(() => {
+            if (content.storedFile !== null && typeof onFileChanged === 'function') {
+                onFileChanged(content.storedFile?.id);
+            }
+        })
+        .finally(() => {
+            setOpertationInProgress(null);
+        });
+    };
+
+    const activateFileHandler = (): void => {
+        if (typeof content.storedFile?.id !== 'string') {
+            return;
+        }
+
+        setOpertationInProgress(OperationCode.disableFile);
+
+        void apiFileActivate(content.storedFile.id)
+        .then(() => {
+            if (content.storedFile !== null && typeof onFileChanged === 'function') {
+                onFileChanged(content.storedFile?.id);
+            }
+        })
         .finally(() => {
             setOpertationInProgress(null);
         });
@@ -161,6 +210,22 @@ const BrowseContentMenu = (props: BrowseContentMenuProps): JSX.Element => {
             name: 'Delete file',
             clickHandler: deleteFileHandler,
         });
+
+        if (content.storedFile.status !== 'Disabled') {
+            menuList.push({
+                key: OperationCode.activateFile,
+                name: 'Disable',
+                clickHandler: disableFileHandler,
+            });
+        }
+
+        if (content.storedFile.status !== 'Active') {
+            menuList.push({
+                key: OperationCode.activateFile,
+                name: 'Activate',
+                clickHandler: activateFileHandler,
+            });
+        }
     }
 
     if (typeof fileData === 'object' && Array.isArray(fileData?.albums) && !fileData.isDirectory) {

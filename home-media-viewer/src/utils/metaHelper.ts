@@ -161,3 +161,11 @@ export const addPositionMeta = async (
     },
   });
 };
+
+export const removeAllMetadata = async (file: File): Promise<void> => {
+  await prisma.fileMeta.deleteMany({
+    where: {
+      fileId: file.id,
+    },
+  });
+};

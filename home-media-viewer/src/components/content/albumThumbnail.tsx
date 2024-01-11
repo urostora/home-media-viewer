@@ -16,9 +16,11 @@ const AlbumThumbnail = (props: AlbumThumbnailProps): JSX.Element => {
       }
     }
 
-    const imageContent = content.thumbnailFile != null && typeof content.thumbnailFile.thumbnailImage === 'string'
-        ? <img alt={content.name} src={`data:image/jpeg;base64,${content.thumbnailFile.thumbnailImage}`} />
-        : <></>;
+    const imageContent = content.thumbnailFile === null || content.thumbnailFile === undefined
+        ? null
+        : (typeof content.thumbnailFile.thumbnailImage === 'string'
+            ? <img className={hmvStyle.thumbnailImage} alt={content.name} src={`data:image/jpeg;base64,${content.thumbnailFile.thumbnailImage}`} />
+            : <img className={hmvStyle.thumbnailImage} alt={content.name} src={`/api/file/thumbnail/${content.thumbnailFile.id}/200`} />);
 
     return (
         <div className={`${hmvStyle.contentCardContainer} ${hmvStyle.albumCardContainer} ${hmvStyle.noDetails}`} onClick={onCardClicked} >
