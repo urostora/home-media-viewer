@@ -13,9 +13,10 @@ export const handleFileResponseByPath = (req: NextApiRequest, res: NextApiRespon
 
   const range = req.headers.range;
   if (range === undefined) {
-    res.writeHead(200, undefined, {
+    res.writeHead(200, 'OK', {
       'Content-Type': mime.contentType(extname(path)) as string,
       'Content-Length': stat.size,
+      'Cache-Control': `max-age=3600`,
     });
     const readStream = createReadStream(path);
     // We replaced all the event handlers with a simple call to readStream.pipe()
@@ -31,6 +32,7 @@ export const handleFileResponseByPath = (req: NextApiRequest, res: NextApiRespon
       'Accept-Ranges': 'bytes',
       'Content-Length': end - start + 1,
       'Content-Type': 'video/mp4',
+      'Cache-Control': `max-age=3600`,
     });
 
     const videoStream = createReadStream(path, { start, end });
