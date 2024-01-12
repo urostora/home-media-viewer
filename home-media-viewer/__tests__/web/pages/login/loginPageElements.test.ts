@@ -4,7 +4,7 @@
 
 import type { Page } from 'puppeteer';
 
-describe('HMV Login page', () => {
+describe('web/pages/login/elements', () => {
   let testPage: Page;
 
   beforeAll(async () => {
