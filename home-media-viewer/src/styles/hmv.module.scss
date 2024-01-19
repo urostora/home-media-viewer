@@ -91,6 +91,10 @@ $appTextColorAlternative: #2d9649;
         justify-content: flex-end;
     }
 
+    > div {
+        min-width: 40vw;
+    }
+
     > div > * {
         display: inline-block;
         height: 38px;
