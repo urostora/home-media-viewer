@@ -76,7 +76,7 @@ const ContentList = (props: ContentListPropsType): JSX.Element => {
         }
 
         const newContent = data[currentPosition - 1];
-        if (! ('isDirectory' in newContent)) {
+        if (!('isDirectory' in newContent) || newContent.isDirectory) {
             return;
         }
 
