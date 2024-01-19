@@ -3,9 +3,10 @@ import { useState } from "react";
 import AlbumThumbnail from "./albumThumbnail";
 import ContentDisplay from "./contentDisplay";
 import ContentThumbnail from "./contentThumbnail";
+import ScrollToTop from "./scrollToTop";
 
 import type { AlbumExtendedResultType, AlbumResultType } from "@/types/api/albumTypes";
-import { type FileResultType } from "@/types/api/fileTypes";
+import type { FileResultType } from "@/types/api/fileTypes";
 
 import hmvStyle from '@/styles/hmv.module.scss';
 
@@ -132,6 +133,7 @@ const ContentList = (props: ContentListPropsType): JSX.Element => {
     return (<div className={hmvStyle.contentsContainer}>
             {fileElements.length === 0 ? <>Content list is empty</> : fileElements}
             {displayedContentElement}
+            <ScrollToTop />
         </div>);
 };
 
