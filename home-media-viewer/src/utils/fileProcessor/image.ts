@@ -6,11 +6,12 @@ import { getFullPath, updateContentDate, updateThumbnailDate } from '../fileHelp
 
 import { addDateMeta, addFloatMeta, addIntMeta, addPositionMeta, addStringMeta } from '../metaHelper';
 import { getDateObject } from '../utils';
-import { getFileThumbnailPath, thumbnailSizes } from '../thumbnailHelper';
+import { getFileThumbnailPath } from '../thumbnailHelper';
 
 import type { File } from '@prisma/client';
 import type { FileProcessor } from './processorFactory';
 import { MetaType } from '../metaUtils';
+import { thumbnailSizes } from '../frontend/thumbnailUtils';
 
 const imageFileProcessor: FileProcessor = async (file: File): Promise<boolean> => {
   const path = getFullPath(file);
