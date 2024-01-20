@@ -4,15 +4,15 @@
 
 import type { Page, ElementHandle } from 'puppeteer';
 
-import { getLoggedInPage } from '../helpers/webHelper.helper';
+import { getPage } from '../helpers/webHelper.helper';
 
 describe('web/pages/main/elements', () => {
   let page: Page;
   let mobilePage: Page;
 
   beforeAll(async () => {
-    page = await getLoggedInPage();
-    mobilePage = await getLoggedInPage(false);
+    page = await getPage();
+    mobilePage = await getPage({ desktop: false });
   });
 
   it('should have user area with name and logout button', async () => {

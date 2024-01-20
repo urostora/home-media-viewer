@@ -4,13 +4,13 @@
 
 import type { Page } from 'puppeteer';
 
+import { getPage } from '../helpers/webHelper.helper';
+
 describe('web/pages/login/loginWithCorrectUser', () => {
   let page: Page;
 
   beforeAll(async () => {
-    page = await browser.newPage();
-    await page.goto(process.env.APP_URL ?? '', { timeout: 5_000 });
-    await page.waitForSelector('input[type="text"][name="email"]', { timeout: 5_000 });
+    page = await getPage({ isLoggedIn: false });
   });
 
   it('should refuse login with correct user', async () => {
