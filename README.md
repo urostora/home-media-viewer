@@ -6,7 +6,7 @@ A fully Docker-based NodeJs project provides web access to media files (images a
 
 Media files can be filtered by extracted metadata like date or location.
 
-![Album list](https://hmv.devati.net/docs/album-page.jpg)
+![Album list](https://hmv.devati.net/docs/content-list.jpg)
 
 ![Search by ](https://hmv.devati.net/docs/search-by-location.jpg)
 
