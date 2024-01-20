@@ -57,9 +57,22 @@ const ContentDisplay = (props: ContentDisplayProps): JSX.Element => {
         }
     };
 
+    const onDownloadClickedHandler = (e: React.MouseEvent): void => {
+        const contentUrl = getContentUrl(content.id);
+
+        if (window === undefined) {
+            return;
+        }
+
+        window.open(contentUrl, '__blank');
+    };
+
     return (
         <div className={hmvStyle.contentDisplayContainer} onClick={onBackgroundClicked}>
-            <div className={hmvStyle.closeButton} onClick={closeHandler}>X</div>
+            <div className={hmvStyle.operationsBlock}>
+                <div onClick={onDownloadClickedHandler}>&#8615;</div>
+                <div onClick={closeHandler}>X</div>
+            </div>
             <div
                 className={`${hmvStyle.navigationArea} ${hmvStyle.previousContainer}`}
                 onClick={previousHandler}>

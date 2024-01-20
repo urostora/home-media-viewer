@@ -228,21 +228,28 @@ $appTextColorAlternative: #2d9649;
     background-color: rgba(gray, 0.7);
     z-index: 99;
 
-    .closeButton {
+    .operationsBlock {
         position: absolute;
         top: 0px;
         right: 0px;
-        width: 60px;
-        height: 60px;
-        z-index: 100;
-        text-align: center;
-        font-size: 48px;
-        color: white;
-        background-color: rgba(0, 0, 0, 0.3);
-        border: 1px white solid;
-        border-radius: 30px;
-        padding: 3px;
-        cursor: pointer;
+        display: flex;
+        flex-flow: row nowrap;
+        gap: 10px;
+
+        > * {
+            width: 60px;
+            height: 60px;
+            z-index: 100;
+            text-align: center;
+            font-size: 48px;
+            font-weight: bold;
+            color: white;
+            background-color: rgba(0, 0, 0, 0.3);
+            border: 1px white solid;
+            border-radius: 30px;
+            padding: 3px;
+            cursor: pointer;
+        }
     }
 
     .contentWrapper {
