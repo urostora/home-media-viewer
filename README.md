@@ -1,6 +1,6 @@
 # Home Media Viewer
 
-[![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)[![NodeJS](https://img.shields.io/badge/node.js-6DA55F?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/en)[![Next JS](https://img.shields.io/badge/Next-black?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)[![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)](https://react.dev/)[![Prisma](https://img.shields.io/badge/Prisma-3982CE?style=for-the-badge&logo=Prisma&logoColor=white)](https://www.prisma.io/)[![MariaDB](https://img.shields.io/badge/MariaDB-003545?style=for-the-badge&logo=mariadb&logoColor=white)](https://mariadb.org/)[![Jest](https://img.shields.io/badge/-jest-%23C21325?style=for-the-badge&logo=jest&logoColor=white)](https://jestjs.io/)
+[![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)[![NodeJS](https://img.shields.io/badge/node.js-6DA55F?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/en)[![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)](https://react.dev/)[![MariaDB](https://img.shields.io/badge/MariaDB-003545?style=for-the-badge&logo=mariadb&logoColor=white)](https://mariadb.org/)[![Next JS](https://img.shields.io/badge/Next-black?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)[![Prisma](https://img.shields.io/badge/Prisma-3982CE?style=for-the-badge&logo=Prisma&logoColor=white)](https://www.prisma.io/)[![Jest](https://img.shields.io/badge/-jest-%23C21325?style=for-the-badge&logo=jest&logoColor=white)](https://jestjs.io/)
 
 A fully Docker-based NodeJs project provides web access to media files (images and videos) attached to the container. The application creates thumbnail images for the media content and extracts related metadata from them.
 
@@ -29,7 +29,9 @@ This project requires only Docker to run.
 
 ### Media content
 
-Media content should be arranged into directories, like the following (albums can be deeper too):
+The default media content is the test suite.
+
+Custom media content should be arranged into directories, like the following (albums can be deeper too) and attached to the app container:
 
 ```text
 root <=== this directory should be attached to the container
@@ -59,7 +61,7 @@ services:
     app:
         # ...
         volumes:
-            - ./static:${APP_ALBUM_ROOT_PATH}:ro # mount media content, target is /mnt/albums by default
+            - ./test/files:${APP_ALBUM_ROOT_PATH}:ro # mount media content, target is /mnt/albums by default
             - home-media-dev-index-storage:${APP_STORAGE_PATH} # it's /mnt/storage by default
 # ...
 
@@ -88,20 +90,15 @@ HOSTNAME=
 ```
 
 - **Load dependencies**
-
-`docker-compose run --rm dependencies bash -c "npm install"`
-
+  `docker-compose run --rm dependencies bash -c "npm install"`
 - **ORM (Prisma) setup**
-
-`docker-compose run --rm dependencies bash -c "npx prisma generate"`
-
+  `docker-compose run --rm dependencies bash -c "npx prisma generate"`
+- **Load database schema and run seed command**
+  `docker-compose run --rm dependencies bash -c "npx prisma migrate reset --force"`
 - **Start containers**
-
-`docker-compose up -d`
-
-- **Init database**
-
-`docker-compose run --rm dependencies bash -c "npx prisma migrate reset --force"`
+  `docker-compose up -d`
+- **Initialize test data** (optional, works only with default test suite)
+  `docker-compose run --rm testrunner bash -c "cd ../scripts && ./initTestData.sh"`
 
 #### When initiated before, just start containers
 
@@ -146,21 +143,22 @@ HOSTNAME=
 
 ##### Dependencies
 
-This container is used to run casual node commands in the development process
+This container is used to run commands required in the development process, so there is no need to install node to the host machine.
 
 Node version
 `docker-compose run --rm dependencies sh -c "node --version"`
 
-Install npm packages
+Run npm commands
 `docker-compose run --rm dependencies sh -c "npm install"`
 
-Prisma commands
+Run Prisma commands
 
+- Generate database schema
 `docker-compose run --rm dependencies sh -c "npx prisma generate"`
-
-`docker-compose run --rm dependencies sh -c "npx prisma migrate dev --name=init"`
-
-`docker-compose run --rm dependencies sh -c "npx prisma db push"`
+- Create migration script to schema changes
+`docker-compose run --rm dependencies sh -c "npx prisma migrate dev --name=schema-update-description"`
+- Deploy schema changes to the database
+`docker-compose run --rm dependencies sh -c "npx prisma migrate deploy"`
 
 ### Test suite development
 
@@ -190,6 +188,8 @@ Before changing test suite, be sure, that app container uses proper test data an
 
 - **Run database initialization script**
    `docker-compose run --rm dependencies bash -c "npx prisma migrate reset --force"`
+- **Remove thumbnails created before**
+   `docker-compose exec app sh -c "rm -R /mnt/storage/*"`
 - **Init test suite**
   `docker-compose run --rm testrunner bash -c "cd ../scripts && ./initTestData.sh"`
 
@@ -198,7 +198,7 @@ Before changing test suite, be sure, that app container uses proper test data an
 Developer environment runs test cases much slower due to the attached file system.
 
 - All tests
-`docker-compose run --rm testrunner bash -c "npx jest --runInBand"`
+`docker-compose run --rm testrunner bash -c "npx jest --runInBand --collect-coverage"`
 - Specific test(s)
 `docker-compose run --rm testrunner bash -c "npx jest --runInBand -t 'Google'"`
 
