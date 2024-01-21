@@ -16,9 +16,7 @@ const UserHeader = (): JSX.Element => {
 
     return (
         <div className={hmvStyle.userHeaderContainer}>
-            <span className={hmvStyle.userName}>
-                <Link href="/album">{authContext.name}</Link>
-            </span>
+            <span className={hmvStyle.userName}>{authContext.name}</span>
             <button className={hmvStyle.buttonElement} onClick={onLogoutClicked}>Logout</button>
         </div>
     );

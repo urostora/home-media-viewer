@@ -753,6 +753,7 @@ select.roundedElement {
     border: 1px solid $appBorderColor;
     background-color: $appBackgroundAlternative;
     color: $appTextColorAlternative;
+    cursor: pointer;
 }
 
 .buttonElement:hover {
