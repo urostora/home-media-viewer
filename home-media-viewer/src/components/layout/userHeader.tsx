@@ -1,6 +1,5 @@
 import { useContext } from 'react';
 
-import Link from 'next/link';
 import { AuthContext } from '@/components/auth/authContext';
 
 import hmvStyle from '@/styles/hmv.module.scss';
