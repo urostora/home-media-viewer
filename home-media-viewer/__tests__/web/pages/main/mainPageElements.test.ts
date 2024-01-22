@@ -109,6 +109,70 @@ describe('web/pages/main/elements', () => {
     });
   });
 
+  describe('desktop navigation bar', () => {
+    let navigationBar: ElementHandle<HTMLDivElement> | null = null;
+
+    beforeAll(async () => {
+      navigationBar = await desktopPage.waitForSelector('div[class*="hmv_navigationBar"]');
+      expect(navigationBar).not.toBeNull();
+    });
+
+    it('navigation bar elements should be visible', async () => {
+      const navigationBarElements = await navigationBar?.$$('select, a');
+
+      expect(Array.isArray(navigationBarElements)).toBe(true);
+
+      if (!Array.isArray(navigationBarElements)) {
+        return;
+      }
+
+      for (const element of navigationBarElements) {
+        expect(await element.isVisible()).toBe(true);
+      }
+    });
+  });
+
+  describe('desktop album list', () => {
+    let contentListContainer: ElementHandle<HTMLDivElement> | null = null;
+    let contentCards: Array<ElementHandle<HTMLDivElement>>;
+
+    beforeAll(async () => {
+      contentListContainer = await desktopPage.waitForSelector('div[class*="hmv_contentsContainer"]');
+      expect(contentListContainer).not.toBeNull();
+
+      if (contentListContainer === undefined || contentListContainer === null) {
+        throw Error('Content list container not found');
+      }
+
+      contentCards = await contentListContainer.$$('div[class*="hmv_contentCardContainer"]');
+    });
+
+    it('has album content cards', async () => {
+      expect(contentCards.length).toBeGreaterThan(0);
+    });
+
+    it('test albums should be visible', async () => {
+      const expectedAlbumNames = ['album01', 'album02'];
+      const visibleAlbumNames: string[] = [];
+
+      for (const card of contentCards) {
+        if (!(await card.isVisible())) {
+          continue;
+        }
+
+        const albumName = await card.$eval('div[class*="hmv_contentName"]', (node) => node.innerText);
+        if (typeof albumName === 'string') {
+          visibleAlbumNames.push(albumName);
+        }
+      }
+
+      for (const expectedAlbumName of expectedAlbumNames) {
+        const foundAlbumName = visibleAlbumNames.find((name) => name === expectedAlbumName);
+        expect(foundAlbumName).toBe(expectedAlbumName);
+      }
+    });
+  });
+
   describe('mobile title', () => {
     let titleLink: ElementHandle<HTMLAnchorElement> | undefined;
     let titleLinkMobile: ElementHandle<HTMLAnchorElement> | undefined;
@@ -193,6 +257,69 @@ describe('web/pages/main/elements', () => {
 
       for (const menuElement of menuElements) {
         expect(await menuElement.isVisible()).toBeTruthy();
+      }
+    });
+  });
+
+  describe('mobile navigation bar', () => {
+    let navigationBar: ElementHandle<HTMLDivElement> | null = null;
+
+    beforeAll(async () => {
+      navigationBar = await mobilePage.waitForSelector('div[class*="hmv_navigationBar"]');
+      expect(navigationBar).not.toBeNull();
+    });
+
+    it('navigation bar elements should be visible', async () => {
+      const navigationBarElements = await navigationBar?.$$('select, a');
+
+      expect(Array.isArray(navigationBarElements)).toBe(true);
+
+      if (!Array.isArray(navigationBarElements)) {
+        return;
+      }
+
+      for (const element of navigationBarElements) {
+        expect(await element.isVisible()).toBe(true);
+      }
+    });
+  });
+
+  describe('mobile album list', () => {
+    let contentListContainer: ElementHandle<HTMLDivElement> | null = null;
+    let contentCards: Array<ElementHandle<HTMLDivElement>>;
+
+    beforeAll(async () => {
+      contentListContainer = await mobilePage.waitForSelector('div[class*="hmv_contentsContainer"]');
+      expect(contentListContainer).not.toBeNull();
+
+      if (contentListContainer === undefined || contentListContainer === null) {
+        throw Error('Content list container not found');
+      }
+
+      contentCards = await contentListContainer.$$('div[class*="hmv_contentCardContainer"]');
+    });
+
+    it('has album content cards', async () => {
+      expect(contentCards.length).toBeGreaterThan(0);
+    });
+
+    it('test albums should be visible', async () => {
+      const expectedAlbumNames = ['album01', 'album02'];
+      const visibleAlbumNames: string[] = [];
+
+      for (const card of contentCards) {
+        if (!(await card.isVisible())) {
+          continue;
+        }
+
+        const albumName = await card.$eval('div[class*="hmv_contentName"]', (node) => node.innerText);
+        if (typeof albumName === 'string') {
+          visibleAlbumNames.push(albumName);
+        }
+      }
+
+      for (const expectedAlbumName of expectedAlbumNames) {
+        expect(visibleAlbumNames.includes(expectedAlbumName)).toBe(true);
       }
     });
   });
