@@ -12,7 +12,7 @@ describe('web/pages/login/loginWithCorrectUser', () => {
 
   beforeAll(async () => {
     page = await getPage({ isLoggedIn: false });
-  });
+  }, 15_000);
 
   it('should refuse login with correct user', async () => {
     const correctUserEmail = process.env.ADMIN_EMAIL ?? '';

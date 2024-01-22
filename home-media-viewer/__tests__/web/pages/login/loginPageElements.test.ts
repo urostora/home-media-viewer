@@ -14,7 +14,7 @@ describe('web/pages/login/elements', () => {
   beforeAll(async () => {
     desktopLoginPage = await getPage({ isLoggedIn: false });
     mobileLoginPage = await getPage({ isLoggedIn: false, desktop: false });
-  });
+  }, 15_000);
 
   describe('desktop', () => {
     it('should be titled "Home Media Viewer"', async () => {

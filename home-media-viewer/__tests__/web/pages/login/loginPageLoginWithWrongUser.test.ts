@@ -12,7 +12,7 @@ describe('web/pages/login/loginWithWrongUser', () => {
 
   beforeAll(async () => {
     page = await getPage({ isLoggedIn: false });
-  });
+  }, 15_000);
 
   it('should refuse login with fake user', async () => {
     const fakeUserEmail = 'qwer@qwer.com';

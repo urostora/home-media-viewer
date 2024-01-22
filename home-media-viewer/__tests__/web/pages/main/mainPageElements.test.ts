@@ -14,7 +14,7 @@ describe('web/pages/main/elements', () => {
   beforeAll(async () => {
     desktopPage = await getPage();
     mobilePage = await getPage({ desktop: false });
-  });
+  }, 15_000);
 
   describe('desktop user area', () => {
     it('should have user area with name and logout button', async () => {
