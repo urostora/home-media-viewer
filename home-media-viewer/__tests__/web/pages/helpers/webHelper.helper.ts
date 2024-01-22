@@ -34,7 +34,7 @@ const MOBILE_VIEWPORT: Viewport = {
 export const getPage = async (options: LoggedInPageOptionsType = {}): Promise<Page> => {
   const page: Page = await browser.newPage();
 
-  await page.goto((process.env.APP_URL ?? '') + (options.url ?? '/'), { timeout: 10_000 });
+  await page.goto((process.env.APP_URL ?? '') + (options.url ?? '/'), { waitUntil: 'networkidle0', timeout: 10_000 });
 
   const loggedInUserNameElement = await page.$(selectors.main.user.userName);
 

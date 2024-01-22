@@ -5,6 +5,7 @@
 import type { Page } from 'puppeteer';
 
 import { getPage } from '../helpers/webHelper.helper';
+import { selectors } from '../helpers/webSelectors.helper';
 
 describe('web/pages/login/loginWithWrongUser', () => {
   let page: Page;
@@ -19,17 +20,17 @@ describe('web/pages/login/loginWithWrongUser', () => {
 
     // console.log(await page.content());
 
-    await page.type('input[type="text"][name="email"]', fakeUserEmail);
-    await page.type('input[type="password"][name="password"]', fakeUserPassword);
+    await page.type(selectors.login.emailInput, fakeUserEmail);
+    await page.type(selectors.login.passwordInput, fakeUserPassword);
 
     await Promise.all([
       // Wait for navigation to complete
-      page.waitForSelector('div[class*="errorMessage"]', { timeout: 5000 }),
-      page.click('input[type="submit"]'),
+      page.waitForSelector(selectors.general.errorMessage, { timeout: 5000 }),
+      page.click(selectors.login.loginSubmitButton),
     ]);
 
-    const errorMessageElement = await page.waitForSelector('div[class*="errorMessage"]', { timeout: 5000 });
-    expect(await errorMessageElement?.isVisible()).toBeTruthy();
+    const errorMessageElement = await page.waitForSelector(selectors.general.errorMessage, { timeout: 5000 });
+    expect(await errorMessageElement?.isVisible()).toBe(true);
   });
 
   afterAll(async () => {

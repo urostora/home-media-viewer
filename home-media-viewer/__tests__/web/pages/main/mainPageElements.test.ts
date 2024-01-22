@@ -5,6 +5,7 @@
 import type { Page, ElementHandle } from 'puppeteer';
 
 import { getPage } from '../helpers/webHelper.helper';
+import { selectors } from '../helpers/webSelectors.helper';
 
 describe('web/pages/main/elements', () => {
   let desktopPage: Page;
@@ -15,14 +16,22 @@ describe('web/pages/main/elements', () => {
     mobilePage = await getPage({ desktop: false });
   });
 
-  it('should have user area with name and logout button', async () => {
-    const userHeader = await desktopPage.waitForSelector('div[class*="userHeaderContainer"]');
+  describe('desktop user area', () => {
+    it('should have user area with name and logout button', async () => {
+      const userHeader = await desktopPage.$(selectors.main.user.userHeaderContainer);
 
-    const userNameSpan = await userHeader?.waitForSelector('span[class*="userName"]');
-    const logoutButton = await userHeader?.waitForSelector('button');
+      expect(userHeader).not.toBeNull();
 
-    expect(await userNameSpan?.isVisible()).toBeTruthy();
-    expect(await logoutButton?.isVisible()).toBeTruthy();
+      if (userHeader === null) {
+        return;
+      }
+
+      const userNameSpan = await userHeader.$(selectors.main.user.userName);
+      const logoutButton = await userHeader.$('button');
+
+      expect(await userNameSpan?.isVisible()).toBe(true);
+      expect(await logoutButton?.isVisible()).toBe(true);
+    });
   });
 
   describe('desktop title', () => {
@@ -30,16 +39,20 @@ describe('web/pages/main/elements', () => {
     let titleLinkMobile: ElementHandle<HTMLAnchorElement> | undefined;
 
     beforeAll(async () => {
-      const titleHeader = await desktopPage.waitForSelector('div[class*="titleArea"]');
+      const titleHeader = await desktopPage.$(selectors.main.title.container);
 
-      const titleLinks = await titleHeader?.$$('a[class*="title"]');
+      expect(titleHeader).not.toBeNull();
+
+      const titleLinks = (await titleHeader?.$$(selectors.main.title.titleText)) as Array<
+        ElementHandle<HTMLAnchorElement>
+      >;
       expect(titleLinks?.length).toBe(2);
 
       for (const linkHandler of titleLinks ?? []) {
-        if (await linkHandler.evaluate((link) => !link.className.includes('titleMobile'))) {
-          titleLink = linkHandler;
-        } else {
+        if (await linkHandler.evaluate((link) => link.className.includes('titleMobile'))) {
           titleLinkMobile = linkHandler;
+        } else {
+          titleLink = linkHandler;
         }
       }
 
@@ -48,22 +61,29 @@ describe('web/pages/main/elements', () => {
     });
 
     it('should have visible desktop title and invisible mobile title', async () => {
-      expect(await titleLink?.isVisible()).toBeTruthy();
-      expect(await titleLinkMobile?.isVisible()).toBeFalsy();
+      expect(await titleLink?.isVisible()).toBe(true);
+      expect(await titleLinkMobile?.isVisible()).toBe(false);
     });
 
     it('should navigate to index page', async () => {
       expect(await titleLink?.evaluate((l) => l.href)).toBe(`${process.env.APP_URL}/`);
     });
+
+    it('should have expected text', async () => {
+      const expectedTitle = 'Home media viewer';
+      const titleText = await titleLink?.evaluate((l) => l.innerText);
+
+      expect(titleText).toBe(expectedTitle);
+    });
   });
 
   describe('desktop menu', () => {
-    let menuContainer: ElementHandle<HTMLDivElement> | null;
-    let menuToggle: ElementHandle<HTMLDivElement> | null;
-    let menuElementsContainer: ElementHandle<HTMLDivElement> | null;
+    let menuContainer: ElementHandle<Element> | null;
+    let menuToggle: ElementHandle<Element> | null;
+    let menuElementsContainer: ElementHandle<Element> | null;
 
     beforeAll(async () => {
-      menuContainer = await desktopPage.waitForSelector('div[class*="hmv_mainMenu"]', { timeout: 5000 });
+      menuContainer = await desktopPage.$(selectors.main.menu.container);
 
       expect(menuContainer).not.toBeUndefined();
       expect(menuContainer).not.toBeNull();
@@ -72,15 +92,10 @@ describe('web/pages/main/elements', () => {
         return;
       }
 
-      menuToggle = await menuContainer.waitForSelector('div[class*="hmv_mainMenuToggle"]', { timeout: 5000 });
-      menuElementsContainer = await menuContainer.waitForSelector('div[class*="hmv_mainMenuElements"]', {
-        timeout: 1000,
-      });
+      menuToggle = await menuContainer.$(selectors.main.menu.toggle);
+      menuElementsContainer = await menuContainer.$(selectors.main.menu.elementsContainer);
 
-      expect(menuToggle).not.toBeUndefined();
       expect(menuToggle).not.toBeNull();
-
-      expect(menuElementsContainer).not.toBeUndefined();
       expect(menuElementsContainer).not.toBeNull();
     });
 
@@ -93,7 +108,7 @@ describe('web/pages/main/elements', () => {
     });
 
     it('main menu elements should be visible', async () => {
-      const menuElements = await menuContainer?.$$('div[class*="hmv_linkItem"]');
+      const menuElements = await menuContainer?.$$(selectors.main.menu.elements);
 
       expect(menuElements).not.toBeUndefined();
 
@@ -104,16 +119,16 @@ describe('web/pages/main/elements', () => {
       expect(menuElements?.length).toBeGreaterThan(0);
 
       for (const menuElement of menuElements) {
-        expect(await menuElement.isVisible()).toBeTruthy();
+        expect(await menuElement.isVisible()).toBe(true);
       }
     });
   });
 
   describe('desktop navigation bar', () => {
-    let navigationBar: ElementHandle<HTMLDivElement> | null = null;
+    let navigationBar: ElementHandle<Element> | null = null;
 
     beforeAll(async () => {
-      navigationBar = await desktopPage.waitForSelector('div[class*="hmv_navigationBar"]');
+      navigationBar = await desktopPage.waitForSelector(selectors.main.navigation.container);
       expect(navigationBar).not.toBeNull();
     });
 
@@ -133,18 +148,18 @@ describe('web/pages/main/elements', () => {
   });
 
   describe('desktop album list', () => {
-    let contentListContainer: ElementHandle<HTMLDivElement> | null = null;
-    let contentCards: Array<ElementHandle<HTMLDivElement>>;
+    let contentListContainer: ElementHandle<Element> | null = null;
+    let contentCards: Array<ElementHandle<Element>>;
 
     beforeAll(async () => {
-      contentListContainer = await desktopPage.waitForSelector('div[class*="hmv_contentsContainer"]');
+      contentListContainer = await desktopPage.waitForSelector(selectors.contents.container);
       expect(contentListContainer).not.toBeNull();
 
       if (contentListContainer === undefined || contentListContainer === null) {
         throw Error('Content list container not found');
       }
 
-      contentCards = await contentListContainer.$$('div[class*="hmv_contentCardContainer"]');
+      contentCards = await contentListContainer.$$(selectors.contents.card);
     });
 
     it('has album content cards', async () => {
@@ -160,7 +175,9 @@ describe('web/pages/main/elements', () => {
           continue;
         }
 
-        const albumName = await card.$eval('div[class*="hmv_contentName"]', (node) => node.innerText);
+        const albumName = await card.$eval(selectors.contents.cardName, (node) =>
+          'innerText' in node ? node.innerText : null,
+        );
         if (typeof albumName === 'string') {
           visibleAlbumNames.push(albumName);
         }
@@ -173,21 +190,43 @@ describe('web/pages/main/elements', () => {
     });
   });
 
+  describe('mobile user area', () => {
+    it('should have user area with name and logout button', async () => {
+      const userHeader = await mobilePage.$(selectors.main.user.userHeaderContainer);
+
+      expect(userHeader).not.toBeNull();
+
+      if (userHeader === null) {
+        return;
+      }
+
+      const userNameSpan = await userHeader.$(selectors.main.user.userName);
+      const logoutButton = await userHeader.$('button');
+
+      expect(await userNameSpan?.isVisible()).toBe(true);
+      expect(await logoutButton?.isVisible()).toBe(true);
+    });
+  });
+
   describe('mobile title', () => {
     let titleLink: ElementHandle<HTMLAnchorElement> | undefined;
     let titleLinkMobile: ElementHandle<HTMLAnchorElement> | undefined;
 
     beforeAll(async () => {
-      const titleHeader = await mobilePage.waitForSelector('div[class*="titleArea"]');
+      const titleHeader = await mobilePage.$(selectors.main.title.container);
 
-      const titleLinks = await titleHeader?.$$('a[class*="title"]');
+      expect(titleHeader).not.toBeNull();
+
+      const titleLinks = (await titleHeader?.$$(selectors.main.title.titleText)) as Array<
+        ElementHandle<HTMLAnchorElement>
+      >;
       expect(titleLinks?.length).toBe(2);
 
       for (const linkHandler of titleLinks ?? []) {
-        if (await linkHandler.evaluate((link) => !link.className.includes('titleMobile'))) {
-          titleLink = linkHandler;
-        } else {
+        if (await linkHandler.evaluate((link) => link.className.includes('titleMobile'))) {
           titleLinkMobile = linkHandler;
+        } else {
+          titleLink = linkHandler;
         }
       }
 
@@ -196,22 +235,29 @@ describe('web/pages/main/elements', () => {
     });
 
     it('should have visible mobile title and invisible desktop title', async () => {
-      expect(await titleLink?.isVisible()).toBeFalsy();
-      expect(await titleLinkMobile?.isVisible()).toBeTruthy();
+      expect(await titleLink?.isVisible()).toBe(false);
+      expect(await titleLinkMobile?.isVisible()).toBe(true);
     });
 
     it('should navigate to index page', async () => {
       expect(await titleLinkMobile?.evaluate((l) => l.href)).toBe(`${process.env.APP_URL}/`);
     });
+
+    it('should have expected text', async () => {
+      const expectedTitle = 'HMV';
+      const titleText = await titleLinkMobile?.evaluate((l) => l.innerText);
+
+      expect(titleText).toBe(expectedTitle);
+    });
   });
 
   describe('mobile menu', () => {
-    let menuContainer: ElementHandle<HTMLDivElement> | null;
-    let menuToggle: ElementHandle<HTMLDivElement> | null;
-    let menuElementsContainer: ElementHandle<HTMLDivElement> | null;
+    let menuContainer: ElementHandle<Element> | null;
+    let menuToggle: ElementHandle<Element> | null;
+    let menuElementsContainer: ElementHandle<Element> | null;
 
     beforeAll(async () => {
-      menuContainer = await mobilePage.waitForSelector('div[class*="hmv_mainMenu"]', { timeout: 5000 });
+      menuContainer = await mobilePage.$(selectors.main.menu.container);
 
       expect(menuContainer).not.toBeUndefined();
       expect(menuContainer).not.toBeNull();
@@ -220,15 +266,10 @@ describe('web/pages/main/elements', () => {
         return;
       }
 
-      menuToggle = await menuContainer.waitForSelector('div[class*="hmv_mainMenuToggle"]', { timeout: 5000 });
-      menuElementsContainer = await menuContainer.waitForSelector('div[class*="hmv_mainMenuElements"]', {
-        timeout: 1000,
-      });
+      menuToggle = await menuContainer.$(selectors.main.menu.toggle);
+      menuElementsContainer = await menuContainer.$(selectors.main.menu.elementsContainer);
 
-      expect(menuToggle).not.toBeUndefined();
       expect(menuToggle).not.toBeNull();
-
-      expect(menuElementsContainer).not.toBeUndefined();
       expect(menuElementsContainer).not.toBeNull();
     });
 
@@ -245,7 +286,7 @@ describe('web/pages/main/elements', () => {
 
       expect(await menuElementsContainer?.isVisible()).toBe(true);
 
-      const menuElements = await menuContainer?.$$('div[class*="hmv_linkItem"]');
+      const menuElements = await menuContainer?.$$(selectors.main.menu.elements);
 
       expect(menuElements).not.toBeUndefined();
 
@@ -256,16 +297,16 @@ describe('web/pages/main/elements', () => {
       expect(menuElements?.length).toBeGreaterThan(0);
 
       for (const menuElement of menuElements) {
-        expect(await menuElement.isVisible()).toBeTruthy();
+        expect(await menuElement.isVisible()).toBe(true);
       }
     });
   });
 
   describe('mobile navigation bar', () => {
-    let navigationBar: ElementHandle<HTMLDivElement> | null = null;
+    let navigationBar: ElementHandle<Element> | null = null;
 
     beforeAll(async () => {
-      navigationBar = await mobilePage.waitForSelector('div[class*="hmv_navigationBar"]');
+      navigationBar = await mobilePage.waitForSelector(selectors.main.navigation.container);
       expect(navigationBar).not.toBeNull();
     });
 
@@ -285,18 +326,18 @@ describe('web/pages/main/elements', () => {
   });
 
   describe('mobile album list', () => {
-    let contentListContainer: ElementHandle<HTMLDivElement> | null = null;
-    let contentCards: Array<ElementHandle<HTMLDivElement>>;
+    let contentListContainer: ElementHandle<Element> | null = null;
+    let contentCards: Array<ElementHandle<Element>>;
 
     beforeAll(async () => {
-      contentListContainer = await mobilePage.waitForSelector('div[class*="hmv_contentsContainer"]');
+      contentListContainer = await mobilePage.waitForSelector(selectors.contents.container);
       expect(contentListContainer).not.toBeNull();
 
       if (contentListContainer === undefined || contentListContainer === null) {
         throw Error('Content list container not found');
       }
 
-      contentCards = await contentListContainer.$$('div[class*="hmv_contentCardContainer"]');
+      contentCards = await contentListContainer.$$(selectors.contents.card);
     });
 
     it('has album content cards', async () => {
@@ -312,7 +353,9 @@ describe('web/pages/main/elements', () => {
           continue;
         }
 
-        const albumName = await card.$eval('div[class*="hmv_contentName"]', (node) => node.innerText);
+        const albumName = await card.$eval(selectors.contents.cardName, (node) =>
+          'innerText' in node ? node.innerText : null,
+        );
         if (typeof albumName === 'string') {
           visibleAlbumNames.push(albumName);
         }
