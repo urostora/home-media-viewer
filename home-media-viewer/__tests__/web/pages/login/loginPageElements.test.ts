@@ -5,59 +5,160 @@
 import type { Page } from 'puppeteer';
 
 import { getPage } from '../helpers/webHelper.helper';
+import { selectors } from '../helpers/webSelectors.helper';
 
 describe('web/pages/login/elements', () => {
-  let testPage: Page;
+  let desktopLoginPage: Page;
+  let mobileLoginPage: Page;
 
   beforeAll(async () => {
-    testPage = await getPage({ isLoggedIn: false });
+    desktopLoginPage = await getPage({ isLoggedIn: false });
+    mobileLoginPage = await getPage({ isLoggedIn: false, desktop: false });
   });
 
-  it('should be titled "Home Media Viewer"', async () => {
-    await expect(testPage.title()).resolves.toMatch('Home Media Viewer');
+  describe('desktop', () => {
+    it('should be titled "Home Media Viewer"', async () => {
+      await expect(desktopLoginPage.title()).resolves.toMatch('Home Media Viewer');
+    });
+
+    it('E-mail field exists', async () => {
+      const usernameInput = await desktopLoginPage.$(selectors.login.emailInput);
+
+      expect(usernameInput).not.toBeNull();
+
+      if (usernameInput === null) {
+        return;
+      }
+
+      expect(await usernameInput.isVisible()).toBe(true);
+
+      const requiredProperty = await usernameInput.asElement()?.getProperty('required');
+      const requiredPropertyValue = await requiredProperty?.jsonValue();
+
+      expect(requiredPropertyValue).toEqual(true);
+
+      const label = await usernameInput.evaluateHandle((el) => el.previousSibling, usernameInput, { timeout: 1000 });
+
+      expect(label?.asElement()).not.toBeNull();
+
+      const labelHtmlProperty = await label?.asElement()?.getProperty('innerHTML');
+      const labelText = await labelHtmlProperty?.jsonValue();
+
+      expect(labelText).toEqual('E-mail');
+    });
+
+    it('Password field exists', async () => {
+      const passwordInput = await desktopLoginPage.$(selectors.login.passwordInput);
+
+      expect(passwordInput).not.toBeNull();
+
+      if (passwordInput === null) {
+        return;
+      }
+
+      expect(await passwordInput.isVisible()).toBe(true);
+
+      const requiredProperty = await passwordInput.asElement()?.getProperty('required');
+      const requiredPropertyValue = await requiredProperty?.jsonValue();
+
+      expect(requiredPropertyValue).toEqual(true);
+
+      const label = await passwordInput.evaluateHandle((el) => el.previousSibling, passwordInput, { timeout: 1000 });
+
+      expect(label?.asElement()).not.toBeNull();
+
+      const labelHtmlProperty = await label?.asElement()?.getProperty('innerHTML');
+      const labelText = await labelHtmlProperty?.jsonValue();
+
+      expect(labelText).toEqual('Password');
+    });
+
+    it('Login button exists', async () => {
+      const expectedTitle = 'Log in';
+      const loginButton = await desktopLoginPage.$(selectors.login.loginSubmitButton);
+
+      expect(loginButton).not.toBeNull();
+
+      if (loginButton === null) {
+        return;
+      }
+
+      expect(await loginButton.isVisible()).toBe(true);
+
+      const loginButtonValue: string | null = await loginButton.evaluate((btn) =>
+        'value' in btn ? (btn.value as string) : null,
+      );
+      expect(loginButtonValue).toBe(expectedTitle);
+    });
   });
 
-  it('E-mail field exists', async () => {
-    const usernameInput = await testPage.waitForSelector('input[type="text"][name=email]', { timeout: 1000 });
+  describe('mobile', () => {
+    it('should be titled "Home Media Viewer"', async () => {
+      await expect(mobileLoginPage.title()).resolves.toMatch('Home Media Viewer');
+    });
 
-    expect(usernameInput).not.toBeNull();
+    it('E-mail field exists', async () => {
+      const usernameInput = await mobileLoginPage.$(selectors.login.emailInput);
 
-    const requiredProperty = await usernameInput?.asElement()?.getProperty('required');
-    const requiredPropertyValue = await requiredProperty?.jsonValue();
+      expect(usernameInput).not.toBeNull();
 
-    expect(requiredPropertyValue).toEqual(true);
+      if (usernameInput === null) {
+        return;
+      }
 
-    const label = await usernameInput?.evaluateHandle((el) => el.previousSibling, usernameInput, { timeout: 1000 });
+      const requiredProperty = await usernameInput.asElement()?.getProperty('required');
+      const requiredPropertyValue = await requiredProperty?.jsonValue();
 
-    expect(label?.asElement()).not.toBeNull();
+      expect(requiredPropertyValue).toEqual(true);
 
-    const labelHtmlProperty = await label?.asElement()?.getProperty('innerHTML');
-    const labelText = await labelHtmlProperty?.jsonValue();
+      const label = await usernameInput.evaluateHandle((el) => el.previousSibling, usernameInput, { timeout: 1000 });
 
-    expect(labelText).toEqual('E-mail');
-  }, 15_000);
+      expect(label?.asElement()).not.toBeNull();
 
-  it('Password field exists', async () => {
-    const passwordInput = await testPage.waitForSelector('input[type="password"][name=password]', { timeout: 1000 });
+      const labelHtmlProperty = await label?.asElement()?.getProperty('innerHTML');
+      const labelText = await labelHtmlProperty?.jsonValue();
 
-    expect(passwordInput).not.toBeNull();
+      expect(labelText).toEqual('E-mail');
+    });
 
-    const requiredProperty = await passwordInput?.asElement()?.getProperty('required');
-    const requiredPropertyValue = await requiredProperty?.jsonValue();
+    it('Password field exists', async () => {
+      const passwordInput = await mobileLoginPage.$(selectors.login.passwordInput);
 
-    expect(requiredPropertyValue).toEqual(true);
+      expect(passwordInput).not.toBeNull();
 
-    const label = await passwordInput?.evaluateHandle((el) => el.previousSibling, passwordInput, { timeout: 1000 });
+      const requiredProperty = await passwordInput?.asElement()?.getProperty('required');
+      const requiredPropertyValue = await requiredProperty?.jsonValue();
 
-    expect(label?.asElement()).not.toBeNull();
+      expect(requiredPropertyValue).toEqual(true);
 
-    const labelHtmlProperty = await label?.asElement()?.getProperty('innerHTML');
-    const labelText = await labelHtmlProperty?.jsonValue();
+      const label = await passwordInput?.evaluateHandle((el) => el.previousSibling, passwordInput, { timeout: 1000 });
 
-    expect(labelText).toEqual('Password');
-  }, 15_000);
+      expect(label?.asElement()).not.toBeNull();
+
+      const labelHtmlProperty = await label?.asElement()?.getProperty('innerHTML');
+      const labelText = await labelHtmlProperty?.jsonValue();
+
+      expect(labelText).toEqual('Password');
+    });
+
+    it('Login button exists', async () => {
+      const loginButton = await mobileLoginPage.$(selectors.login.loginSubmitButton);
+
+      expect(loginButton).not.toBeNull();
+
+      if (loginButton === null) {
+        return;
+      }
+
+      const loginButtonValue: string | null = await loginButton.evaluate((btn) =>
+        'value' in btn ? (btn.value as string) : null,
+      );
+      expect(loginButtonValue).toBe('Log in');
+    });
+  });
 
   afterAll(async () => {
-    await testPage?.close();
+    await desktopLoginPage?.close();
+    await mobileLoginPage?.close();
   });
 });

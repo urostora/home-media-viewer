@@ -3,6 +3,7 @@
  */
 
 import type { Page, Viewport } from 'puppeteer';
+import { selectors } from './webSelectors.helper';
 
 export interface LoggedInPageOptionsType {
   /**
@@ -35,21 +36,21 @@ export const getPage = async (options: LoggedInPageOptionsType = {}): Promise<Pa
 
   await page.goto((process.env.APP_URL ?? '') + (options.url ?? '/'), { timeout: 10_000 });
 
-  const loggedInUserNameElement = await page.$('span[class*="hmv_userName"]');
+  const loggedInUserNameElement = await page.$(selectors.main.user.userName);
 
   const mustBeLoggedIn = options.isLoggedIn ?? true;
   if (mustBeLoggedIn && loggedInUserNameElement === null) {
     // Log in
-    await page.type('input[type="text"][name="email"]', process.env.ADMIN_EMAIL ?? '');
-    await page.type('input[type="password"][name="password"]', process.env.ADMIN_PASSWORD ?? '');
+    await page.type(selectors.login.emailInput, process.env.ADMIN_EMAIL ?? '');
+    await page.type(selectors.login.passwordInput, process.env.ADMIN_PASSWORD ?? '');
 
-    await Promise.all([page.waitForSelector('span[class*="hmv_userName"]'), page.click('input[type="submit"]')]);
+    await Promise.all([
+      page.waitForSelector(selectors.main.user.userName),
+      page.click(selectors.login.loginSubmitButton),
+    ]);
   } else if (!mustBeLoggedIn && loggedInUserNameElement !== null) {
     // Log out
-    await Promise.all([
-      page.waitForSelector('input[type="text"][name="email"]'),
-      page.click('div[class*="userHeaderContainer"] button'),
-    ]);
+    await Promise.all([page.waitForSelector(selectors.login.emailInput), page.click(selectors.main.user.logoutButton)]);
   }
 
   // set viewport size
