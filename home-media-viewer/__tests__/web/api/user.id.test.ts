@@ -1,14 +1,15 @@
-import { GeneralResponse, GeneralResponseWithData } from '@/types/api/generalTypes';
 import { fetchDataFromApi } from './helpers/helper';
-import { UserDataType, UserEditType } from '@/types/api/userTypes';
 import { checkUserData, getTestUserData } from './helpers/user.helper';
+
+import type { UserDataType, UserEditType } from '@/types/api/userTypes';
+import type { GeneralResponse, GeneralResponseWithData } from '@/types/api/generalTypes';
 
 describe('web/api/user', () => {
   const getPath = (id: string): string => `user/${id}`;
 
   const userIdsAdded: string[] = [];
-  let userDataToModify: UserDataType | undefined = undefined;
-  let userDataToDelete: UserDataType | undefined = undefined;
+  let userDataToModify: UserDataType | undefined;
+  let userDataToDelete: UserDataType | undefined;
 
   beforeAll(async () => {
     // create modify test user
@@ -20,7 +21,7 @@ describe('web/api/user', () => {
     );
 
     if (typeof userToModifyCreateResult?.data?.id !== 'string') {
-      throw 'Could not create modify test user';
+      throw Error('Could not create modify test user');
     }
 
     userIdsAdded.push(userToModifyCreateResult.data.id);
@@ -35,7 +36,7 @@ describe('web/api/user', () => {
     );
 
     if (typeof userToDeleteCreateResult?.data?.id !== 'string') {
-      throw 'Could not create modify test user';
+      throw Error('Could not create modify test user');
     }
 
     userIdsAdded.push(userToDeleteCreateResult.data.id);
@@ -54,8 +55,8 @@ describe('web/api/user', () => {
   });
 
   it('modify data', async () => {
-    if (!userDataToModify) {
-      throw 'Test user not found';
+    if (userDataToModify === undefined) {
+      throw Error('Test user not found');
     }
 
     const modifiedValues: UserEditType = {
@@ -75,12 +76,12 @@ describe('web/api/user', () => {
     expect(typeof result?.data).toBe('object');
     expect(typeof result?.data?.id).toBe('string');
 
-    await checkUserData(userDataToModify.id as string, modifiedValues);
+    await checkUserData(userDataToModify.id, modifiedValues);
   });
 
   it('delete user', async () => {
-    if (!userDataToDelete) {
-      throw 'Test user not found';
+    if (userDataToDelete === undefined) {
+      throw Error('Test user not found');
     }
 
     const result = await fetchDataFromApi<GeneralResponse>(getPath(userDataToDelete.id), undefined, 'DELETE');

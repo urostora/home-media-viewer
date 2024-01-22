@@ -64,6 +64,7 @@ export default function AlbumList( props: AlbumListPropsType ): JSX.Element {
 
     return (<>
         <div className={hmvStyle.navigationBar}>
+            <div className={hmvStyle.leftSide}></div>
             <div className={hmvStyle.rightSide}>
                 <select className={hmvStyle.roundedElement} value={order} onChange={onOrderChanged}>
                     <option value="nameAsc">Name ascending</option>

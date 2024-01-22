@@ -1,10 +1,10 @@
-import fetch, { Response } from 'node-fetch';
+import fetch, { type Response } from 'node-fetch';
 
 const APP_URL = process.env.APP_URL;
 const adminEmail = process.env.ADMIN_EMAIL;
 const adminPassword = process.env.ADMIN_PASSWORD;
 
-let loginCookie: string | undefined | null = undefined;
+let loginCookie: string | undefined | null;
 
 export const getApiUrl = (path: string): string => `${APP_URL}/api/${path}`;
 
@@ -34,18 +34,18 @@ export const fetchResultFromApi = async (
   const url = getApiUrl(path);
   const loginCookie = await getLoginCookie();
 
-  const cookiesHeader: { Cookie: string } | object = loginCookie ? { Cookie: loginCookie } : {};
+  const cookiesHeader: { Cookie: string } | object = typeof loginCookie === 'string' ? { Cookie: loginCookie } : {};
 
   const fetchOptions = {
-    body: data ? JSON.stringify(data) : undefined,
-    method: method,
+    body: data !== undefined ? JSON.stringify(data) : undefined,
+    method,
     headers: {
-      'Content-Type': data ? 'application/javascript' : '',
+      'Content-Type': data !== undefined ? 'application/javascript' : '',
       ...cookiesHeader,
     },
   };
 
-  return fetch(url, fetchOptions);
+  return await fetch(url, fetchOptions);
 };
 
 export const getLoginCookie = async (email?: string, password?: string): Promise<string | undefined> => {
@@ -58,20 +58,20 @@ export const getLoginCookie = async (email?: string, password?: string): Promise
     });
 
     if (!response.ok) {
-      throw `Could not get login cookie - returned status ${response.status}`;
+      throw Error(`Could not get login cookie - returned status ${response.status}`);
     }
 
     const setCookieValue = response?.headers?.get('set-cookie');
-    if (typeof setCookieValue != 'string' || setCookieValue.length < 50) {
-      throw 'Could not get login cookie - no set-cookie header found';
+    if (typeof setCookieValue !== 'string' || setCookieValue.length < 50) {
+      throw Error('Could not get login cookie - no set-cookie header found');
     }
 
-    const groups = /(?<logincookie>home-media-viewer-user-cookie=[^;]+);/.exec(setCookieValue as string)?.groups;
+    const groups = /(?<logincookie>home-media-viewer-user-cookie=[^;]+);/.exec(setCookieValue)?.groups;
 
-    if (groups && groups['logincookie'].length > 50) {
-      loginCookie = groups['logincookie'];
+    if (groups !== undefined && groups?.logincookie.length > 50) {
+      loginCookie = groups.logincookie;
     } else {
-      throw 'Login cookie invalid (too short or not found)';
+      throw Error('Login cookie invalid (too short or not found)');
     }
   }
 

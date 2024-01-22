@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import BrowseContentCard from './browseContentCard';
 import ContentDisplay from './contentDisplay';
 import AlbumDetails from './albumDetails';
+import ScrollToTop from './scrollToTop';
 import { apiBrowse } from '@/utils/frontend/dataSource/browse';
 
 import type { BrowseResult, BrowseResultFile } from '@/types/api/browseTypes';
@@ -162,6 +163,7 @@ const BrowserContentList = (props: BrowserContentListProps): JSX.Element => {
                 ? contentElements
                 : <>Directory is empty</>}
             {displayContent}
+            <ScrollToTop />
         </div>
     </div>;
 };

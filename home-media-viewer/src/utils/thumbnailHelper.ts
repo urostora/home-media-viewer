@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 
 import type { EntityType } from '@/types/api/generalTypes';
+import { thumbnailSize } from '@/utils/frontend/thumbnailUtils';
 
 const getThumbnailBaseDirectory = (): string => {
   const dir = process.env.APP_STORAGE_PATH ?? '/mnt/storage/thumbnail';
@@ -58,11 +59,3 @@ export const getFileThumbnailInBase64 = (file: EntityType): string | null => {
 
   return null;
 };
-
-export const thumbnailSize = {
-  small: 200,
-  medium: 600,
-  large: 1280,
-};
-
-export const thumbnailSizes = [thumbnailSize.small, thumbnailSize.medium, thumbnailSize.large];

@@ -52,7 +52,7 @@ const AlbumRootPage = (): JSX.Element => {
     };
 
     const backToAlbumLink = queryIds.length > 1
-        ? <Link key="backToAlbum" href={`/album/${queryIds[0]}`} prefetch={false} >Back to album</Link>
+        ? <Link key="backToAlbum" href={`/album/${queryIds[0]}`} prefetch={false} >Current album</Link>
         : null;
 
     const backLink = queryIds.length > 2
@@ -62,7 +62,7 @@ const AlbumRootPage = (): JSX.Element => {
     return (<>
         <div className={hmvStyle.navigationBar}>
             <div className={hmvStyle.leftSide}>
-                <Link key="backToAlbumList" href={'/album'} prefetch={false} >Back to album list</Link>
+                <Link key="backToAlbumList" href={'/album'} prefetch={false} >Album list</Link>
                 {backToAlbumLink}
                 {backLink}
             </div>
