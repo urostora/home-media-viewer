@@ -35,14 +35,16 @@ export const getPage = async (options: LoggedInPageOptionsType = {}): Promise<Pa
 
   await page.goto((process.env.APP_URL ?? '') + (options.url ?? '/'), { timeout: 10_000 });
 
+  const loggedInUserNameElement = await page.$('span[class*="hmv_userName"]');
+
   const mustBeLoggedIn = options.isLoggedIn ?? true;
-  if (mustBeLoggedIn && (await page.$('span[class*="hmv_userName"]')) === null) {
+  if (mustBeLoggedIn && loggedInUserNameElement === null) {
     // Log in
     await page.type('input[type="text"][name="email"]', process.env.ADMIN_EMAIL ?? '');
     await page.type('input[type="password"][name="password"]', process.env.ADMIN_PASSWORD ?? '');
 
     await Promise.all([page.waitForSelector('span[class*="hmv_userName"]'), page.click('input[type="submit"]')]);
-  } else if (!mustBeLoggedIn && (await page.$('span[class*="hmv_userName"]')) !== null) {
+  } else if (!mustBeLoggedIn && loggedInUserNameElement !== null) {
     // Log out
     await Promise.all([
       page.waitForSelector('input[type="text"][name="email"]'),
