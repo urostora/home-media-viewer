@@ -10,6 +10,11 @@ class ScrollPositionResetHandler {
   #lastAlbumSelected: string | undefined = undefined;
 
   constructor() {
+    // eslint-disable-next-line @typescript-eslint/prefer-optional-chain
+    if (typeof window === 'undefined' || window?.localStorage === undefined) {
+      return;
+    }
+
     const storedValue = window.localStorage.getItem(ScrollPositionResetHandler.lastSelectedItemsCookieKey);
     if (storedValue === null) {
       return;
