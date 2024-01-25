@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 
 import { getFileProcessor } from '@/utils/fileProcessor/processorFactory';
-import { getDateTimeFilter } from '@/utils/utils';
+import { getDateObject, getDateTimeFilter } from '@/utils/utils';
 import { getFileThumbnailInBase64 } from '@/utils/thumbnailHelper';
 import { getSimpleValueOrInFilter } from './api/searchParameterHelper';
 import prisma from '@/utils/prisma/prismaImporter';
@@ -11,15 +11,21 @@ import { getAlbums, getAlbumsContainingPath } from './albumHelper';
 import { MetaType } from './metaUtils';
 import { getSquareAroundCoordinate } from './geoUtils';
 
-import type { FileResultType, FileSearchType, FileUpdateType } from '@/types/api/fileTypes';
+import type { FileMetaUpdateType, FileResultType, FileSearchType, FileUpdateType } from '@/types/api/fileTypes';
 import type { $Enums, Album, File, MetadataProcessingStatus, Prisma, FileMeta } from '@prisma/client';
 import type { EntityListResult } from '@/types/api/generalTypes';
 import type { BrowseResult, BrowseResultFile } from '@/types/api/browseTypes';
 import { statusValues, type DataValidatorSchema } from './dataValidator';
+import { addDateMeta, addFloatMeta, addIntMeta, addPositionMeta, addStringMeta } from './metaHelper';
 
 export const ALBUM_PATH = process.env.APP_ALBUM_ROOT_PATH ?? '/mnt/albums';
 
 export const fileUpdateDataSchema: DataValidatorSchema = [{ field: 'status', valuesAllowed: statusValues }];
+
+export const fileMetadataUpdateDataSchema: DataValidatorSchema = [
+  { field: 'key' },
+  { field: 'type', valuesAllowed: ['Int', 'String', 'Float', 'Date', 'Location'] },
+];
 
 export const syncFilesInAlbumAndFile = async (album: Album, parentFile?: File): Promise<void> => {
   let directoryPath = album.basePath;
@@ -723,4 +729,53 @@ export const getBrowseResult = async (directoryPath: string): Promise<BrowseResu
   };
 
   return results;
+};
+
+export const updateFileMetaEntry = async (file: File, data: FileMetaUpdateType): Promise<void> => {
+  switch (data.type) {
+    case 'String':
+      if (typeof data.value === 'string') {
+        await addStringMeta(file, data.key, data.value);
+      } else {
+        throw new HmvError('Value must be a string', { isPublic: true });
+      }
+      break;
+    case 'Int':
+      if (typeof data.value === 'number') {
+        await addIntMeta(file, data.key, data.value);
+      } else {
+        throw new HmvError('Value must be a number', { isPublic: true });
+      }
+      break;
+    case 'Float':
+      if (typeof data.value === 'number') {
+        await addFloatMeta(file, data.key, data.value);
+      } else {
+        throw new HmvError('Value must be a number', { isPublic: true });
+      }
+      break;
+    case 'Date':
+      if (typeof data.value === 'string' && getDateObject(data.value) !== null) {
+        const date = getDateObject(data.value);
+        if (date !== null) {
+          await addDateMeta(file, data.key, date);
+        }
+      } else {
+        throw new HmvError('Value must be a date string', { isPublic: true });
+      }
+      break;
+    case 'Location':
+      if (
+        typeof data.value === 'object' &&
+        typeof data.value.latitude === 'number' &&
+        typeof data.value.longitude === 'number'
+      ) {
+        await addPositionMeta(file, data.key, data.value.latitude, data.value.longitude);
+      } else {
+        throw new HmvError('Value has invalid latitude or longitude value', { isPublic: true });
+      }
+      break;
+    default:
+      throw new HmvError(`Invalid data type specified`, { isPublic: true });
+  }
 };
