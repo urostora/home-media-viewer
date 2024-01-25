@@ -155,7 +155,7 @@ const ContentThumbnail = (props: ContentThumbnailPropsType): JSX.Element => {
     }
 
     return (
-        <div className={`${hmvStyle.contentCardContainer} ${displayDetails ? '' : hmvStyle.noDetails}`} onClick={onCardClicked} >
+        <div className={`${hmvStyle.contentCardContainer} ${displayDetails ? '' : hmvStyle.noDetails}`} onClick={onCardClicked} data-id={content.id} >
             <div className={hmvStyle.contentName}>
                 <abbr title={content.path}>
                   <span dangerouslySetInnerHTML={{ __html: contentName.replaceAll('_', '_<wbr>')}}></span>
