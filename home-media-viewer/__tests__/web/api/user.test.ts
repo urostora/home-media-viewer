@@ -35,7 +35,7 @@ describe('web/api/user', () => {
 
     const createdId = result?.data?.id;
 
-    expect(typeof createdId === 'string').toBe('string');
+    expect(typeof createdId).toBe('string');
     if (typeof createdId !== 'string') {
       return;
     }
@@ -58,7 +58,7 @@ describe('web/api/user', () => {
 
     const createdId = result?.data?.id;
 
-    expect(typeof createdId === 'string').toBe('string');
+    expect(typeof createdId).toBe('string');
     if (typeof createdId !== 'string') {
       return;
     }
