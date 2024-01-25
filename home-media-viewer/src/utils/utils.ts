@@ -7,7 +7,7 @@ export const getDateObject = (dateTimeString: string | undefined | null): Date |
   }
 
   const rex =
-    /(?<year>\d{4})\D?(?<month>\d{1,2})\D?(?<day>\d{1,2})(?:\D{0,2})(?<hour>\d{1,2})?(?:\D?(?<min>\d{1,2})(?:\D?(?<sec>\d{1,2})?)?)?/i;
+    /(?<year>(?:19|20)\d{2})\D?(?<month>\d{1,2})\D?(?<day>\d{1,2})(?:\D{0,2})(?<hour>\d{1,2})?(?:\D?(?<min>\d{1,2})(?:\D?(?<sec>\d{1,2})?)?)?/i;
   const match = rex.exec(dateTimeString);
 
   if (match?.groups === undefined) {
