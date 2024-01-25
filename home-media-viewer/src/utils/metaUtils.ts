@@ -12,6 +12,7 @@ export const MetaType = {
   Language: 'language',
   Codec: 'codec',
   CodecFullName: 'codec_full_name',
+  Encoder: 'encoder',
   Duration: 'duration',
   Bitrate: 'bitrate',
   Fps: 'fps',

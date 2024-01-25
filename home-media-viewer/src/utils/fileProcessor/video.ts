@@ -124,6 +124,10 @@ const videoFileProcessor: FileProcessor = async (file: File): Promise<boolean> =
         customVideoResults.location.lon,
       );
     }
+
+    if (typeof customVideoResults?.encoder === 'string') {
+      await addStringMeta(file, MetaType.Encoder, customVideoResults.encoder);
+    }
   }
 
   // create thumbnail
@@ -165,13 +169,14 @@ interface CustomVideoResult {
     lon: number;
   };
   creationTime?: Date;
+  encoder?: string;
 }
 
 const getKeyValueFromOutputResult = (input: string, key: string): string | null => {
-  const rex = new RegExp(`${key}\\s*\\:\\s*(?<result>[-_:\\w]+)`, 'i');
+  const rex = new RegExp(`${key}\\s*\\:\\s*(?<result>[^\\n]+)`, 'i');
   const m = rex.exec(input);
   if (m?.groups?.result !== undefined) {
-    return m.groups.result;
+    return m.groups.result.trim();
   }
 
   return null;
@@ -210,6 +215,13 @@ const loadCustomVideoData = (path: string, ffprobePath?: string): CustomVideoRes
       const res = getKeyValueFromOutputResult(str, 'creation_time');
       if (res != null) {
         ret.creationTime = getDateObject(res) ?? undefined;
+      }
+    }
+
+    if (ret?.encoder == null) {
+      const res = getKeyValueFromOutputResult(str, 'encoder');
+      if (res != null) {
+        ret.encoder = res;
       }
     }
 
