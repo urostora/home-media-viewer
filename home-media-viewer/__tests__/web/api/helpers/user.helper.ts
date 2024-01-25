@@ -1,6 +1,7 @@
-import { UserDataType, UserEditType } from '@/types/api/userTypes';
 import { fetchDataFromApi } from './helper';
-import { GeneralResponseWithData } from '@/types/api/generalTypes';
+
+import type { GeneralResponseWithData } from '@/types/api/generalTypes';
+import type { UserDataType, UserEditType } from '@/types/api/userTypes';
 
 const customNamePart = `${new Date().getTime()}`;
 const validPassword = 'Password_4-Guest|User';
@@ -14,7 +15,7 @@ export const getTestUserData = (namePrefix: string = 'guest', isAdmin: boolean =
   };
 };
 
-export const checkUserData = async (id: string, values: UserEditType) => {
+export const checkUserData = async (id: string, values: UserEditType): Promise<void> => {
   const path = `user/${id}`;
 
   const response = await fetchDataFromApi<GeneralResponseWithData<UserDataType>>(path);
@@ -23,19 +24,19 @@ export const checkUserData = async (id: string, values: UserEditType) => {
   expect(response?.ok).toBe(true);
   expect(response?.data).not.toBeNull();
 
-  if (values?.email) {
+  if (typeof values?.email === 'string') {
     expect(response?.data?.email).toBe(values.email);
   }
 
-  if (values?.name) {
+  if (typeof values?.name === 'string') {
     expect(response?.data?.name).toBe(values.name);
   }
 
-  if (values?.isAdmin) {
+  if (typeof values?.isAdmin === 'boolean') {
     expect(response?.data?.isAdmin).toBe(values.isAdmin);
   }
 
-  if (values?.status) {
+  if (typeof values?.status !== 'undefined') {
     expect(response?.data?.status).toBe(values.status);
   }
 };

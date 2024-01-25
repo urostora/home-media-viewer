@@ -1,6 +1,7 @@
-import { GeneralResponseWithData } from '@/types/api/generalTypes';
 import { fetchDataFromApi, fetchResultFromApi } from './helpers/helper';
-import { LoginResponseDataType } from '@/types/loginTypes';
+
+import type { GeneralResponseWithData } from '@/types/api/generalTypes';
+import type { LoginResponseDataType } from '@/types/loginTypes';
 
 describe('web/api/login', () => {
   const path = 'login';

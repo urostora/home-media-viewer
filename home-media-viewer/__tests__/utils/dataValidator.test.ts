@@ -1,5 +1,5 @@
 import { HmvError } from '@/utils/apiHelpers';
-import { DataValidatorSchema, validateData } from '@/utils/dataValidator';
+import { type DataValidatorSchema, validateData } from '@/utils/dataValidator';
 
 describe('utils/dataValidator', () => {
   it('data is null', () => {

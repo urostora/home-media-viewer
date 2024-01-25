@@ -1,6 +1,7 @@
 import { fetchDataFromApi } from './helper';
-import { GeneralResponseWithData } from '@/types/api/generalTypes';
-import { AlbumExtendedDataType } from '@/types/api/albumTypes';
+
+import type { GeneralResponseWithData } from '@/types/api/generalTypes';
+import type { AlbumExtendedDataType } from '@/types/api/albumTypes';
 
 export const getAlbumData = async (id: string): Promise<AlbumExtendedDataType | null> => {
   const path = `album/${id}`;

@@ -1,6 +1,7 @@
-import { DateFilter } from '@/types/api/generalTypes';
 import { getDateObject, getDateTimeFilter } from '@/utils/utils';
-import { Prisma } from '@prisma/client';
+
+import type { Prisma } from '@prisma/client';
+import { type DateFilter } from '@/types/api/generalTypes';
 
 describe('utils/utils getDateObject', () => {
   it('with undefined', () => {

@@ -1,14 +1,14 @@
-import { render, screen, waitForElementToBeRemoved } from '@testing-library/react'
 import '@testing-library/jest-dom'
-
 import 'whatwg-fetch'
-import {rest} from 'msw'
 import {setupServer} from 'msw/node';
+import { render, screen, waitForElementToBeRemoved } from '@testing-library/react'
+
+import { type AsyncResponseResolverReturnType, type DefaultBodyType, type MockedResponse, rest} from 'msw'
 
 import AlbumDetails from "@/components/content/albumDetails";
 import { getApiResponseWithData } from '@/utils/apiHelpers';
 
-import { AlbumExtendedDataType } from '@/types/api/albumTypes';
+import type { AlbumExtendedDataType } from '@/types/api/albumTypes';
 
 const SAMPLE_DATA: AlbumExtendedDataType = {
   id: 'qwer-1234',
@@ -35,18 +35,18 @@ const SAMPLE_DATA: AlbumExtendedDataType = {
 };
 
 const server = setupServer(
-  rest.get('/api/album/asdf-1234', (req, res, ctx) => {
+  rest.get('/api/album/asdf-1234', (req, res, ctx): AsyncResponseResolverReturnType<MockedResponse<DefaultBodyType>> => {
     // return album details
     return res(ctx.json(getApiResponseWithData<AlbumExtendedDataType>(SAMPLE_DATA)));
   }),
-  rest.get('/api/album/qwer', (req, res, ctx) => {
+  rest.get('/api/album/qwer', (req, res, ctx): AsyncResponseResolverReturnType<MockedResponse<DefaultBodyType>> => {
     return res(ctx.status(400));
   }),
 );
 
-beforeAll(() => server.listen());
-afterEach(() => server.resetHandlers());
-afterAll(() => server.close());
+beforeAll(() => { server.listen() });
+afterEach(() => { server.resetHandlers() });
+afterAll(() => { server.close() }) ;
 
 
 describe('component/contents/AlbumDetails', () => {
