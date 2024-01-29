@@ -21,11 +21,11 @@ interface Location {
 }
 
 const DEFAULT_LOCATION: Location = {
-    latitude: 47.4899,
-    longitude: 19.1173,
+    latitude: 47.507235,
+    longitude: 19.042195,
 };
 
-const DEFAULT_ZOOM = 16;
+const DEFAULT_ZOOM = 15;
 
 const getFileLocation = (file: FileResultType): null | Location => {
     const locationMeta = file.metas.find(m => m.metaKey === MetaType.GpsCoordinates);
@@ -84,6 +84,7 @@ const LocationMetadataDisplay: React.FC<LocationMetadataDisplayProps> = (props: 
 
     const setLocationButtonHandler = (): void => {
         setCurrentLocation(getLastSavedLocation() ?? DEFAULT_LOCATION);
+        setIsLocationChanged(true);
     };
 
     const mapClickedHandler = ({ event, latLng, pixel }: {event: MouseEvent, latLng: [number, number], pixel: [number, number] }): void => {
