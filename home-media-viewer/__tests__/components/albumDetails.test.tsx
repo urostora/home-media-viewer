@@ -50,20 +50,30 @@ afterAll(() => { server.close() }) ;
 
 
 describe('component/contents/AlbumDetails', () => {
-  it('shows loading message at first render', async () => {
+  it('should show loading message', async () => {
     render(<AlbumDetails albumId="qwer" />);
 
     screen.getByText(/Loading album details/i);
   });
 
-  it('show empty element without albumId set', async () => {
+  it('should be empty when no album was set', async () => {
     const { container } = render(<AlbumDetails />);
 
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('show album found in database', async () => {
+  it('should show only title when details are not set', async () => {
     render(<AlbumDetails albumId="asdf-1234" />);
+
+    await screen.findByText('Test album name', undefined, { timeout: 2000 });
+
+    screen.getByText(/Test album name/i)
+
+    expect(screen.queryByText(/qwer-1234/i)).toBeNull();
+  });
+
+  it('should show loaded album details', async () => {
+    render(<AlbumDetails albumId="asdf-1234" showDetails={true} />);
 
     await screen.findByText('Name:', undefined, { timeout: 2000 });
 
@@ -76,7 +86,7 @@ describe('component/contents/AlbumDetails', () => {
     screen.getByText(/Failed: 2/i)
   });
 
-  it('show error when album not exists', async () => {
+  it('should show error when album not exists', async () => {
     render(<AlbumDetails albumId="qwer" />);
 
     await waitForElementToBeRemoved(() => screen.getByText(/Loading/i))
