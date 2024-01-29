@@ -149,7 +149,7 @@ const LocationMetadataDisplay: React.FC<LocationMetadataDisplayProps> = (props: 
         // file location not set, show only a button (admin) or an info box
         return (<div className={style.locationMetadataDisplay} >
             {isAdmin
-                ? <button className={style.roundBorderedButtonElement} onClick={setLocationButtonHandler}>Content has no location - Set it</button>
+                ? <button className={style.roundBorderedButtonElement} onClick={setLocationButtonHandler}>Content has no location - Set it manually</button>
                 : <div className={style.infoBox}>{'Media content has no location metadata'}</div>}
         </div>);
     }
@@ -162,8 +162,8 @@ const LocationMetadataDisplay: React.FC<LocationMetadataDisplayProps> = (props: 
 
     const actions = isAdmin && isLocationChanged
         ? (<div key="actions" className={style.actionsContainer}>
-            <button className={style.roundBorderedButtonElement} onClick={saveLocationHandler} disabled={isLocationChangeInProgress}>{isLocationChangeInProgress ? 'Update in progress' : 'Change location to current marker'}</button>
-            {fileLocation !== null ? <button className={style.roundBorderedButtonElement} onClick={resetLocationHandler}>Reset location</button> : null}
+            <button className={style.roundBorderedButtonElement} onClick={saveLocationHandler} disabled={isLocationChangeInProgress}>{isLocationChangeInProgress ? 'Update in progress' : 'Update location'}</button>
+            {<button className={style.roundBorderedButtonElement} onClick={resetLocationHandler}>Cancel</button>}
         </div>)
         : null;
 
