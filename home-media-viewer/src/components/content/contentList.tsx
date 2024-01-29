@@ -15,13 +15,14 @@ export interface ContentListPropsType {
     albumSelected?: (album: AlbumResultType) => void,
     fileSelected?: (file: FileResultType) => void,
     contentSelected?: (content: FileResultType | AlbumResultType) => void,
+    onFileChanged?: (file: FileResultType) => void;
     data: Array<FileResultType | AlbumExtendedResultType>,
     displaySelectedContent?: boolean,
     displayDetails?: boolean,
 }
 
 const ContentList = (props: ContentListPropsType): JSX.Element => {
-    const { data, contentSelected, albumSelected, fileSelected, displaySelectedContent = true, displayDetails = false } = props;
+    const { data, contentSelected, albumSelected, fileSelected, onFileChanged, displaySelectedContent = true, displayDetails = false } = props;
 
     const [ displayedContent, setDisplayedContent ] = useState<FileResultType>();
     const [ infoContent, setInfoContent ] = useState<FileResultType>();
@@ -135,6 +136,7 @@ const ContentList = (props: ContentListPropsType): JSX.Element => {
                 file={infoContent}
                 key="infoContent"
                 onClose={onInfoContentClosed}
+                onFileChanged={onFileChanged}
             />)
         : null;
 

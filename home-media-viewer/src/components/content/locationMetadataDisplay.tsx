@@ -12,6 +12,7 @@ import style from '@/styles/hmv.module.scss';
 
 interface LocationMetadataDisplayProps {
     file: FileResultType;
+    onFileChanged?: (file: FileResultType) => void;
 }
 
 interface Location {
@@ -40,8 +41,35 @@ const getFileLocation = (file: FileResultType): null | Location => {
     return { latitude: locationMeta.latitude, longitude: locationMeta.longitude };
 }
 
+const LAST_SAVED_LOCATION_KEY = 'last-saved-location';
+const getLastSavedLocation = (): Location | null => {
+    if (typeof window === 'undefined') {
+        return null;
+    }
+
+    const savedLocation = window.sessionStorage.getItem(LAST_SAVED_LOCATION_KEY);
+    if (typeof savedLocation !== 'string') {
+        return null;
+    }
+
+    const locationValue = JSON.parse(savedLocation);
+    if (typeof locationValue?.latitude !== 'number' || typeof locationValue?.latitude !== 'number') {
+        return null;
+    }
+
+    return locationValue;
+}
+
+const locationSaved = (location: Location): void => {
+    if (typeof window === 'undefined') {
+        return;
+    }
+
+    window.sessionStorage.setItem(LAST_SAVED_LOCATION_KEY, JSON.stringify(location));
+}
+
 const LocationMetadataDisplay: React.FC<LocationMetadataDisplayProps> = (props: LocationMetadataDisplayProps): React.ReactElement => {
-    const { file } = props;
+    const { file, onFileChanged } = props;
     const authContext = useContext(AuthContext);
 
     const fileLocation = getFileLocation(file);
@@ -55,7 +83,7 @@ const LocationMetadataDisplay: React.FC<LocationMetadataDisplayProps> = (props: 
     const isAdmin = authContext.isAdmin === true;
 
     const setLocationButtonHandler = (): void => {
-        setCurrentLocation(DEFAULT_LOCATION);
+        setCurrentLocation(getLastSavedLocation() ?? DEFAULT_LOCATION);
     };
 
     const mapClickedHandler = ({ event, latLng, pixel }: {event: MouseEvent, latLng: [number, number], pixel: [number, number] }): void => {
@@ -103,6 +131,11 @@ const LocationMetadataDisplay: React.FC<LocationMetadataDisplayProps> = (props: 
             .then(() => {
                 setIsLocationChanged(false);
                 setError(null);
+                locationSaved(currentLocation);
+
+                if (typeof onFileChanged === 'function') {
+                    onFileChanged(file);
+                }
             })
             .catch((e) => {
                 setError(`${e}`);

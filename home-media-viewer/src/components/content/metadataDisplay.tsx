@@ -16,7 +16,7 @@ interface MetadataDisplayProps {
 }
 
 const MetadataDisplay: React.FC<MetadataDisplayProps> = (props: MetadataDisplayProps): React.ReactElement => {
-    const { file, onClose } = props;
+    const { file, onClose, onFileChanged } = props;
 
     const metaElementList = file.metas.map(m => {
         const value = getMetaStringValue(m);
@@ -92,7 +92,7 @@ const MetadataDisplay: React.FC<MetadataDisplayProps> = (props: MetadataDisplayP
             {thumbnailElement}
             {highlightedMetadataSection}
             <div className={style.locationContainer}>
-                <LocationMetadataDisplay file={file} />
+                <LocationMetadataDisplay file={file} onFileChanged={onFileChanged} />
             </div>
             <ul>
                 {metaElementList}
