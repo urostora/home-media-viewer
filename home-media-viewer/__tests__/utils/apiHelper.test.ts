@@ -1,11 +1,16 @@
-import { EntityListResult, EntityWithStatusType, GeneralResponse } from '@/types/api/generalTypes';
 import { getApiResponse, getApiResponseWithData, getApiResponseWithEntityList } from '@/utils/apiHelpers';
 import { getDateObject } from '@/utils/utils';
 import { $Enums } from '@prisma/client';
 
+import type { EntityListResult, EntityWithStatusType, GeneralResponse } from '@/types/api/generalTypes';
+
 const DATE_TRESHOLD_IN_MILLISEC = 1000;
 
-const checkBasicApiResponseData = (result: GeneralResponse, dateBefore: Date, expectedOkValue: boolean = true) => {
+const checkBasicApiResponseData = (
+  result: GeneralResponse,
+  dateBefore: Date,
+  expectedOkValue: boolean = true,
+): void => {
   // date
   expect(typeof result.date).toEqual('string');
 

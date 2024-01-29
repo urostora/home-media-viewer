@@ -1,14 +1,14 @@
-import { render, screen, waitForElementToBeRemoved } from '@testing-library/react'
 import '@testing-library/jest-dom'
-
 import 'whatwg-fetch'
-import {rest} from 'msw'
 import {setupServer} from 'msw/node';
+import { render, screen, waitForElementToBeRemoved } from '@testing-library/react'
+
+import { type AsyncResponseResolverReturnType, type DefaultBodyType, type MockedResponse, rest} from 'msw'
 
 import AlbumDetails from "@/components/content/albumDetails";
 import { getApiResponseWithData } from '@/utils/apiHelpers';
 
-import { AlbumExtendedDataType } from '@/types/api/albumTypes';
+import type { AlbumExtendedDataType } from '@/types/api/albumTypes';
 
 const SAMPLE_DATA: AlbumExtendedDataType = {
   id: 'qwer-1234',
@@ -35,35 +35,45 @@ const SAMPLE_DATA: AlbumExtendedDataType = {
 };
 
 const server = setupServer(
-  rest.get('/api/album/asdf-1234', (req, res, ctx) => {
+  rest.get('/api/album/asdf-1234', (req, res, ctx): AsyncResponseResolverReturnType<MockedResponse<DefaultBodyType>> => {
     // return album details
     return res(ctx.json(getApiResponseWithData<AlbumExtendedDataType>(SAMPLE_DATA)));
   }),
-  rest.get('/api/album/qwer', (req, res, ctx) => {
+  rest.get('/api/album/qwer', (req, res, ctx): AsyncResponseResolverReturnType<MockedResponse<DefaultBodyType>> => {
     return res(ctx.status(400));
   }),
 );
 
-beforeAll(() => server.listen());
-afterEach(() => server.resetHandlers());
-afterAll(() => server.close());
+beforeAll(() => { server.listen() });
+afterEach(() => { server.resetHandlers() });
+afterAll(() => { server.close() }) ;
 
 
 describe('component/contents/AlbumDetails', () => {
-  it('shows loading message at first render', async () => {
+  it('should show loading message', async () => {
     render(<AlbumDetails albumId="qwer" />);
 
     screen.getByText(/Loading album details/i);
   });
 
-  it('show empty element without albumId set', async () => {
+  it('should be empty when no album was set', async () => {
     const { container } = render(<AlbumDetails />);
 
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('show album found in database', async () => {
+  it('should show only title when details are not set', async () => {
     render(<AlbumDetails albumId="asdf-1234" />);
+
+    await screen.findByText('Test album name', undefined, { timeout: 2000 });
+
+    screen.getByText(/Test album name/i)
+
+    expect(screen.queryByText(/qwer-1234/i)).toBeNull();
+  });
+
+  it('should show loaded album details', async () => {
+    render(<AlbumDetails albumId="asdf-1234" showDetails={true} />);
 
     await screen.findByText('Name:', undefined, { timeout: 2000 });
 
@@ -76,7 +86,7 @@ describe('component/contents/AlbumDetails', () => {
     screen.getByText(/Failed: 2/i)
   });
 
-  it('show error when album not exists', async () => {
+  it('should show error when album not exists', async () => {
     render(<AlbumDetails albumId="qwer" />);
 
     await waitForElementToBeRemoved(() => screen.getByText(/Loading/i))

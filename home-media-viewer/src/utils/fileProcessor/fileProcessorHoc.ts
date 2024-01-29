@@ -1,7 +1,7 @@
 import fs from 'fs';
 
 import { getFullPath, updateFileMetadata } from '@/utils/fileHelper';
-import { removeAllMetadata } from '../metaHelper';
+// import { removeAllMetadata } from '../metaHelper';
 
 import type { File } from '@prisma/client';
 
@@ -22,7 +22,7 @@ export const fileProcessorHoc = (
     }
 
     // remove existing metadata
-    await removeAllMetadata(file);
+    // await removeAllMetadata(file);
 
     return await fileProcessorFunction(file);
   };

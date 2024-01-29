@@ -10,6 +10,7 @@ import globus from 'public/globus.png';
 
 export interface ContentThumbnailPropsType {
     contentSelected?: (content: FileResultType) => void,
+    contentInfoSelected?: (content: FileResultType) => void,
     content: FileResultType,
     displayDetails?: boolean,
 }
@@ -51,7 +52,7 @@ const getMetaMap = (metaList?: FileMetadataType[] | undefined): Map<string, stri
 };
 
 const ContentThumbnail = (props: ContentThumbnailPropsType): JSX.Element => {
-    const { content, contentSelected, displayDetails = false } = props;
+    const { content, contentSelected, contentInfoSelected, displayDetails = false } = props;
 
     const onCardClicked = (): void => {
       if (typeof contentSelected === 'function') {
@@ -70,6 +71,15 @@ const ContentThumbnail = (props: ContentThumbnailPropsType): JSX.Element => {
 
       const url = `https://www.google.com/maps/search/?api=1&query=${locationMeta.latitude}%2C${locationMeta.longitude}`;
       window.open(url, '__blank');
+    }
+
+    const onInfoClicked = (e: React.SyntheticEvent): void => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (typeof contentInfoSelected === 'function') {
+        contentInfoSelected(content);
+      }
     }
 
     const isVideo = typeof content?.extension === 'string'
@@ -154,8 +164,12 @@ const ContentThumbnail = (props: ContentThumbnailPropsType): JSX.Element => {
       highlightedMetaElements.push(<div key="location" onClick={onLocationClicked} className={hmvStyle.locationIcon}><Image src={globus} alt="" /></div>);
     }
 
+    if (typeof contentInfoSelected === 'function') {
+      highlightedMetaElements.push(<div key="info" className={hmvStyle.highlightedMetaIcon} onClick={onInfoClicked}>&#8505;</div>);
+    }
+
     return (
-        <div className={`${hmvStyle.contentCardContainer} ${displayDetails ? '' : hmvStyle.noDetails}`} onClick={onCardClicked} >
+        <div className={`${hmvStyle.contentCardContainer} ${displayDetails ? '' : hmvStyle.noDetails}`} onClick={onCardClicked} data-id={content.id} >
             <div className={hmvStyle.contentName}>
                 <abbr title={content.path}>
                   <span dangerouslySetInnerHTML={{ __html: contentName.replaceAll('_', '_<wbr>')}}></span>

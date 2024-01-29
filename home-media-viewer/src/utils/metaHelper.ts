@@ -115,7 +115,7 @@ export const addDateMeta = async (file: File, metaKey: string, value: Date): Pro
     create: {
       fileId: file.id,
       metaKey,
-      type: 'Float',
+      type: 'DateTime',
       intValue: null,
       floatValue: null,
       stringValue: null,

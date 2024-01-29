@@ -1,5 +1,5 @@
-import type { FileResultType, FileSearchType } from '@/types/api/fileTypes';
-import type { GeneralResponseWithData, GeneralEntityListResponse } from '@/types/api/generalTypes';
+import type { FileMetaUpdateType, FileResultType, FileSearchType } from '@/types/api/fileTypes';
+import type { GeneralResponseWithData, GeneralEntityListResponse, GeneralResponse } from '@/types/api/generalTypes';
 
 export const apiGetFile = async (id: string): Promise<FileResultType | null> => {
   const fetchResult = await fetch(`/api/file/${id}`);
@@ -97,6 +97,20 @@ export const apiFileRefreshMetadata = async (id: string): Promise<void> => {
 
   const fetchResult = await fetch('/api/file/metadata', fetchArgs);
   const resultData: GeneralEntityListResponse<FileResultType> = await fetchResult.json();
+
+  if (!resultData.ok) {
+    throw Error(resultData.error ?? 'Could not refresh metadata');
+  }
+};
+
+export const apiFileUpdateMetadata = async (fileId: string, data: FileMetaUpdateType): Promise<void> => {
+  const fetchArgs: RequestInit = {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  };
+
+  const fetchResult = await fetch(`/api/file/${fileId}/metadata`, fetchArgs);
+  const resultData: GeneralResponse = await fetchResult.json();
 
   if (!resultData.ok) {
     throw Error(resultData.error ?? 'Could not update metadata');

@@ -17,7 +17,7 @@ const FilteredContentList = (props: FilteredContentListPropsType): JSX.Element =
     const [ isFetchInProgress, setIsFetchInProgress ] = useState<boolean>(false);
     const [ content, setContent ] = useState<FileResultType[] | null>(null);
 
-    useEffect(() => {
+    const reloadFiles = (albumId?: string, parentFileId?: string | null, contentType?: string): void => {
         setContent(null);
         setIsFetchInProgress(true);
 
@@ -36,7 +36,15 @@ const FilteredContentList = (props: FilteredContentListPropsType): JSX.Element =
                 setContent([]);
                 setIsFetchInProgress(false);
             });
+    }
+
+    useEffect(() => {
+        reloadFiles(albumId, parentFileId, contentType);
     }, [ albumId, parentFileId, contentType ]);
+
+    const onFileChanged = (): void => {
+        reloadFiles(albumId, parentFileId, contentType);
+    };
 
     if (isFetchInProgress) {
         return <>Loading content...</>;
@@ -46,7 +54,7 @@ const FilteredContentList = (props: FilteredContentListPropsType): JSX.Element =
         return <>Error while loading content</>;
     }
 
-    return <ContentList data={content} fileSelected={onContentSelected} displayDetails={displayDetails} />;
+    return <ContentList data={content} fileSelected={onContentSelected} displayDetails={displayDetails} onFileChanged={onFileChanged} />;
 }
 
 export default FilteredContentList;

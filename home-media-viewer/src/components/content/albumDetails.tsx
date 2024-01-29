@@ -7,10 +7,11 @@ import hmvStyle from '@/styles/hmv.module.scss';
 
 export interface AlbumDetailsProps {
     albumId?: string,
+    showDetails?: boolean;
 }
 
 const AlbumDetails = (props: AlbumDetailsProps): ReactElement => {
-    const { albumId } = props;
+    const { albumId, showDetails = false } = props;
 
     const [ albumData, setAlbumData ] = useState<AlbumExtendedDataType | null>(null);
     const [ isLoading, setIsLoading ] = useState<boolean>(true);
@@ -95,19 +96,24 @@ const AlbumDetails = (props: AlbumDetailsProps): ReactElement => {
     }
 
     return (<div className={`${hmvStyle.roundBorderedContainer} ${hmvStyle.albumDetails}`}>
-        <div className={hmvStyle.title}>Album details</div>
-        <div>
-            <span className={hmvStyle.caption}>Name:</span>
-            <span className={hmvStyle.value}>{`${albumData.name} (${albumData.id})`}</span>
-        </div>
-        <div>
-            <span className={hmvStyle.caption}>Path:</span>
-            <span className={hmvStyle.value} dangerouslySetInnerHTML={{__html: albumData.basePath.replace('_', '_<wbr>')}}></span>
-        </div>
-        <div>
-            <span className={hmvStyle.caption}>Files:</span>
-            <span className={hmvStyle.value}>{fileStatusString}</span>
-        </div>
+        <div className={hmvStyle.title}>{showDetails ? 'Album details' : albumData.name}</div>
+        {showDetails
+            ? (<>
+                <div>
+                    <span className={hmvStyle.caption}>Name:</span>
+                    <span className={hmvStyle.value}>{`${albumData.name} (${albumData.id})`}</span>
+                </div>
+                <div>
+                    <span className={hmvStyle.caption}>Path:</span>
+                    <span className={hmvStyle.value} dangerouslySetInnerHTML={{__html: albumData.basePath.replace('_', '_<wbr>')}}></span>
+                </div>
+                <div>
+                    <span className={hmvStyle.caption}>Files:</span>
+                    <span className={hmvStyle.value}>{fileStatusString}</span>
+                </div>
+                </>)
+        : null}
+        
     </div>);
 }
 

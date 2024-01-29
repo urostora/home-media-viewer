@@ -1,7 +1,8 @@
-import { GeneralResponseWithData } from '@/types/api/generalTypes';
 import { fetchDataFromApi } from './helpers/helper';
-import { UserDataType } from '@/types/api/userTypes';
 import { checkUserData, getTestUserData } from './helpers/user.helper';
+
+import type { GeneralResponseWithData } from '@/types/api/generalTypes';
+import type { UserDataType } from '@/types/api/userTypes';
 
 describe('web/api/user', () => {
   const path = 'user';
@@ -34,7 +35,12 @@ describe('web/api/user', () => {
 
     const createdId = result?.data?.id;
 
-    await checkUserData(createdId as string, { email, name, isAdmin });
+    expect(typeof createdId).toBe('string');
+    if (typeof createdId !== 'string') {
+      return;
+    }
+
+    await checkUserData(createdId, { email, name, isAdmin });
   });
 
   it('create admin user', async () => {
@@ -52,6 +58,11 @@ describe('web/api/user', () => {
 
     const createdId = result?.data?.id;
 
-    await checkUserData(createdId as string, { email, name, isAdmin });
+    expect(typeof createdId).toBe('string');
+    if (typeof createdId !== 'string') {
+      return;
+    }
+
+    await checkUserData(createdId, { email, name, isAdmin });
   });
 });

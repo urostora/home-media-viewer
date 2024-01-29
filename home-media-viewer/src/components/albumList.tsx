@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import { apiLoadAlbums } from "@/utils/frontend/dataSource/album";
 import ContentList from "./content/contentList";
+import ScrollPositionReset from '@/utils/frontend/scrollPositionResetHandler';
 
 import type { AlbumExtendedResultType, AlbumResultType } from "@/types/api/albumTypes";
 
@@ -14,6 +15,8 @@ export interface AlbumListPropsType {
 export default function AlbumList( props: AlbumListPropsType ): JSX.Element {
     const [ albumData, setAlbumData ] = useState<AlbumExtendedResultType[] | null>(null);
     const [ order, setOrder ] = useState< 'nameAsc' | 'nameDesc' | 'dateAsc' | 'dateDesc' >('dateDesc');
+    const [ error, setError ] = useState<string | undefined >(undefined);
+    const [ scrollResetCompleted, setScrollResetCompleted ] = useState<boolean>(false);
 
     const { onAlbumSelected } = props;
 
@@ -23,12 +26,20 @@ export default function AlbumList( props: AlbumListPropsType ): JSX.Element {
                 const results = await apiLoadAlbums({ take: 0, returnThumbnails: false });
                 setAlbumData(results);
             } catch (error) {
-
+                setError(`${error}`);
             }
         }
         
         void fetchData();
     }, []);
+
+    const onAlbumSelectedHandler = (album: AlbumResultType): void => {
+        ScrollPositionReset.lastAlbumSelected = album.id;
+
+        if (typeof onAlbumSelected === 'function') {
+            onAlbumSelected(album);
+        }
+    };
 
     const onOrderChanged = (e: React.FormEvent<HTMLSelectElement>): void => {
         const newValue = e.currentTarget.value;
@@ -37,6 +48,11 @@ export default function AlbumList( props: AlbumListPropsType ): JSX.Element {
             setOrder(newValue);
         }
     };
+
+    // show error if available
+    if (error !== undefined) {
+        return <div className={hmvStyle.errorMessage}>{error}</div>;
+    }
 
     // get content
     if (albumData === null) {
@@ -62,6 +78,20 @@ export default function AlbumList( props: AlbumListPropsType ): JSX.Element {
         return a1.name.localeCompare(a2.name) * (order === 'nameDesc' ? -1 : 1);
     });
 
+    if (!scrollResetCompleted) {
+        // scroll to last selected item
+        const lastSelectedAlbumId = ScrollPositionReset.lastAlbumSelected;
+
+        if (lastSelectedAlbumId !== undefined) {
+            setTimeout(() => {
+                ScrollPositionReset.scrollToLastElement(lastSelectedAlbumId);
+            }, 100);
+
+            ScrollPositionReset.lastAlbumSelected = undefined;
+            setScrollResetCompleted(true);
+        }
+    }
+
     return (<>
         <div className={hmvStyle.navigationBar}>
             <div className={hmvStyle.leftSide}></div>
@@ -74,6 +104,6 @@ export default function AlbumList( props: AlbumListPropsType ): JSX.Element {
                 </select>
             </div>
         </div>
-        <ContentList data={albumData} contentSelected={onAlbumSelected} />
+        <ContentList data={albumData} contentSelected={onAlbumSelectedHandler} />
     </>);
 }

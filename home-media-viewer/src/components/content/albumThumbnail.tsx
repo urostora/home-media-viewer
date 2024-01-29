@@ -23,7 +23,7 @@ const AlbumThumbnail = (props: AlbumThumbnailProps): JSX.Element => {
             : <img className={hmvStyle.thumbnailImage} alt={content.name} src={`/api/file/thumbnail/${content.thumbnailFile.id}/200`} />);
 
     return (
-        <div className={`${hmvStyle.contentCardContainer} ${hmvStyle.albumCardContainer} ${hmvStyle.noDetails}`} onClick={onCardClicked} >
+        <div className={`${hmvStyle.contentCardContainer} ${hmvStyle.albumCardContainer} ${hmvStyle.noDetails}`} onClick={onCardClicked} data-id={content.id} >
             <div className={hmvStyle.contentName}>
                 <span dangerouslySetInnerHTML={{ __html: content.name.replaceAll('_', '_<wbr>')}}></span>
             </div>

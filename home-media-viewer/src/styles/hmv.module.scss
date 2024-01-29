@@ -228,30 +228,6 @@ $appTextColorAlternative: #2d9649;
     background-color: rgba(gray, 0.7);
     z-index: 99;
 
-    .operationsBlock {
-        position: absolute;
-        top: 0px;
-        right: 0px;
-        display: flex;
-        flex-flow: row nowrap;
-        gap: 10px;
-
-        > * {
-            width: 60px;
-            height: 60px;
-            z-index: 100;
-            text-align: center;
-            font-size: 48px;
-            font-weight: bold;
-            color: white;
-            background-color: rgba(0, 0, 0, 0.3);
-            border: 1px white solid;
-            border-radius: 30px;
-            padding: 3px;
-            cursor: pointer;
-        }
-    }
-
     .contentWrapper {
         width: 100%;
         height: 100%;
@@ -662,6 +638,7 @@ $appTextColorAlternative: #2d9649;
     .title {
         font-size: larger;
         margin-bottom: 10px;
+        text-align: center;
     }
 
     .caption {
@@ -685,6 +662,167 @@ $appTextColorAlternative: #2d9649;
     .failed {
         color: red;
     }
+}
+
+.popup {
+    position: fixed;
+    z-index: 100;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    background-color: rgba(0, 0, 0, 0.4);
+
+    > div:nth-child(2) {
+        display: block;
+        margin: 10% auto;
+    }
+}
+
+.metadataDisplay {
+    width: 55vw;
+    min-width: 350px;
+    max-height: 80vh;
+    border: $appBorderColor solid 2px;
+    background-color: $appBackgroundAlternative;
+    padding: 15px;
+    overflow: scroll;
+    scrollbar-color: $appBorderColor;
+    scrollbar-base-color: $appBackgroundAlternative;
+    scrollbar-width: thin;
+
+    > div {
+        margin-top: 10px;
+    }
+
+    .title {
+        text-align: center;
+        font-weight: bold;
+        font-size: 23px;
+
+        abbr {
+            text-decoration: none;
+        }
+    }
+
+    .thumbnailContainer {
+        height: 200px;
+        width: 100%;
+    }
+
+    .highlightedMetadataContainer {
+        display: flex;
+        flex-flow: row wrap;
+        gap: 10px
+    }
+
+    .locationContainer {
+        max-height: 300px;
+        width: 100%;
+
+        > div {
+            width: 100%;
+            height: 100%;
+        }
+    }
+
+    li {
+        list-style-type: none;
+    }
+}
+
+.locationMetadataDisplay {
+    display: flex;
+    flex-flow: column nowrap;
+    min-height: 35px;
+
+    > div {
+        width: 100%;
+    }
+
+    .mapContainer {
+        flex-grow: 1;
+    }
+
+    .actionsContainer {
+        height: 40px;
+        margin-top: 5px;
+        flex-grow: 0;
+    }
+
+    .zoomContainer {
+        display: flex;
+        flex-flow: row nowrap;
+        gap: 10px;
+
+        > * {
+            display: inline-block;
+        }
+
+        > button {
+            flex-grow: 1;
+            font-size: 25px;
+            font-weight: bold;
+            margin: 0px;
+        }
+
+        > span {
+            font-weight: bold;
+            vertical-align: middle;
+        }
+    }
+}
+
+.locationMetadataDisplay.isOpen {
+    height: 300px !important;
+}
+
+.thumbnailContainer {
+    .imageWrapper {
+        width: 100%;
+        height: 100%;
+
+        > img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+    }
+}
+
+.operationsBlock {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    display: flex;
+    flex-flow: row nowrap;
+    gap: 10px;
+
+    > * {
+        width: 60px;
+        height: 60px;
+        z-index: 100;
+        text-align: center;
+        font-size: 48px;
+        font-weight: bold;
+        color: white;
+        background-color: rgba(0, 0, 0, 0.3);
+        border: 1px white solid;
+        border-radius: 30px;
+        padding: 3px;
+        cursor: pointer;
+    }
+}
+
+.highlightedMetaIcon {
+    width: 35px;
+    height: 35px !important;
+    margin-top: -3px;
+    margin-left: 5px;
+    cursor: pointer;
+    font-size: 28px;
+    border-radius: 20px !important;
+    text-align: center;
 }
 
 .locationIcon {
@@ -733,17 +871,31 @@ select.roundedElement {
     padding: 10px;
 }
 
+.roundBorderedElement {
+    padding: 5px;
+    border-radius: 15px;
+    border: 1px solid $appBorderColor;
+    background-color: $appBackgroundAlternative;
+    color: $appTextColorAlternative;
+    margin-right: 10px;
+}
+
 .roundBorderedButtonElement {
     padding: 5px;
     border-radius: 15px;
     border: 1px solid $appBorderColor;
     background-color: $appBackgroundAlternative;
     color: $appTextColorAlternative;
+    margin-right: 10px;
 }
 
 .roundBorderedButtonElement:hover {
     background-color: $appTextColorAlternative;
     color: $appBackgroundAlternative;
+}
+
+.roundBorderedButtonElement:disabled {
+    opacity: 0.7;
 }
 
 .buttonElement {
@@ -915,6 +1067,16 @@ select.roundedElement {
     margin: 1rem auto;
 }
 
+.infoBox {
+    border: $appBorderColor 1px solid;
+    color: $appTextColorAlternative;
+    background-color: $appBackgroundAlternative;
+    border-radius: 3px;
+    background-color: rgb(255, 171, 171);
+    padding: 1rem;
+    margin: 1rem auto;
+}
+
 .horizontalScrollableContainer {
     display: flex;
     flex-flow: row wrap;
@@ -988,8 +1150,6 @@ select.roundedElement {
     .contentCardContainer {
         max-width: 100%;
         min-width: 120px;
-
-        
     }
 
     .contentCardContainer.noDetails {
@@ -1016,6 +1176,13 @@ select.roundedElement {
             height: 20px !important;
             margin-top: -1px !important;
         }
+
+        .highlightedMetaIcon {
+            font-size: 15px !important;
+            width: 20px !important;
+            border-radius: 10px !important;
+            align-self: self-end;
+        }
     }
 
     .contentDisplayContainer {
@@ -1035,6 +1202,10 @@ select.roundedElement {
 @media (prefers-color-scheme: dark) {
     $appBackgroundAlternative: black;
 
+    .loginForm {
+        border: 1px solid white;
+    }
+
     .userHeaderContainer {
         background-color: black;
         color: white;
@@ -1046,6 +1217,21 @@ select.roundedElement {
 
     select.roundedElement {
         color: white;
+        background-color: black;
+    }
+
+    .roundBorderedContainer {
+        background-color: transparent;
+        color: white;
+    }
+
+    .albumDetails {
+        .caption {
+            color: white;
+        }
+    }
+
+    .metadataDisplay {
         background-color: black;
     }
 }

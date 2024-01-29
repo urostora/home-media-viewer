@@ -62,3 +62,9 @@ export interface FileResultType {
 }
 
 export interface FileUpdateType extends EntityWithStatusType {}
+
+export interface FileMetaUpdateType {
+  key: string;
+  type: 'Int' | 'String' | 'Float' | 'Date' | 'Location';
+  value: number | string | { latitude: number; longitude: number };
+}

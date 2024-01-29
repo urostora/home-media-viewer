@@ -9,6 +9,9 @@ const nextConfig = {
     };
     return config;
   },
+  eslint: {
+    dirs: [ 'src', '__tests__' ]
+  },
   reactStrictMode: true,
   typescript: {
     ignoreBuildErrors: true,
