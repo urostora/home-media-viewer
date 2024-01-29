@@ -94,10 +94,10 @@ const videoFileProcessor: FileProcessor = async (file: File): Promise<boolean> =
     await addIntMeta(file, MetaType.Bitrate, Math.round(str.bit_rate));
   }
 
-  const fpsValue = getFpsValue(str?.r_frame_rate);
-  if (fpsValue != null) {
-    await addIntMeta(file, MetaType.Fps, Math.round(fpsValue));
-  }
+  // const fpsValue = getFpsValue(str?.r_frame_rate);
+  // if (fpsValue != null) {
+  //   await addIntMeta(file, MetaType.Fps, Math.round(fpsValue));
+  // }
 
   const customVideoResults = loadCustomVideoData(path, ffprobeStatic.path);
 
@@ -127,6 +127,15 @@ const videoFileProcessor: FileProcessor = async (file: File): Promise<boolean> =
 
     if (typeof customVideoResults?.encoder === 'string') {
       await addStringMeta(file, MetaType.Encoder, customVideoResults.encoder);
+    }
+
+    if (typeof customVideoResults.fps === 'number') {
+      await addFloatMeta(file, MetaType.Fps, customVideoResults.fps);
+    }
+  } else {
+    const fpsValue = getFpsValue(str?.r_frame_rate);
+    if (fpsValue != null) {
+      await addIntMeta(file, MetaType.Fps, Math.round(fpsValue));
     }
   }
 
@@ -170,6 +179,7 @@ interface CustomVideoResult {
   };
   creationTime?: Date;
   encoder?: string;
+  fps?: number;
 }
 
 const getKeyValueFromOutputResult = (input: string, key: string): string | null => {
@@ -222,6 +232,13 @@ const loadCustomVideoData = (path: string, ffprobePath?: string): CustomVideoRes
       const res = getKeyValueFromOutputResult(str, 'encoder');
       if (res != null) {
         ret.encoder = res;
+      }
+    }
+
+    if (ret?.fps == null) {
+      const result = /(?<fps>\d+(?:\.\d+))\s?fps/.exec(str);
+      if (result !== null && typeof result?.groups?.fps === 'string') {
+        ret.fps = Number.parseFloat(result.groups.fps);
       }
     }
 
