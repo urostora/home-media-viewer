@@ -4,6 +4,7 @@ import AlbumThumbnail from "./albumThumbnail";
 import ContentDisplay from "./contentDisplay";
 import ContentThumbnail from "./contentThumbnail";
 import ScrollToTop from "./scrollToTop";
+import MetadataDisplay from "./metadataDisplay";
 
 import type { AlbumExtendedResultType, AlbumResultType } from "@/types/api/albumTypes";
 import type { FileResultType } from "@/types/api/fileTypes";
@@ -23,6 +24,7 @@ const ContentList = (props: ContentListPropsType): JSX.Element => {
     const { data, contentSelected, albumSelected, fileSelected, displaySelectedContent = true, displayDetails = false } = props;
 
     const [ displayedContent, setDisplayedContent ] = useState<FileResultType>();
+    const [ infoContent, setInfoContent ] = useState<FileResultType>();
 
     const onContentSelectedHandler = (content: FileResultType | AlbumResultType): void => {
         if (
@@ -46,6 +48,15 @@ const ContentList = (props: ContentListPropsType): JSX.Element => {
         }
     }
 
+    const onContentInfoSelectedHandler = (content: FileResultType | AlbumResultType): void => {
+        if (
+            'isDirectory' in content
+            && !content.isDirectory
+        ) {
+            setInfoContent(content);
+        }
+    }
+
     const getCurrentPosition = (currentContent: FileResultType | AlbumExtendedResultType | undefined): number | null => {
         if (data === null || currentContent === undefined) {
             return null;
@@ -57,6 +68,11 @@ const ContentList = (props: ContentListPropsType): JSX.Element => {
 
     const onDisplayedContentClosed = (): void => {
         setDisplayedContent(undefined);
+    };
+    
+
+    const onInfoContentClosed = (): void => {
+        setInfoContent(undefined);
     };
 
     const onPreviousContentClickedHandler = (): void => {
@@ -114,6 +130,14 @@ const ContentList = (props: ContentListPropsType): JSX.Element => {
             />
         : null;
 
+    const infoContentElement = infoContent !== undefined
+        ? (<MetadataDisplay
+                file={infoContent}
+                key="infoContent"
+                onClose={onInfoContentClosed}
+            />)
+        : null;
+
     const fileElements = data.map(data => {
         if ('metadataStatus' in data ) {
             return <ContentThumbnail
@@ -121,6 +145,7 @@ const ContentList = (props: ContentListPropsType): JSX.Element => {
                 data-id={data.id}
                 content={data}
                 contentSelected={onContentSelectedHandler}
+                contentInfoSelected={onContentInfoSelectedHandler}
                 displayDetails={displayDetails}
             />;
         } else if ('thumbnailFile' in data) {
@@ -133,6 +158,7 @@ const ContentList = (props: ContentListPropsType): JSX.Element => {
     return (<div className={hmvStyle.contentsContainer}>
             {fileElements.length === 0 ? <>Content list is empty</> : fileElements}
             {displayedContentElement}
+            {infoContentElement}
             <ScrollToTop />
         </div>);
 };
