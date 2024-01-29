@@ -744,7 +744,8 @@ $appTextColorAlternative: #2d9649;
     }
 
     .actionsContainer {
-        height: 35px;
+        height: 40px;
+        margin-top: 5px;
         flex-grow: 0;
     }
 
@@ -1148,8 +1149,6 @@ select.roundedElement {
     .contentCardContainer {
         max-width: 100%;
         min-width: 120px;
-
-        
     }
 
     .contentCardContainer.noDetails {
@@ -1176,6 +1175,13 @@ select.roundedElement {
             height: 20px !important;
             margin-top: -1px !important;
         }
+
+        .highlightedMetaIcon {
+            font-size: 15px !important;
+            width: 20px !important;
+            border-radius: 10px !important;
+            align-self: self-end;
+        }
     }
 
     .contentDisplayContainer {
@@ -1195,6 +1201,10 @@ select.roundedElement {
 @media (prefers-color-scheme: dark) {
     $appBackgroundAlternative: black;
 
+    .loginForm {
+        border: 1px solid white;
+    }
+
     .userHeaderContainer {
         background-color: black;
         color: white;
@@ -1206,6 +1216,21 @@ select.roundedElement {
 
     select.roundedElement {
         color: white;
+        background-color: black;
+    }
+
+    .roundBorderedContainer {
+        background-color: transparent;
+        color: white;
+    }
+
+    .albumDetails {
+        .caption {
+            color: white;
+        }
+    }
+
+    .metadataDisplay {
         background-color: black;
     }
 }
