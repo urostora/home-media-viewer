@@ -143,7 +143,7 @@ const BrowserContentList = (props: BrowserContentListProps): JSX.Element => {
         />;
 
 
-    const albumDetailsList = content?.albumContains.map(ac => <AlbumDetails key={ac.id} albumId={ac.id} />);
+    const albumDetailsList = content?.albumContains.map(ac => <AlbumDetails key={ac.id} albumId={ac.id} showDetails={true} />);
 
     const contentElements = content?.content.map(c => {
         return <BrowseContentCard
