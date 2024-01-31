@@ -9,4 +9,5 @@ export interface LoginResponseDataType {
   isAdmin: boolean;
   sessionExpiresOn: number;
   sessionExpiresInSeconds: number;
+  sessionToken: string;
 }

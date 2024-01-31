@@ -37,3 +37,8 @@ export interface UserAlbumConnectType {
   userId: string;
   albumId: string;
 }
+
+export interface UserSessionData {
+  id: string;
+  admin?: boolean;
+}

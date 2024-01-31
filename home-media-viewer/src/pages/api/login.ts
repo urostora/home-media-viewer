@@ -9,6 +9,7 @@ import { type DataValidatorSchema, validateData } from '@/utils/dataValidator';
 
 import prisma from '@/utils/prisma/prismaImporter';
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { sealData } from 'iron-session/edge';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
   const schema: DataValidatorSchema = [
@@ -40,10 +41,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
 
     const sessionOptions = getIronSessionOptions();
 
-    req.session.user = {
+    const userData = {
       id: user?.id,
       admin: user?.isAdmin ?? false,
     };
+
+    req.session.user = userData;
     await req.session.save();
     console.log(`User ${user.name} logged in [IP: ${req.socket.remoteAddress}]`);
 
@@ -54,6 +57,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
         isAdmin: user.isAdmin,
         sessionExpiresOn: new Date().getTime() + (sessionOptions?.cookieOptions?.maxAge ?? 24 * 60 * 60) * 1000,
         sessionExpiresInSeconds: (sessionOptions?.cookieOptions?.maxAge ?? 24 * 60 * 60) * 1000,
+        sessionToken: await sealData(userData, sessionOptions),
       }),
     );
   } catch (e) {
