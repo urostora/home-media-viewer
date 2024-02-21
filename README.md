@@ -23,6 +23,15 @@ Media files can be filtered by extracted metadata like date or location.
 
 ## Usage
 
+### Hosting
+
+![Self-hosted HMV app](https://hmv.devati.net)
+
+```text
+User: guest@guest.net
+Password: Secure+Guest+Password1
+```
+
 ### Prerequests
 
 This project requires only Docker to run.
