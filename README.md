@@ -25,7 +25,7 @@ Media files can be filtered by extracted metadata like date or location.
 
 ### Hosting
 
-![Self-hosted HMV app](https://hmv.devati.net)
+[Self-hosted HMV app](https://hmv.devati.net)
 
 ```text
 User: guest@guest.net
