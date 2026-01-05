@@ -99,19 +99,19 @@ HOSTNAME=
 ```
 
 - **Load dependencies**
-  `docker-compose run --rm dependencies bash -c "npm install"`
+  `docker compose run --rm dependencies bash -c "npm install"`
 - **ORM (Prisma) setup**
-  `docker-compose run --rm dependencies bash -c "npx prisma generate"`
+  `docker compose run --rm dependencies bash -c "npx prisma generate"`
 - **Load database schema and run seed command**
-  `docker-compose run --rm dependencies bash -c "npx prisma migrate reset --force"`
+  `docker compose run --rm dependencies bash -c "npx prisma migrate reset --force"`
 - **Start containers**
-  `docker-compose up -d`
+  `docker compose up -d`
 - **Initialize test data** (optional, works only with default test suite)
-  `docker-compose run --rm testrunner bash -c "cd ../scripts && ./initTestData.sh"`
+  `docker compose run --rm testrunner bash -c "cd ../scripts && ./initTestData.sh"`
 
 #### When initiated before, just start containers
 
-`docker-compose up -d`
+`docker compose up -d`
 
 #### Using developer web app
 
@@ -133,41 +133,41 @@ HOSTNAME=
   - Runs background processing jobs
 - **testrunner**
   - test suite can be run in this container
-    `docker-compose run --rm testrunner bash -c "npm run test"`
+    `docker compose run --rm testrunner bash -c "npm run test"`
 - **dependencies**
   - Run custom node commands, like
-    - Node version `docker-compose run --rm dependencies sh -c "node --version"`
-    - npm install `docker-compose run --rm dependencies sh -c "npm install"`
+    - Node version `docker compose run --rm dependencies sh -c "node --version"`
+    - npm install `docker compose run --rm dependencies sh -c "npm install"`
     - Prisma commands
       - Generate schema classes
-        `docker-compose run --rm dependencies bash -c "npx prisma generate"`
+        `docker compose run --rm dependencies bash -c "npx prisma generate"`
       - Create migrate script from schema changes
-        `docker-compose run --rm dependencies bash -c "npx prisma migrate dev --name=init"`
+        `docker compose run --rm dependencies bash -c "npx prisma migrate dev --name=init"`
       - Apply schema changes
-        `docker-compose run --rm dependencies bash -c "npx prisma migrate deploy"`
+        `docker compose run --rm dependencies bash -c "npx prisma migrate deploy"`
       - Reset database
-        `docker-compose run --rm dependencies bash -c "npx prisma migrate reset --force"`
+        `docker compose run --rm dependencies bash -c "npx prisma migrate reset --force"`
     - Run linter
-      - `docker-compose run --rm dependencies bash -c "npm run lint"`
+      - `docker compose run --rm dependencies bash -c "npm run lint"`
 
 ##### Dependencies
 
 This container is used to run commands required in the development process, so there is no need to install node to the host machine.
 
 Node version
-`docker-compose run --rm dependencies sh -c "node --version"`
+`docker compose run --rm dependencies sh -c "node --version"`
 
 Run npm commands
-`docker-compose run --rm dependencies sh -c "npm install"`
+`docker compose run --rm dependencies sh -c "npm install"`
 
 Run Prisma commands
 
 - Generate database schema
-`docker-compose run --rm dependencies sh -c "npx prisma generate"`
+`docker compose run --rm dependencies sh -c "npx prisma generate"`
 - Create migration script to schema changes
-`docker-compose run --rm dependencies sh -c "npx prisma migrate dev --name=schema-update-description"`
+`docker compose run --rm dependencies sh -c "npx prisma migrate dev --name=schema-update-description"`
 - Deploy schema changes to the database
-`docker-compose run --rm dependencies sh -c "npx prisma migrate deploy"`
+`docker compose run --rm dependencies sh -c "npx prisma migrate deploy"`
 
 ### Test suite development
 
@@ -177,7 +177,7 @@ Before changing test suite, be sure, that app container uses proper test data an
 
 - **Set up test database and connect test data to albums mount point**
 
-  docker-compose.yml
+  docker compose.yml
 
    ``` yml
     services:
@@ -196,25 +196,25 @@ Before changing test suite, be sure, that app container uses proper test data an
   ```
 
 - **Run database initialization script**
-   `docker-compose run --rm dependencies bash -c "npx prisma migrate reset --force"`
+   `docker compose run --rm dependencies bash -c "npx prisma migrate reset --force"`
 - **Remove thumbnails created before**
-   `docker-compose exec app sh -c "rm -R /mnt/storage/*"`
+   `docker compose exec app sh -c "rm -R /mnt/storage/*"`
 - **Init test suite**
-  `docker-compose run --rm testrunner bash -c "cd ../scripts && ./initTestData.sh"`
+  `docker compose run --rm testrunner bash -c "cd ../scripts && ./initTestData.sh"`
 
 #### Run tests on developer environment
 
 Developer environment runs test cases much slower due to the attached file system.
 
 - All tests
-`docker-compose run --rm testrunner bash -c "npx jest --runInBand --collect-coverage"`
+`docker compose run --rm testrunner bash -c "npx jest --runInBand --collect-coverage"`
 - Specific test(s)
-`docker-compose run --rm testrunner bash -c "npx jest --runInBand -t 'Google'"`
+`docker compose run --rm testrunner bash -c "npx jest --runInBand -t 'Google'"`
 
 ## Test environment
 
 Test environment contains a production app and a test runner container.
-To use this environment, set docker-compose parameters to the following:
+To use this environment, set docker compose parameters to the following:
 
 `--file docker-compose-test.yml --env-file .env-test`.
 
@@ -236,43 +236,43 @@ To use this environment, set docker-compose parameters to the following:
 ### First use / automated test run
 
 1. **Build containers**
-  `docker-compose --file docker-compose-test.yml --env-file .env-test build`
+  `docker compose --file docker-compose-test.yml --env-file .env-test build`
 2. **Reset database**
-  `docker-compose --file docker-compose-test.yml --env-file .env-test run --rm migration bash -c "npx prisma migrate reset --force"`
+  `docker compose --file docker-compose-test.yml --env-file .env-test run --rm migration bash -c "npx prisma migrate reset --force"`
 3. **Start containers**
-  `docker-compose --file docker-compose-test.yml --env-file .env-test up -d`
+  `docker compose --file docker-compose-test.yml --env-file .env-test up -d`
 4. **Clear previous index files**
-   `docker-compose --file docker-compose-test.yml --env-file .env-test exec app sh -c "rm -R /mnt/storage/*"`
+   `docker compose --file docker-compose-test.yml --env-file .env-test exec app sh -c "rm -R /mnt/storage/*"`
 5. **Run test suite pre-processor script**
-   `docker-compose --file docker-compose-test.yml --env-file .env-test run --rm testrunner bash -c "./scripts/initTestData.sh"`
+   `docker compose --file docker-compose-test.yml --env-file .env-test run --rm testrunner bash -c "./scripts/initTestData.sh"`
 6. **Run test suite**
-   `docker-compose --file docker-compose-test.yml --env-file .env-test run --rm testrunner bash -c "npm run test"`
+   `docker compose --file docker-compose-test.yml --env-file .env-test run --rm testrunner bash -c "npm run test"`
 
 ### Start containers
 
-`docker-compose --file docker-compose-test.yml --env-file .env-test up -d`
+`docker compose --file docker-compose-test.yml --env-file .env-test up -d`
 
 ### Reset test data
 
 - Initialize database
   - Update (create) tables
-  `docker-compose --file docker-compose-test.yml --env-file .env-test run --rm migration bash -c "npx prisma migrate reset --force"`
+  `docker compose --file docker-compose-test.yml --env-file .env-test run --rm migration bash -c "npx prisma migrate reset --force"`
   - Set initial data (seed)
-  `docker-compose --file docker-compose-test.yml --env-file .env-test run --rm migration bash -c "npx prisma db seed"`
+  `docker compose --file docker-compose-test.yml --env-file .env-test run --rm migration bash -c "npx prisma db seed"`
 - Process test data suite
-  `docker-compose --file docker-compose-test.yml --env-file .env-test run --rm testrunner bash -c "./scripts/initTestData.sh"`
+  `docker compose --file docker-compose-test.yml --env-file .env-test run --rm testrunner bash -c "./scripts/initTestData.sh"`
 
 ### Run tests
 
-`docker-compose --file docker-compose-test.yml --env-file .env-test run --rm testrunner bash -c "npm run test"`
+`docker compose --file docker-compose-test.yml --env-file .env-test run --rm testrunner bash -c "npm run test"`
 
 ## Production environment
 
 Before initiating running production app, change keys and passwords in the environment file (.env-prod) or create a new compose file with a new environment.
 
 1. **Build app**
-`docker-compose --file docker-compose-prod.yml --env-file .env-prod build app`
+`docker compose --file docker-compose-prod.yml --env-file .env-prod build app`
 2. **Run DB migration scripts**
-`docker-compose --file docker-compose-prod.yml --env-file .env-prod bash -c "npx prisma migrate deploy"`
+`docker compose --file docker-compose-prod.yml --env-file .env-prod bash -c "npx prisma migrate deploy"`
 3. **Run production app**
-`docker-compose --file docker-compose-prod.yml --env-file .env-prod up -d`
+`docker compose --file docker-compose-prod.yml --env-file .env-prod up -d`
