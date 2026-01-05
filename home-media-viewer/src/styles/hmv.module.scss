@@ -120,9 +120,13 @@ $appTextColorAlternative: #2d9649;
 }
 
 .contentsContainer {
-    display: flex;
-    flex-flow: row wrap;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 350px));
+    justify-content: stretch;
+    // display: flex;
+    // flex-flow: row wrap;
+    // justify-content: space-between;
+    gap: 15px;
     width: 100%;
 }
 
@@ -140,7 +144,7 @@ $appTextColorAlternative: #2d9649;
     border-radius: 15px;
     border: 1px solid $appBorderColor;
     background-color: $appBackgroundAlternative;
-    flex-grow: 1;
+    // flex-grow: 1;
     display: flex;
     flex-flow: column nowrap;
     justify-content: space-between;

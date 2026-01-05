@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import AlbumThumbnail from "./albumThumbnail";
 import ContentDisplay from "./contentDisplay";
@@ -10,6 +10,8 @@ import type { AlbumExtendedResultType, AlbumResultType } from "@/types/api/album
 import type { FileResultType } from "@/types/api/fileTypes";
 
 import hmvStyle from '@/styles/hmv.module.scss';
+
+const PAGE_SIZE = 5;
 
 export interface ContentListPropsType {
     albumSelected?: (album: AlbumResultType) => void,
@@ -26,6 +28,53 @@ const ContentList = (props: ContentListPropsType): JSX.Element => {
 
     const [ displayedContent, setDisplayedContent ] = useState<FileResultType>();
     const [ infoContent, setInfoContent ] = useState<FileResultType>();
+
+    // pagination states
+    const [ isScrolledToTheEnd, setIsScrolledToTheEnd ] = useState<boolean>(false);
+    const [ itemsDisplayed, setItemsDisplayed ] = useState<number>(PAGE_SIZE);
+
+    const onScrollEventHandler =
+        (): void => {
+            const body = document.body;
+            const html = document.documentElement;
+
+            const scrolledToEnd = body.clientHeight - (html.scrollTop + html.clientHeight) <= 100;
+
+            if (scrolledToEnd) {
+                setIsScrolledToTheEnd(true);
+            }
+        };
+
+    useEffect(
+        () => {
+            if (isScrolledToTheEnd) {
+                displayNextItems();
+                setIsScrolledToTheEnd(false);
+                setTimeout(onScrollEventHandler, 200);
+            }
+        },
+        [ isScrolledToTheEnd ]
+    );
+
+    useEffect(() => {
+        if (typeof document === 'object') {
+            document?.addEventListener('scroll', onScrollEventHandler);
+        }
+        
+        setTimeout(onScrollEventHandler, 200);
+
+        return () => {
+            if (typeof document === 'object') {
+                document?.removeEventListener('scroll', onScrollEventHandler);
+            }
+        }
+    });
+
+    const displayNextItems = (): void => {
+        if (itemsDisplayed <= data.length) {
+            setItemsDisplayed(itemsDisplayed + PAGE_SIZE);
+        }
+    };
 
     const onContentSelectedHandler = (content: FileResultType | AlbumResultType): void => {
         if (
@@ -140,22 +189,24 @@ const ContentList = (props: ContentListPropsType): JSX.Element => {
             />)
         : null;
 
-    const fileElements = data.map(data => {
-        if ('metadataStatus' in data ) {
-            return <ContentThumbnail
-                key={data.id}
-                data-id={data.id}
-                content={data}
-                contentSelected={onContentSelectedHandler}
-                contentInfoSelected={onContentInfoSelectedHandler}
-                displayDetails={displayDetails}
-            />;
-        } else if ('thumbnailFile' in data) {
-            return <AlbumThumbnail key={data.id} content={data} contentSelected={onContentSelectedHandler} />;
-        }
+    const fileElements = data
+        .slice(0, itemsDisplayed)
+        .map(data => {
+            if ('metadataStatus' in data ) {
+                return <ContentThumbnail
+                    key={data.id}
+                    data-id={data.id}
+                    content={data}
+                    contentSelected={onContentSelectedHandler}
+                    contentInfoSelected={onContentInfoSelectedHandler}
+                    displayDetails={displayDetails}
+                />;
+            } else if ('thumbnailFile' in data) {
+                return <AlbumThumbnail key={data.id} content={data} contentSelected={onContentSelectedHandler} />;
+            }
 
-        return (null);
-    });
+            return (null);
+        });
 
     return (<div className={hmvStyle.contentsContainer}>
             {fileElements.length === 0 ? <>Content list is empty</> : fileElements}
