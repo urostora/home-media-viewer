@@ -1,19 +1,19 @@
-FROM node:20 as dependencies
+FROM node:24 as dependencies
 
 WORKDIR /home/node/app
 COPY ./home-media-viewer/package*.json .
 RUN npm install
 
 
-FROM node:20 as builder
+FROM node:24 as builder
 
 ENV NODE_ENV production
 ENV NEXT_TELEMETRY_DISABLED 1
 
 WORKDIR /home/node/app
 
-COPY --chown=node:node --chmod=775 ./home-media-viewer ./
-COPY --chown=node:node --chmod=775 ./home-media-viewer/next.config.js.prod ./next.config.js
+COPY --chown=node:node --chmod=755 ./home-media-viewer ./
+COPY --chown=node:node --chmod=644 ./home-media-viewer/next.config.js.prod ./next.config.js
 
 COPY --from=dependencies /home/node/app/node_modules /home/node/app/node_modules
 COPY --from=dependencies /home/node/app/package.json .
@@ -25,7 +25,7 @@ RUN npx prisma generate
 RUN npm run build
 
 
-FROM node:20 as proddependencies
+FROM node:24 as proddependencies
 
 WORKDIR /home/node/app
 
@@ -38,7 +38,7 @@ RUN npm install --omit=dev
 RUN npx prisma generate
 
 
-FROM node:20 as app
+FROM node:24 as app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -62,7 +62,7 @@ COPY --chown=node:node --chmod=555 ./home-media-viewer/runBackgroundProcess.sh .
 
 RUN mkdir -p /mnt/storage && chown -R node:node /mnt/storage
 
-USER root
+USER node
 
 ENV PORT 3000
 

@@ -1,11 +1,12 @@
-FROM node:20
+FROM node:24.x
 
 WORKDIR /home/node/app
 ENV WORKDIR=/home/node/app
 
 # install cron daemon
 RUN apt update \
-    && apt -y install cron
+    && apt -y install --no-install-recommends cron \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN echo "*/3 * * * *   root   /home/node/app/runBackgroundProcess.sh >> /var/log/cron.log 2>&1" >> /etc/crontab \
     && touch /var/log/cron.log

@@ -2,7 +2,7 @@ version: "3"
 services:
   dependencies:
     container_name: media-viewer-dev-node
-    image: "node:20"
+    image: "node:24"
     working_dir: /home/node/app
     environment:
       DATABASE_URL: ${DATABASE_URL}
@@ -15,7 +15,7 @@ services:
   db:
     container_name: media-viewer-dev-db
     hostname: media-viewer-dev-db
-    image: "mariadb:11"
+    image: "mariadb:13"
     environment:
       MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
       MARIADB_DATABASE: ${MARIADB_DATABASE}
@@ -85,7 +85,7 @@ services:
       PROCESS_TOKEN: ${PROCESS_TOKEN}
       TS_NODE_PROJECT: /home/node/app/tsconfig.json
       APP_URL: http://media-viewer-dev-app:3000
-      BACKGROND_URL: http://media-viewer-dev-app:3000
+      BACKGROUND_URL: http://media-viewer-dev-app:3000
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
     volumes:

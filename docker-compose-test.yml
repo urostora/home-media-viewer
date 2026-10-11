@@ -3,7 +3,7 @@ services:
   db:
     container_name: home-media-viewer-test-db
     hostname: home-media-viewer-test-db
-    image: "mariadb:11"
+    image: "mariadb:13"
     environment:
       MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
       MARIADB_DATABASE: ${MARIADB_DATABASE}
@@ -58,7 +58,7 @@ services:
       HOSTNAME: ${HOSTNAME}
       IS_BACKGROUND_PROCESS_ENABLED: 0
       APP_URL: http://home-media-viewer-test-app:3000
-      BACKGROND_URL: http://home-media-viewer-test-background:3000
+      BACKGROUND_URL: http://home-media-viewer-test-background:3000
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
     networks:

@@ -49,9 +49,9 @@ curl -X PUT -S -H 'Content-Type: application/json' -d '{"name": "guest", "email"
 
 # call data processing API 3 times to index all content
 echo -e "\nRun background process 3 times\n"
-curl -S ${BACKGROND_URL}/api/process/updateMetadata?token=${PROCESS_TOKEN}
-curl -S ${BACKGROND_URL}/api/process/updateMetadata?token=${PROCESS_TOKEN}
-curl -S ${BACKGROND_URL}/api/process/updateMetadata?token=${PROCESS_TOKEN}
+curl -S ${BACKGROUND_URL}/api/process/updateMetadata?token=${PROCESS_TOKEN}
+curl -S ${BACKGROUND_URL}/api/process/updateMetadata?token=${PROCESS_TOKEN}
+curl -S ${BACKGROUND_URL}/api/process/updateMetadata?token=${PROCESS_TOKEN}
 
 if [ -f $COOKIES_FILE ]
 then

@@ -1,19 +1,19 @@
-FROM node:20 as devdependencies
+FROM node:24 as devdependencies
 
 WORKDIR /home/node/app
 COPY ./home-media-viewer/package*.json .
 RUN npm install
 
 
-FROM node:20 as appbuilder
+FROM node:24 as appbuilder
 
 ENV NODE_ENV production
 ENV NEXT_TELEMETRY_DISABLED 1
 
 WORKDIR /home/node/app
 
-COPY --chown=node:node --chmod=775 ./home-media-viewer ./
-COPY --chown=node:node --chmod=775 ./home-media-viewer/next.config.js.prod ./next.config.js
+COPY --chown=node:node --chmod=755 ./home-media-viewer ./
+COPY --chown=node:node --chmod=644 ./home-media-viewer/next.config.js.prod ./next.config.js
 
 COPY --from=devdependencies /home/node/app/node_modules /home/node/app/node_modules
 COPY --from=devdependencies /home/node/app/package.json .
@@ -22,7 +22,7 @@ RUN npx prisma generate
 RUN npm run build
 
 
-FROM node:20 as proddependencies
+FROM node:24 as proddependencies
 
 WORKDIR /home/node/app
 
@@ -35,7 +35,7 @@ RUN npm install --omit=dev \
     && npx prisma generate
 
 
-FROM node:20 as app
+FROM node:24 as app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
