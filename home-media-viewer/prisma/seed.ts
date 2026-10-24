@@ -4,13 +4,20 @@ import { getHashedPassword } from '../src/utils/userHelper';
 
 const prisma = new PrismaClient();
 
-async function main() {
+async function main(): Promise<void> {
   // create admin user if not exists
-  const adminEmail = process.env.ADMIN_EMAIL ?? 'admin@admin.com';
-  const existingAdminUser = await prisma.user.findFirst({ where: { email: adminEmail }});
+  const adminEmail = process.env.ADMIN_EMAIL?.trim();
+  const password = process.env.ADMIN_PASSWORD;
+  if (adminEmail === undefined || adminEmail.length === 0 || password === undefined || password.trim().length === 0) {
+    throw new Error('Administrator bootstrap requires ADMIN_EMAIL and ADMIN_PASSWORD.');
+  }
+  const existingAdminUser = await prisma.user.findFirst({ where: { email: adminEmail } });
+
+  if (existingAdminUser !== null && (!existingAdminUser.isAdmin || existingAdminUser.status !== 'Active')) {
+    throw new Error('Bootstrap email belongs to an inactive or non-administrator user; resolve it explicitly.');
+  }
 
   if (existingAdminUser === null) {
-    const password = process.env.ADMIN_PASSWORD ?? 'P4ssw0rd';
     const hashedPassword = await getHashedPassword(password);
     await prisma.user.upsert({
       where: {
@@ -18,7 +25,7 @@ async function main() {
       },
       update: {},
       create: {
-        email: 'admin@admin.com',
+        email: adminEmail,
         name: 'admin',
         password: hashedPassword,
         isAdmin: true,

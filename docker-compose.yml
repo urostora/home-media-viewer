@@ -2,11 +2,13 @@ version: "3"
 services:
   dependencies:
     container_name: media-viewer-dev-node
-    image: "node:24"
+    image: "node:26"
     working_dir: /home/node/app
     environment:
       DATABASE_URL: ${DATABASE_URL}
       SHADOW_DATABASE_URL: ${SHADOW_DATABASE_URL}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
     volumes:
       - ./home-media-viewer:/home/node/app
     networks:
@@ -22,6 +24,12 @@ services:
       MARIADB_USER: ${MARIADB_USER}
       MARIADB_PASSWORD: ${MARIADB_PASSWORD}
       MARIADB_AUTO_UPGRADE: 1
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
     ports:
       - ${MARIADB_PORT_ON_HOST}:3306
     volumes:
@@ -34,6 +42,21 @@ services:
           cpus: "1.50"
           memory: 800m
 
+  migration:
+    image: "node:26"
+    working_dir: /home/node/app
+    command: ["npx", "--no-install", "prisma", "migrate", "deploy"]
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    volumes:
+      - ./home-media-viewer:/home/node/app
+    networks:
+      - home-media-dev-network
+
   app:
     container_name: media-viewer-dev-app
     hostname: media-viewer-dev-app
@@ -41,7 +64,10 @@ services:
       dockerfile: ./docker/dev/app/Dockerfile
       context: .
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+      migration:
+        condition: service_completed_successfully
     environment:
       APP_ALBUM_ROOT_PATH: ${APP_ALBUM_ROOT_PATH}
       DATABASE_URL: ${DATABASE_URL}

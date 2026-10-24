@@ -1,4 +1,4 @@
-FROM node:24.x
+FROM node:26
 
 WORKDIR /home/node/app
 ENV WORKDIR=/home/node/app

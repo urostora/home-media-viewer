@@ -1,11 +1,13 @@
-FROM node:24 as dependencies
+FROM node:26 as dependencies
+
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 
 WORKDIR /home/node/app
 COPY ./home-media-viewer/package*.json .
 RUN npm install
 
 
-FROM node:24 as builder
+FROM node:26 as builder
 
 ENV NODE_ENV production
 ENV NEXT_TELEMETRY_DISABLED 1
@@ -25,7 +27,7 @@ RUN npx prisma generate
 RUN npm run build
 
 
-FROM node:24 as proddependencies
+FROM node:26 as proddependencies
 
 WORKDIR /home/node/app
 
@@ -38,7 +40,7 @@ RUN npm install --omit=dev
 RUN npx prisma generate
 
 
-FROM node:24 as app
+FROM node:26 as app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -46,19 +48,11 @@ ENV TS_NODE_PROJECT /home/node/app/tsconfig.json
 
 WORKDIR /home/node/app
 
-# install cron daemon
-RUN apt update \
-    && apt -y install cron \
-    && echo "*/3 * * * *   root   /home/node/app/runBackgroundProcess.sh >> /var/log/cron.log 2>&1" >> /etc/crontab \
-    && touch /var/log/cron.log \
-    && mkdir -p /mnt/storage \
-    && chown -R node:node /mnt/storage
-
 COPY --from=proddependencies --chown=node:node /home/node/app/node_modules ./node_modules
 COPY --from=builder --chown=node:node /home/node/app/.next ./.next
 COPY --from=builder --chown=node:node /home/node/app/public ./public
 COPY --chown=node:node ./home-media-viewer/package.json .
-COPY --chown=node:node --chmod=555 ./home-media-viewer/runBackgroundProcess.sh .
+COPY --chown=node:node ./home-media-viewer/runBackgroundScheduler.mjs .
 
 RUN mkdir -p /mnt/storage && chown -R node:node /mnt/storage
 
@@ -69,4 +63,4 @@ ENV PORT 3000
 EXPOSE 3000
 VOLUME /mnt/storage
 
-CMD env >> /etc/environment && service cron start && npm start
+CMD ["node", "node_modules/next/dist/bin/next", "start"]

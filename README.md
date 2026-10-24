@@ -228,7 +228,7 @@ To use this environment, set docker compose parameters to the following:
   - same as app container, runs background processes
 - db
 - migration
-  - Runs database update / seed scripts
+  - Defaults to schema deployment; administrator seed is an explicit separate command
 - testrunner
   - Prepares app to run UI tests
   - Runs test suite
@@ -270,9 +270,69 @@ To use this environment, set docker compose parameters to the following:
 
 Before initiating running production app, change keys and passwords in the environment file (.env-prod) or create a new compose file with a new environment.
 
-1. **Build app**
-`docker compose --file docker-compose-prod.yml --env-file .env-prod build app`
-2. **Run DB migration scripts**
-`docker compose --file docker-compose-prod.yml --env-file .env-prod bash -c "npx prisma migrate deploy"`
-3. **Run production app**
-`docker compose --file docker-compose-prod.yml --env-file .env-prod up -d`
+Build the application, background, and migration images from the same revision:
+
+```sh
+docker compose --file docker-compose-prod.yml --env-file .env-prod build app background migration
+```
+
+For a **first installation**, deploy the schema, then explicitly create the administrator before starting consumers:
+
+```sh
+docker compose --file docker-compose-prod.yml --env-file .env-prod run --rm migration
+docker compose --file docker-compose-prod.yml --env-file .env-prod run --rm migration npx --no-install prisma db seed
+docker compose --file docker-compose-prod.yml --env-file .env-prod up -d app background scheduler
+```
+
+Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in the deployment environment before bootstrap. The seed requires nonempty credentials in every environment and creates the configured email with a hashed password. Rerunning it preserves an existing active administrator and its password; it fails if that email belongs to an inactive or non-admin account. Migration deployment does not run the seed automatically. Development bootstrap uses `docker compose run --rm dependencies npx --no-install prisma db seed` with credentials set in the development environment file. Test bootstrap uses `docker compose --file docker-compose-test.yml --env-file .env-test run --rm migration npx --no-install prisma db seed`.
+
+For an **existing installation**, take a verified backup, stop consumers, build the new images, deploy migrations, and start the updated services only if migration succeeds:
+
+```sh
+docker compose --file docker-compose-prod.yml --env-file .env-prod stop scheduler app background
+docker compose --file docker-compose-prod.yml --env-file .env-prod build app background migration
+docker compose --file docker-compose-prod.yml --env-file .env-prod run --rm migration
+# Continue only after the migration command exits successfully.
+docker compose --file docker-compose-prod.yml --env-file .env-prod up -d app background scheduler
+```
+
+All three Compose configurations wait for MariaDB's `healthcheck.sh --connect --innodb_initialized` checks before migration. App/background wait for the finite migration service to exit successfully. The migration images also default to `npx --no-install prisma migrate deploy`; failures exit visibly without automatic restarts. Do not use `migrate reset` or remove database volumes during production installation or upgrades. Startup dependency gates do not stop already-running consumers if a later migration fails, which is why the upgrade procedure stops them first. Repair failed migrations deliberately using Prisma's migration recovery procedure before retrying a release.
+
+After a temporary database outage, the shared Prisma client retries ordinary reads outside transactions at most twice, after 250 ms and 500 ms. Only connection errors P1001/P1002/P1017 are retried. Writes, raw queries, and transactions fail without replay; callers must check the operation's outcome before resubmitting a write. Prisma's connection/pool timeouts still apply to each attempt (`connect_timeout` defaults to 5 seconds and `pool_timeout` to 10 seconds; keep nonzero values in `DATABASE_URL`). Background scheduling attempts another run at its next interval. Startup gates do not provide continuous availability monitoring.
+
+Focused database lifecycle checks (mocked seed/database failures, no running database needed):
+
+```sh
+docker compose run --rm --no-deps -v "$PWD:/workspace:ro" dependencies node --test /workspace/docker/test/database-lifecycle.test.mjs
+```
+
+### Production background scheduling
+
+Production web and background HTTP services run as the `node` user, with Node as the foreground process. A separate `scheduler` service uses the same background image and calls `http://background:3000` every three minutes, waiting for each request to finish before the next interval. The scheduler receives only its required process token, background URL, and timeout settings; no environment dump or system cron is needed. Failures are logged and retried at the next interval.
+
+The scheduler is included in production startup. In the test environment it is opt-in via `--profile scheduled`, so normal test initialization controls indexing explicitly. Scheduler logs are available through `docker compose --file docker-compose-prod.yml --env-file .env-prod logs scheduler`. Keep one scheduler instance per background service.
+
+The Node 26 production image prepares `/mnt/storage` for the `node` user (UID/GID 1000). A fresh named volume inherits that ownership. An existing volume retains its own permissions, including thumbnail subdirectories, so rebuilding the image cannot repair a volume created by an older root process.
+
+For the current `/mnt/storage` mount, check write access using the image's default non-root user:
+
+```sh
+docker compose --file docker-compose-prod.yml --env-file .env-prod run --rm --no-deps app node -e 'const fs = require("node:fs"); fs.mkdirSync("/mnt/storage/thumbnail", { recursive: true }); const probe = "/mnt/storage/thumbnail/.write-check-" + Date.now(); fs.writeFileSync(probe, "ok", { flag: "wx" }); fs.unlinkSync(probe); console.log("Storage writable by UID", process.getuid());'
+```
+
+If an existing volume has incompatible ownership, confirm that the selected Compose project and `/mnt/storage` mount refer to the intended generated storage volume. Stop consumers and perform a one-time ownership repair on that volume, then repeat the write check and start the services:
+
+```sh
+docker compose --file docker-compose-prod.yml --env-file .env-prod stop scheduler app background
+docker compose --file docker-compose-prod.yml --env-file .env-prod run --rm --no-deps --user root app chown -R node:node /mnt/storage
+# Repeat the non-root write check above before continuing.
+docker compose --file docker-compose-prod.yml --env-file .env-prod up -d app background scheduler
+```
+
+This maintenance command changes ownership only within the generated storage mount; source albums stay mounted read-only. The normal application and scheduler entrypoints continue to run as `node`.
+
+Scheduler checks can run through Docker without starting a database:
+
+```sh
+docker compose --file docker-compose-prod.yml --env-file .env-prod run --rm --no-deps -v "$PWD:/workspace:ro" app node --experimental-vm-modules /workspace/docker/test/scheduler.test.mjs
+```

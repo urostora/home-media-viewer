@@ -1,11 +1,11 @@
-FROM node:24 as devdependencies
+FROM node:26 as devdependencies
 
 WORKDIR /home/node/app
 COPY ./home-media-viewer/package*.json .
 RUN npm install
 
 
-FROM node:24 as appbuilder
+FROM node:26 as appbuilder
 
 ENV NODE_ENV production
 ENV NEXT_TELEMETRY_DISABLED 1
@@ -22,7 +22,7 @@ RUN npx prisma generate
 RUN npm run build
 
 
-FROM node:24 as proddependencies
+FROM node:26 as proddependencies
 
 WORKDIR /home/node/app
 
@@ -35,7 +35,7 @@ RUN npm install --omit=dev \
     && npx prisma generate
 
 
-FROM node:24 as app
+FROM node:26 as app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
