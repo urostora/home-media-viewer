@@ -1,15 +1,20 @@
-FROM node:26.12.1-trixie@sha256:a98e6fda54fdbb22d4238054cca9a2a113bcd1191c09193a535aae22f400aa8e AS dependencies
+FROM node:26.12.1-trixie-slim@sha256:36793bcbb160a6a16cede1e62b93f84e26b78a972a8a4c0b879c1c12f22761ec AS migration
+ARG DEBIAN_MIRROR=https://deb.debian.org
+# Slim omits CA certificates; bootstrap HTTPS with Node's bundled Mozilla roots.
+RUN mkdir -p /etc/ssl/certs \
+    && node -e 'require("node:fs").writeFileSync("/etc/ssl/certs/ca-certificates.crt", require("node:tls").rootCertificates.join("\n") + "\n")' \
+    && sed -i "s|http://deb.debian.org/debian$|${DEBIAN_MIRROR}/debian|; s|http://deb.debian.org/debian-security$|https://deb.debian.org/debian-security|" /etc/apt/sources.list.d/debian.sources \
+    && apt-get -o Acquire::https::CaInfo=/etc/ssl/certs/ca-certificates.crt -o Acquire::Retries=3 -o Acquire::https::Timeout=30 update --error-on=any \
+    && apt-get -o Acquire::https::CaInfo=/etc/ssl/certs/ca-certificates.crt -o Acquire::Retries=3 -o Acquire::https::Timeout=30 install -y --no-install-recommends ca-certificates openssl \
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /home/node/app
-ENV PUPPETEER_SKIP_DOWNLOAD=true
-COPY ./home-media-viewer/package.json ./home-media-viewer/package-lock.json ./
-RUN npm ci --no-audit --no-fund
-COPY ./home-media-viewer/prisma ./prisma
+ENV TS_NODE_PROJECT=/home/node/app/tsconfig.json PRISMA_SKIP_POSTINSTALL_GENERATE=true
+COPY ./docker/prod/migration/package.json ./docker/prod/migration/package-lock.json ./
+RUN --mount=type=cache,id=hmv-npm,target=/root/.npm,sharing=locked npm ci --no-audit --no-fund
+COPY ./home-media-viewer/prisma/schema.prisma ./prisma/schema.prisma
 RUN ./node_modules/.bin/prisma generate
-
-FROM dependencies AS migration
-ENV TS_NODE_PROJECT=/home/node/app/tsconfig.json
-# Only migration/bootstrap inputs are needed; no application build outputs.
 COPY ./home-media-viewer/tsconfig.json ./
-# Bootstrap imports the shared user/password helpers and their TypeScript dependencies.
-COPY ./home-media-viewer/src ./src
+COPY ./home-media-viewer/prisma/seed.ts ./prisma/seed.ts
+COPY ./home-media-viewer/prisma/migrations ./prisma/migrations
+COPY ./home-media-viewer/src/utils/passwordHelper.ts ./src/utils/passwordHelper.ts
 CMD ["npx", "--no-install", "prisma", "migrate", "deploy"]

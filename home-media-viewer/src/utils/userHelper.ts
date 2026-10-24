@@ -1,6 +1,5 @@
-import bcrypt from 'bcrypt';
-
 import prisma from '@/utils/prisma/prismaImporter';
+import { getHashedPassword } from './passwordHelper';
 import { HmvError } from './apiHelpers';
 import { getSimpleValueOrInFilter, getStringContainOrInFilter } from './api/searchParameterHelper';
 
@@ -9,12 +8,7 @@ import type { UserDataType, UserEditType, UserExtendedDataType, UserSearchType }
 import { type DataValidatorSchema, statusValues } from './dataValidator';
 import { type EntityListResult } from '@/types/api/generalTypes';
 
-const SALT_ROUNDS = 10;
-
-export const getHashedPassword = async (password: string): Promise<string> => await bcrypt.hash(password, SALT_ROUNDS);
-
-export const verifyPassword = async (password: string, hashedPassword: string): Promise<boolean> =>
-  await bcrypt.compare(password, hashedPassword);
+export { getHashedPassword, verifyPassword } from './passwordHelper';
 
 export const isPasswordStrong = (password: string): boolean => {
   const regex = /^(?!.*\\s)(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[~!@#$%^&*()--+={}[\\]|\\:;"'<>,.?]).{8,}$/;

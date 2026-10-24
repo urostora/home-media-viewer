@@ -8,6 +8,7 @@
 # Local dependency/output trees never belong in an image context.
 **/node_modules
 **/.next
+**/next-env.d.ts
 **/coverage
 **/*.tsbuildinfo
 **/npm-debug.log*

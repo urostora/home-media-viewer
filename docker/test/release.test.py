@@ -14,7 +14,7 @@ REVISION = 'a' * 40
 
 
 class ReleaseTests(unittest.TestCase):
-    def scenario(self, mode='release', fail=None, existing=False):
+    def scenario(self, mode='release', fail=None, existing=False, cache_directory=None, builder=None, debian_mirror=None):
         calls = []
         images = {}
         repo = Path(self.directory)
@@ -34,6 +34,7 @@ class ReleaseTests(unittest.TestCase):
                 if 'build' in args:
                     override = Path(args[args.index('-f') + 3])
                     services = json.loads(override.read_text())['services']
+                    self.build_services = services
                     for role in ('app', 'migration', 'testrunner'):
                         if role in services:
                             images[services[role]['image']] = 'sha256:' + role
@@ -57,7 +58,7 @@ class ReleaseTests(unittest.TestCase):
             return subprocess.CompletedProcess(args, 0, '')
         with patch.object(pipeline.subprocess, 'run', side_effect=command):
             try:
-                pipeline.build(mode, repo, 'HEAD', 'example/hmv', manifest)
+                pipeline.build(mode, repo, 'HEAD', 'example/hmv', manifest, cache_directory, builder, debian_mirror)
             except (ValueError, subprocess.CalledProcessError):
                 if not (fail or existing):
                     raise
@@ -135,6 +136,37 @@ class ReleaseTests(unittest.TestCase):
         calls, images, _ = self.scenario('test', fail=lambda args: args[-1].endswith('initTestData.sh'))
         self.assertFalse(images)
         self.assertFalse(any('test' in args for args, _ in calls))
+
+    def test_optional_cache_exports_and_imports_are_scoped_by_role(self):
+        cache = Path(self.directory) / 'cache'
+        (cache / 'app').mkdir(parents=True)
+        (cache / 'app/index.json').write_text('{}')
+        calls, _, _ = self.scenario(cache_directory=cache, builder='isolated-builder')
+        app = self.build_services['app']['build']
+        migration = self.build_services['migration']['build']
+        self.assertEqual(app['cache_from'], [f'type=local,src={cache}/app'])
+        self.assertEqual(app['cache_to'], [f'type=local,dest={cache}/app,mode=max'])
+        self.assertNotIn('cache_from', migration)
+        self.assertEqual(migration['cache_to'], [f'type=local,dest={cache}/migration,mode=max'])
+        bake = next(args for args, _ in calls if args[:3] == ['docker', 'buildx', 'bake'])
+        self.assertEqual(bake[-4:], ['--builder', 'isolated-builder', 'app', 'migration'])
+        self.assertIn(f'fs.read={cache}', bake)
+        self.assertIn(f'fs.write={cache}', bake)
+        self.assertIn('--load', bake)
+        self.assertTrue((cache / 'app/index.json').exists())
+
+    def test_default_build_does_not_require_external_cache(self):
+        self.scenario()
+        for role in ('app', 'migration'):
+            self.assertNotIn('cache_to', self.build_services[role]['build'])
+            self.assertNotIn('cache_from', self.build_services[role]['build'])
+
+    def test_explicit_https_mirror_is_used_only_for_builds(self):
+        self.scenario('test', debian_mirror='https://mirror.example.test')
+        for role in ('app', 'migration', 'testrunner'):
+            self.assertEqual(self.build_services[role]['build']['args'], {'DEBIAN_MIRROR': 'https://mirror.example.test'})
+        self.assertNotIn('build', self.build_services['background'])
+        self.assertNotIn('build', self.build_services['scheduler'])
 
 
 if __name__ == '__main__':

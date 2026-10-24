@@ -18,24 +18,26 @@ def run(*args, capture=False, **kwargs):
                           stdout=subprocess.PIPE if capture else None, **kwargs)
 
 
-def pipeline(mode, repository, ref, prefix, manifest=None):
+def pipeline(mode, repository, ref, prefix, manifest=None, cache_directory=None, builder=None, debian_mirror=None):
     # Serialize builds within this repository without creating a persistent lock file.
     gitdir = run('git', '-C', repository, 'rev-parse', '--path-format=absolute', '--git-common-dir', capture=True).stdout.strip()
     descriptor = os.open(gitdir, os.O_RDONLY)
     try:
         fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        return build(mode, repository, ref, prefix, manifest)
+        return build(mode, repository, ref, prefix, manifest, cache_directory, builder, debian_mirror)
     finally:
         os.close(descriptor)
 
 
-def build(mode, repository, ref, prefix, manifest=None):
+def build(mode, repository, ref, prefix, manifest=None, cache_directory=None, builder=None, debian_mirror=None):
     repository = Path(repository).resolve(strict=True)
     revision = run('git', '-C', repository, 'rev-parse', '--verify', '--end-of-options', f'{ref}^{{commit}}', capture=True).stdout.strip()
     if not re.fullmatch(r'[0-9a-f]{40,64}', revision):
         raise ValueError('Invalid commit revision')
     if not re.fullmatch(r'[a-z0-9][a-z0-9./:_-]*', prefix):
         raise ValueError('Invalid image prefix')
+    if debian_mirror is not None and not re.fullmatch(r'https://[a-zA-Z0-9.-]+(?::[0-9]+)?', debian_mirror):
+        raise ValueError('Debian mirror must be an HTTPS origin hosting /debian')
     if mode == 'release' and (manifest is None or Path(manifest).exists()):
         raise ValueError('Release requires a new --manifest output path')
     project = 'hmv-build-' + secrets.token_hex(8)
@@ -82,6 +84,20 @@ def build(mode, repository, ref, prefix, manifest=None):
                 services[role] = {'image': temporary_images[0]}
             if mode == 'test':
                 services['testrunner'] = {'image': temporary_images[2]}
+            if debian_mirror is not None:
+                for role in ('app', 'migration', *(['testrunner'] if mode == 'test' else [])):
+                    services[role].setdefault('build', {})['args'] = {'DEBIAN_MIRROR': debian_mirror}
+            if cache_directory is not None:
+                cache_root = Path(cache_directory).expanduser().resolve()
+                if ',' in str(cache_root):
+                    raise ValueError('Cache directory cannot contain a comma (BuildKit cache option separator)')
+                cache_root.mkdir(parents=True, exist_ok=True)
+                for role in ('app', 'migration', *(['testrunner'] if mode == 'test' else [])):
+                    cache = cache_root / role
+                    settings = services[role].setdefault('build', {})
+                    settings['cache_to'] = [f'type=local,dest={cache},mode=max']
+                    if (cache / 'index.json').is_file():
+                        settings['cache_from'] = [f'type=local,src={cache}']
             # Ports are unneeded for isolated service-to-service tests. Compose !reset needs Compose >=2.24.4.
             override.write_text(json.dumps({'services': services}))
             if mode == 'test':
@@ -95,7 +111,18 @@ def build(mode, repository, ref, prefix, manifest=None):
             def dc(*args, capture=False):
                 return run(*compose, *args, capture=capture, env=environment)
             dc('config', '--quiet')
-            dc('build', 'app', 'migration', *(['testrunner'] if mode == 'test' else []))
+            targets = ['app', 'migration', *(['testrunner'] if mode == 'test' else [])]
+            if cache_directory is None:
+                dc('build', *(['--builder', builder] if builder else []), *targets)
+            else:
+                # Compose has no flag for Bake's external-directory access. Generate its
+                # build plan, then grant only the explicitly requested cache directory.
+                plan = scratch / 'build.json'
+                plan.write_text(dc('build', '--print', *targets, capture=True).stdout)
+                run('docker', 'buildx', 'bake', '--file', plan, '--load',
+                    '--allow', f'fs.read={cache_root}', '--allow', f'fs.write={cache_root}',
+                    *(['--builder', builder] if builder else []), *targets,
+                    env=environment, cwd=checkout)
             ids = []
             for tag in temporary_images[:2]:
                 info = json.loads(run('docker', 'image', 'inspect', tag, capture=True).stdout)[0]
@@ -158,8 +185,12 @@ def main():
     parser.add_argument('--repository', type=Path, default=Path(__file__).resolve().parents[2])
     parser.add_argument('--image-prefix', default='urostora/home-media-viewer')
     parser.add_argument('--manifest', type=Path, help='New release manifest output file')
+    parser.add_argument('--cache-directory', type=Path, help='Optional persistent local BuildKit layer cache (per image role)')
+    parser.add_argument('--builder', help='Optional existing buildx builder supporting the selected cache backend')
+    parser.add_argument('--debian-mirror', help='Optional HTTPS mirror origin hosting /debian')
     args = parser.parse_args()
-    pipeline(args.mode, args.repository, args.ref, args.image_prefix, args.manifest)
+    pipeline(args.mode, args.repository, args.ref, args.image_prefix, args.manifest,
+             args.cache_directory, args.builder, args.debian_mirror)
 
 
 if __name__ == '__main__':
