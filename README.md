@@ -84,6 +84,12 @@ volumes:
 
 #### Before first use
 
+- **Create a private environment file**
+
+  `python3 scripts/security/create-env.py .env.example .env`
+
+  For an existing file, preserve its working credentials and follow the [role/credential transition procedure](docs/production-security.md); the generator refuses overwrites.
+
 - **Set environment variables in .env file**
 
 ```text
@@ -92,10 +98,10 @@ WEB_PORT=23080
 ...
 # Administrator user credentials - used by the db seed process
 ADMIN_EMAIL=admin@admin.com
-ADMIN_PASSWORD=P4ssw0rd
+ADMIN_PASSWORD=<unique-private-password>
 ...
-# when HOSTNAME is set, app uses secure cookie (HTTPS connection required - used in production)
-HOSTNAME=
+# Explicit HTTP override for development; production defaults to secure HTTPS cookies
+SESSION_COOKIE_SECURE=false
 ```
 
 - **Load dependencies**
@@ -235,18 +241,13 @@ To use this environment, set docker compose parameters to the following:
 
 ### First use / automated test run
 
-1. **Build containers**
-  `docker compose --file docker-compose-test.yml --env-file .env-test build`
-2. **Reset database**
-  `docker compose --file docker-compose-test.yml --env-file .env-test run --rm migration bash -c "npx prisma migrate reset --force"`
-3. **Start containers**
-  `docker compose --file docker-compose-test.yml --env-file .env-test up -d`
-4. **Clear previous index files**
-   `docker compose --file docker-compose-test.yml --env-file .env-test exec app sh -c "rm -R /mnt/storage/*"`
-5. **Run test suite pre-processor script**
-   `docker compose --file docker-compose-test.yml --env-file .env-test run --rm testrunner bash -c "./scripts/initTestData.sh"`
-6. **Run test suite**
-   `docker compose --file docker-compose-test.yml --env-file .env-test run --rm testrunner bash -c "npm run test"`
+Use the [disposable committed-revision test runner](scripts/build/README.md). It generates test-only credentials, uses a new Compose project with fresh volumes and no published ports, initializes the database before consumers, fails on setup errors, and cleans up afterwards:
+
+```sh
+bash scripts/build/test/build-test.sh --ref HEAD
+```
+
+It tests committed content only. The manual commands below are for a deliberately selected development test installation; never pass production settings or volumes to a reset command.
 
 ### Start containers
 
@@ -268,32 +269,33 @@ To use this environment, set docker compose parameters to the following:
 
 ## Production environment
 
-Before initiating running production app, change keys and passwords in the environment file (.env-prod) or create a new compose file with a new environment.
+Create private production settings with `python3 scripts/security/create-env.py .env-prod.example .env-prod` and set ADMIN_EMAIL. Read the [production security and existing-installation transition procedure](docs/production-security.md) before starting or upgrading. Production defaults to HTTPS cookies, a loopback web listener, no published database port, and distinct runtime/migration database identities. Existing volume credentials and grants need an explicit transition.
 
-Build the application, background, and migration images from the same revision:
+Build a committed release with the [release pipeline](scripts/build/README.md):
 
 ```sh
-docker compose --file docker-compose-prod.yml --env-file .env-prod build app background migration
+bash scripts/build/production/build-prod.sh --ref HEAD --manifest /protected/releases/hmv-release.json
 ```
+
+Set `HMV_APP_IMAGE` and `HMV_MIGRATION_IMAGE` together in the private deployment environment using that manifest. Web, background and scheduler share its app image. Use the selected revision's Compose files with `--no-build --pull never` during startup. The pipeline builds once per artifact, refuses to overwrite commit tags and cleans up its temporary worktree/settings. For local development builds without a release manifest, build `app migration` from the production Compose definition; background and scheduler reuse the app image.
 
 For a **first installation**, deploy the schema, then explicitly create the administrator before starting consumers:
 
 ```sh
-docker compose --file docker-compose-prod.yml --env-file .env-prod run --rm migration
-docker compose --file docker-compose-prod.yml --env-file .env-prod run --rm migration npx --no-install prisma db seed
-docker compose --file docker-compose-prod.yml --env-file .env-prod up -d app background scheduler
+docker compose --file docker-compose-prod.yml --env-file .env-prod run --rm --no-build --pull never migration
+docker compose --file docker-compose-prod.yml --env-file .env-prod run --rm --no-build --pull never migration npx --no-install prisma db seed
+docker compose --file docker-compose-prod.yml --env-file .env-prod up -d --no-build --pull never app background scheduler
 ```
 
-Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in the deployment environment before bootstrap. The seed requires nonempty credentials in every environment and creates the configured email with a hashed password. Rerunning it preserves an existing active administrator and its password; it fails if that email belongs to an inactive or non-admin account. Migration deployment does not run the seed automatically. Development bootstrap uses `docker compose run --rm dependencies npx --no-install prisma db seed` with credentials set in the development environment file. Test bootstrap uses `docker compose --file docker-compose-test.yml --env-file .env-test run --rm migration npx --no-install prisma db seed`.
+Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in the deployment environment before bootstrap. The seed requires nonempty credentials in every environment and creates the configured email with a hashed password. Rerunning it preserves an existing active administrator and its password; it fails if that email belongs to an inactive or non-admin account. Migration deployment does not run the seed automatically. Development bootstrap uses `docker compose run --rm dependencies npx --no-install prisma db seed` with credentials set in the development environment file. Test bootstrap uses `docker compose --file docker-compose-test.yml --env-file .env-test run --rm --no-build --pull never migration npx --no-install prisma db seed`.
 
-For an **existing installation**, take a verified backup, stop consumers, build the new images, deploy migrations, and start the updated services only if migration succeeds:
+For an **existing installation**, take a verified backup, stop consumers, select the completed release images, deploy migrations, and start the updated services only if migration succeeds:
 
 ```sh
 docker compose --file docker-compose-prod.yml --env-file .env-prod stop scheduler app background
-docker compose --file docker-compose-prod.yml --env-file .env-prod build app background migration
-docker compose --file docker-compose-prod.yml --env-file .env-prod run --rm migration
+docker compose --file docker-compose-prod.yml --env-file .env-prod run --rm --no-build --pull never migration
 # Continue only after the migration command exits successfully.
-docker compose --file docker-compose-prod.yml --env-file .env-prod up -d app background scheduler
+docker compose --file docker-compose-prod.yml --env-file .env-prod up -d --no-build --pull never app background scheduler
 ```
 
 All three Compose configurations wait for MariaDB's `healthcheck.sh --connect --innodb_initialized` checks before migration. App/background wait for the finite migration service to exit successfully. The migration images also default to `npx --no-install prisma migrate deploy`; failures exit visibly without automatic restarts. Do not use `migrate reset` or remove database volumes during production installation or upgrades. Startup dependency gates do not stop already-running consumers if a later migration fails, which is why the upgrade procedure stops them first. Repair failed migrations deliberately using Prisma's migration recovery procedure before retrying a release.
@@ -336,3 +338,7 @@ Scheduler checks can run through Docker without starting a database:
 ```sh
 docker compose --file docker-compose-prod.yml --env-file .env-prod run --rm --no-deps -v "$PWD:/workspace:ro" app node --experimental-vm-modules /workspace/docker/test/scheduler.test.mjs
 ```
+
+### Backup and recovery
+
+Use the [backup and isolated recovery runbook](scripts/backup/README.md) before upgrades. It covers Compose project selection, verified logical database dumps, generated storage and source-media archives, safe retention, empty-target recovery, ownership, and separate off-host/configuration/secret policies. The scripts require explicit Compose, environment, project and destination arguments; the old no-argument backup scripts are no longer supported.

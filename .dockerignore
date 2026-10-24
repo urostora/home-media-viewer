@@ -1,0 +1,6 @@
+# Keep credential files, private keys and credential history out of build contexts.
+.git
+.env*
+**/.env*
+**/*.pem
+**/*.key

@@ -6,3 +6,9 @@
 static
 
 scripts/test/*.txt
+
+# Deployment credentials (templates are safe to track)
+.env*
+!.env*.example
+*.pem
+*.key

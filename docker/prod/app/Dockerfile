@@ -24,7 +24,7 @@ COPY --from=dependencies /home/node/app/package.json .
 # RUN chmod -R 774 /home
 
 RUN npx prisma generate
-RUN npm run build
+RUN APP_SESSION_SECRET="$(node -e 'process.stdout.write(require("node:crypto").randomBytes(32).toString("hex"))')" npm run build
 
 
 FROM node:26 as proddependencies
@@ -53,6 +53,7 @@ COPY --from=builder --chown=node:node /home/node/app/.next ./.next
 COPY --from=builder --chown=node:node /home/node/app/public ./public
 COPY --chown=node:node ./home-media-viewer/package.json .
 COPY --chown=node:node ./home-media-viewer/runBackgroundScheduler.mjs .
+COPY --chown=node:node ./home-media-viewer/validateProductionConfig.mjs .
 
 RUN mkdir -p /mnt/storage && chown -R node:node /mnt/storage
 
@@ -63,4 +64,4 @@ ENV PORT 3000
 EXPOSE 3000
 VOLUME /mnt/storage
 
-CMD ["node", "node_modules/next/dist/bin/next", "start"]
+CMD ["sh", "-ec", "node validateProductionConfig.mjs && exec node node_modules/next/dist/bin/next start"]

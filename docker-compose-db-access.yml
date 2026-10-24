@@ -1,0 +1,5 @@
+# Explicit, temporary host-admin access only. Never required for app/database traffic.
+services:
+  db:
+    ports:
+      - "127.0.0.1:${MARIADB_PORT_ON_HOST:-25306}:3306"

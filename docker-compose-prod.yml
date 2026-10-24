@@ -5,49 +5,43 @@ services:
     hostname: home-media-viewer-db
     image: "mariadb:13"
     environment:
-      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
-      MARIADB_DATABASE: ${MARIADB_DATABASE}
-      MARIADB_USER: ${MARIADB_USER}
-      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?Set MARIADB_ROOT_PASSWORD in the private production environment file}
+      MARIADB_DATABASE: ${MARIADB_DATABASE:?Set MARIADB_DATABASE in the private production environment file}
+      MARIADB_USER: ${MARIADB_USER:?Set MARIADB_USER in the private production environment file}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD:?Set MARIADB_PASSWORD in the private production environment file}
       MARIADB_AUTO_UPGRADE: 1
+      MARIADB_ROOT_HOST: localhost
+      MARIADB_MIGRATION_USER: ${MARIADB_MIGRATION_USER:-hmv_migration}
+      MARIADB_MIGRATION_PASSWORD: ${MARIADB_MIGRATION_PASSWORD:?Set MARIADB_MIGRATION_PASSWORD in the private production environment file}
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 5s
       timeout: 5s
       retries: 12
       start_period: 30s
-    ports:
-      - ${MARIADB_PORT_ON_HOST}:3306
     volumes:
       - home-media-db-storage:/var/lib/mysql
+      - ./docker/prod/db/10-roles.sh:/docker-entrypoint-initdb.d/10-roles.sh:ro
     networks:
       - home-media-network
 
   scheduler:
-    image: urostora/home-media-viewer/background
-    build:
-      dockerfile: ./docker/prod/app/Dockerfile
-      context: .
-      target: app
+    image: ${HMV_APP_IMAGE:-urostora/home-media-viewer/app:latest}
     init: true
-    command: ["node", "runBackgroundScheduler.mjs"]
+    command: ["sh", "-ec", "node validateProductionConfig.mjs scheduler && exec node runBackgroundScheduler.mjs"]
     depends_on:
       - background
     environment:
       BACKGROUND_URL: http://background:3000
-      PROCESS_TOKEN: ${PROCESS_TOKEN}
+      PROCESS_TOKEN: ${PROCESS_TOKEN:?Set PROCESS_TOKEN in the private production environment file}
       LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
     networks:
       - home-media-network
 
   background:
-    image: urostora/home-media-viewer/background
+    image: ${HMV_APP_IMAGE:-urostora/home-media-viewer/app:latest}
     container_name: home-media-viewer-background
     hostname: home-media-viewer-background
-    build:
-      dockerfile: ./docker/prod/app/Dockerfile
-      context: .
-      target: app
     depends_on:
       db:
         condition: service_healthy
@@ -55,12 +49,12 @@ services:
         condition: service_completed_successfully
     environment:
       APP_ALBUM_ROOT_PATH: ${APP_ALBUM_ROOT_PATH}
-      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in the private production environment file}
       LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
       TS_NODE_PROJECT: /home/node/app/tsconfig.json
-      APP_SESSION_SECRET: ${APP_SESSION_SECRET}
-      PROCESS_TOKEN: ${PROCESS_TOKEN}
-      HOSTNAME: ${HOSTNAME}
+      APP_SESSION_SECRET: ${APP_SESSION_SECRET:?Set APP_SESSION_SECRET in the private production environment file}
+      PROCESS_TOKEN: ${PROCESS_TOKEN:?Set PROCESS_TOKEN in the private production environment file}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-true}
       IS_BACKGROUND_PROCESS_ENABLED: 1
     volumes:
       - ./test/files:${APP_ALBUM_ROOT_PATH}:ro
@@ -69,7 +63,7 @@ services:
       - home-media-network
 
   app:
-    image: urostora/home-media-viewer/app
+    image: ${HMV_APP_IMAGE:-urostora/home-media-viewer/app:latest}
     container_name: home-media-viewer-app
     hostname: home-media-viewer-app
     build:
@@ -83,25 +77,25 @@ services:
         condition: service_completed_successfully
     environment:
       APP_ALBUM_ROOT_PATH: ${APP_ALBUM_ROOT_PATH}
-      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in the private production environment file}
       LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
-      APP_SESSION_SECRET: ${APP_SESSION_SECRET}
-      PROCESS_TOKEN: ${PROCESS_TOKEN}
+      APP_SESSION_SECRET: ${APP_SESSION_SECRET:?Set APP_SESSION_SECRET in the private production environment file}
+      PROCESS_TOKEN: ${PROCESS_TOKEN:?Set PROCESS_TOKEN in the private production environment file}
       TS_NODE_PROJECT: /home/node/app/tsconfig.json
-      HOSTNAME: ${HOSTNAME}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-true}
       IS_BACKGROUND_PROCESS_ENABLED: 0
     volumes:
       - ./test/files:${APP_ALBUM_ROOT_PATH}:ro
       - home-media-storage:${APP_STORAGE_PATH}
     ports:
-      - ${WEB_PORT}:3000
+      - "${WEB_BIND_ADDRESS:-127.0.0.1}:${WEB_PORT:-25080}:3000"
     networks:
       - home-media-network
 
   migration:
     command: ["npx", "--no-install", "prisma", "migrate", "deploy"]
     restart: "no"
-    image: urostora/home-media-viewer/migration
+    image: ${HMV_MIGRATION_IMAGE:-urostora/home-media-viewer/migration:latest}
     container_name: home-media-viewer-migration
     hostname: home-media-viewer-migration
     build:
@@ -112,7 +106,7 @@ services:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_URL: ${MIGRATION_DATABASE_URL:?Set MIGRATION_DATABASE_URL in the private production environment file}
       NODE_ENV: production
       ADMIN_EMAIL: ${ADMIN_EMAIL:-}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}

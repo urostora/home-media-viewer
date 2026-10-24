@@ -1,7 +1,6 @@
 version: "3"
 services:
   db:
-    container_name: home-media-viewer-test-db
     hostname: home-media-viewer-test-db
     image: "mariadb:13"
     environment:
@@ -17,7 +16,7 @@ services:
       retries: 12
       start_period: 30s
     ports:
-      - ${MARIADB_PORT_ON_HOST}:3306
+      - "127.0.0.1:${MARIADB_PORT_ON_HOST}:3306"
     networks:
       - home-media-test-network
     volumes:
@@ -26,8 +25,7 @@ services:
   migration:
     command: ["npx", "--no-install", "prisma", "migrate", "deploy"]
     restart: "no"
-    image: urostora/home-media-viewer/migration-test
-    container_name: home-media-viewer-test-migration
+    image: ${HMV_MIGRATION_IMAGE:-urostora/home-media-viewer/migration-test:latest}
     hostname: home-media-viewer-test-migration
     build:
       dockerfile: ./docker/test/migration/Dockerfile
@@ -42,7 +40,7 @@ services:
       LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
       APP_SESSION_SECRET: ${APP_SESSION_SECRET}
       PROCESS_TOKEN: ${PROCESS_TOKEN}
-      HOSTNAME: ${HOSTNAME}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
       IS_BACKGROUND_PROCESS_ENABLED: 0
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
@@ -50,7 +48,6 @@ services:
       - home-media-test-network
 
   testrunner:
-    container_name: home-media-viewer-test-testrunner
     hostname: home-media-viewer-test-testrunner
     build:
       dockerfile: ./docker/test/testrunner/Dockerfile
@@ -64,21 +61,17 @@ services:
       LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
       APP_SESSION_SECRET: ${APP_SESSION_SECRET}
       PROCESS_TOKEN: ${PROCESS_TOKEN}
-      HOSTNAME: ${HOSTNAME}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
       IS_BACKGROUND_PROCESS_ENABLED: 0
-      APP_URL: http://home-media-viewer-test-app:3000
-      BACKGROUND_URL: http://home-media-viewer-test-background:3000
+      APP_URL: http://app:3000
+      BACKGROUND_URL: http://background:3000
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
     networks:
       - home-media-test-network
 
   scheduler:
-    image: urostora/home-media-viewer/background-test
-    build:
-      dockerfile: ./docker/prod/app/Dockerfile
-      context: .
-      target: app
+    image: ${HMV_APP_IMAGE:-urostora/home-media-viewer/app-test:latest}
     profiles: [scheduled]
     init: true
     command: ["node", "runBackgroundScheduler.mjs"]
@@ -92,13 +85,8 @@ services:
       - home-media-test-network
 
   background:
-    image: urostora/home-media-viewer/background-test
-    container_name: home-media-viewer-test-background
+    image: ${HMV_APP_IMAGE:-urostora/home-media-viewer/app-test:latest}
     hostname: home-media-viewer-test-background
-    build:
-      dockerfile: ./docker/prod/app/Dockerfile
-      context: .
-      target: app
     depends_on:
       db:
         condition: service_healthy
@@ -110,7 +98,7 @@ services:
       LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
       APP_SESSION_SECRET: ${APP_SESSION_SECRET}
       PROCESS_TOKEN: ${PROCESS_TOKEN}
-      HOSTNAME: ${HOSTNAME}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
       IS_BACKGROUND_PROCESS_ENABLED: 1
     volumes:
       - home-media-test-storage:${APP_STORAGE_PATH}
@@ -119,8 +107,7 @@ services:
       - home-media-test-network
 
   app:
-    image: urostora/home-media-viewer/app-test
-    container_name: home-media-viewer-test-app
+    image: ${HMV_APP_IMAGE:-urostora/home-media-viewer/app-test:latest}
     hostname: home-media-viewer-test-app
     build:
       dockerfile: ./docker/prod/app/Dockerfile
@@ -137,7 +124,7 @@ services:
       LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
       APP_SESSION_SECRET: ${APP_SESSION_SECRET}
       PROCESS_TOKEN: ${PROCESS_TOKEN}
-      HOSTNAME: ${HOSTNAME}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
       IS_BACKGROUND_PROCESS_ENABLED: 0
     volumes:
       - home-media-test-storage:${APP_STORAGE_PATH}

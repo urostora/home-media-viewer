@@ -32,4 +32,6 @@ COPY --chown=node:node ./home-media-viewer .
 
 COPY --chown=node:node --chmod=755 ./scripts/test/initTestData.sh ./scripts/initTestData.sh
 
+COPY --chown=node:node --chmod=644 ./scripts/test/initTestData.mjs ./scripts/initTestData.mjs
+
 USER node

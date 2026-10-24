@@ -1,27 +1,24 @@
 import type { IronSessionOptions } from 'iron-session';
 
-const hasHostname = typeof process.env?.HOSTNAME === 'string' && process.env.HOSTNAME.length > 0;
-
-const getRandomSecret = (secretLength: number = 32): string => {
-  const charactersAllowed = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-
-  let result = '';
-  for (let i = 0; i < secretLength; i++) {
-    result += charactersAllowed[Math.floor(Math.random() * charactersAllowed.length)];
+export const getIronSessionOptions = (): IronSessionOptions => {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const secret = process.env.APP_SESSION_SECRET;
+  if (secret === undefined || secret.trim().length < 32) {
+    throw new Error('APP_SESSION_SECRET must contain at least 32 characters');
+  }
+  const secureSetting = process.env.SESSION_COOKIE_SECURE;
+  if (secureSetting !== undefined && secureSetting !== 'true' && secureSetting !== 'false') {
+    throw new Error('SESSION_COOKIE_SECURE must be true or false');
   }
 
-  return result;
-};
-
-export const getIronSessionOptions = (): IronSessionOptions => {
   return {
     cookieName: 'home-media-viewer-user-cookie',
-    password: process.env.APP_SESSION_SECRET ?? getRandomSecret(),
-    // secure: true should be used in production (HTTPS) but can't be used in development (HTTP)
+    password: secret,
     cookieOptions: {
-      httpOnly: false,
+      httpOnly: true,
+      sameSite: 'lax',
       maxAge: 14 * 24 * 60 * 60,
-      secure: (process.env?.NODE_ENV ?? '') === 'production' && hasHostname,
+      secure: secureSetting === undefined ? isProduction : secureSetting === 'true',
     },
   };
 };
