@@ -43,7 +43,7 @@ try {
   }
   browser = await puppeteer.launch({
     headless: "new",
-    executablePath: "/usr/bin/google-chrome",
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || "/usr/bin/chromium",
     args: [
       "--no-sandbox",
       "--disable-dev-shm-usage",

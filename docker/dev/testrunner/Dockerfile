@@ -1,20 +1,8 @@
-FROM node:26 as testrunner
-
-RUN apt update && apt install gnupg wget -y && \
-  wget --quiet --output-document=- https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor > /etc/apt/trusted.gpg.d/google-archive.gpg && \
-  sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' && \
-  apt update && \
-  apt install google-chrome-stable -y --no-install-recommends && \
-  rm -rf /var/lib/apt/lists/*
-
-ENV TS_NODE_PROJECT /home/node/app/tsconfig.json
-
-USER 0
-
+FROM node:26.12.1-trixie@sha256:a98e6fda54fdbb22d4238054cca9a2a113bcd1191c09193a535aae22f400aa8e AS testrunner
+RUN sed -i 's|http://deb.debian.org|https://deb.debian.org|g' /etc/apt/sources.list.d/debian.sources \
+    && apt-get update --error-on=any && apt-get install -y --no-install-recommends chromium && rm -rf /var/lib/apt/lists/*
+ENV TS_NODE_PROJECT=/home/node/app/tsconfig.json PUPPETEER_SKIP_DOWNLOAD=true PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 WORKDIR /home/node/app
-
-RUN mkdir /home/node/scripts
-
+RUN mkdir -p /home/node/scripts
 VOLUME /home/node/app
 VOLUME /home/node/scripts
-

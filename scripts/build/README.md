@@ -26,14 +26,18 @@ Take a verified backup and follow the security/credential transition runbook fir
 ```sh
 # Set both HMV_*_IMAGE variables to the references from the release manifest first.
 set -e
+# Inspect only image references; do not print resolved environment configuration.
+for image in $(docker compose -f docker-compose-prod.yml --env-file .env-prod config --images); do
+  docker image inspect "$image" >/dev/null
+done
 docker compose -f docker-compose-prod.yml --env-file .env-prod stop scheduler app background
-docker compose -f docker-compose-prod.yml --env-file .env-prod run --rm --no-build --pull never migration
+docker compose -f docker-compose-prod.yml --env-file .env-prod run --rm --pull never migration
 # For a first installation only, explicitly bootstrap the administrator:
-# docker compose -f docker-compose-prod.yml --env-file .env-prod run --rm --no-build --pull never migration npx --no-install prisma db seed
+# docker compose -f docker-compose-prod.yml --env-file .env-prod run --rm --pull never migration npx --no-install prisma db seed
 docker compose -f docker-compose-prod.yml --env-file .env-prod up -d --no-build --pull never app background scheduler
 ```
 
-Run these against the release revision's Compose/configuration files. A missing image must fail rather than silently build/pull a mutable default. These scripts do not deploy or publish artifacts. Release build acceptance verifies artifact identity; it does not replace application smoke tests or the integration suite. Dependency locking and image packaging changes remain infrastructure review point 7.
+Run these against the release revision's Compose/configuration files. The image preflight must pass before running migrations; `compose run` has no `--no-build` flag. It uses existing local images unless `--build` is requested. `compose up` retains `--no-build`; no mutable default may be built or pulled during release deployment. These scripts do not deploy or publish artifacts. Release build acceptance verifies artifact identity; it does not replace application smoke tests or the integration suite. Dependency locking and image packaging changes remain infrastructure review point 7.
 
 ## Focused orchestration regression checks
 
@@ -42,4 +46,4 @@ docker compose run --rm --no-deps -v "$PWD:/workspace:ro" dependencies python3 /
 docker compose run --rm --no-deps -v "$PWD:/workspace:ro" dependencies node --test /workspace/docker/test/fixture-init.test.mjs
 ```
 
-These check successful artifact identity with no existing images, refused tag overwrites, build/setup/fixture failure gating, caller-environment isolation, initialization order and cleanup. They mock orchestration commands or HTTP responses and do not reset an application database. The point 6 live test run passed migration/seed/startup/fixture setup but its application suite was blocked in Node 26 Puppeteer/yargs global setup (`require is not defined in ES module scope`); see infrastructure review point 7.
+These check successful artifact identity with no existing images, refused tag overwrites, build/setup/fixture failure gating, caller-environment isolation, initialization order and cleanup. They mock orchestration commands or HTTP responses and do not reset an application database. The point 6 live test run passed migration/seed/startup/fixture setup but its application suite was blocked in Node 26 Puppeteer/yargs global setup (`require is not defined in ES module scope`); this was resolved in infrastructure review point 7, where all 109 application tests passed.

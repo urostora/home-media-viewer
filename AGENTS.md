@@ -12,6 +12,7 @@ Use these files in order when working on the project:
 3. Keep changes small and targeted.
 4. Run build, test, and dependency commands through Docker and use the Compose service names for database access.
 5. Preserve existing worktree changes. Report changed files, validation results, and checks that could not run.
+6. After each task or subtask finishes, remove its temporary files, credentials, fixtures, containers, and isolated Docker resources. Preserve intentional deliverables, regression tests, and pre-existing/shared resources; record validation results before cleanup.
 
 The application lives in `home-media-viewer/`; Compose files, Dockerfiles, scripts, and media fixtures live at the repository root. This is a **Next.js Pages Router + React + TypeScript** project, not a Nuxt application.
 

@@ -1,7 +1,7 @@
 /** @type {import('jest-environment-puppeteer').JestPuppeteerConfig} */
 module.exports = {
     launch: {
-        executablePath: '/usr/bin/google-chrome-stable',
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium',
         headless: 'new',
         args: [
             '--no-sandbox',

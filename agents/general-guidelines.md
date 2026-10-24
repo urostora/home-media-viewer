@@ -10,6 +10,8 @@
 - Prefer small, targeted edits over broad rewrites.
 - Reuse project utilities and established data access patterns.
 - Add basic error handling around I/O and network work.
+- After each task or subtask finishes, remove all files and containers created solely for temporary work or testing, including scratch scripts, copied fixtures, temporary credentials/certificates, logs and backup sets. Clean up task-only Docker resources as described in the execution guide.
+- Record relevant findings and validation results in durable task documentation before cleanup. Preserve intentional deliverables and reusable regression tests. Retain temporary artifacts only when the user explicitly requests it.
 
 ## Project structure
 - `home-media-viewer/src/pages/`: routes and API handlers in `api/`.
@@ -32,7 +34,7 @@
 
 ## Data and configuration
 - Reuse `src/utils/prisma/prismaImporter.ts` for Prisma access and existing API/session helpers for authentication and authorization.
-- Inspect migrations and seed behavior before schema changes. Do not reset databases or delete volumes or generated media storage without explicit task authorization.
+- Inspect migrations and seed behavior before schema changes. Do not reset databases or delete pre-existing/shared volumes or generated media storage without explicit task authorization. The cleanup rule authorizes removal of disposable test volumes created solely for the completed task or subtask.
 - Do not commit or print secrets from `.env*`, session secrets, process tokens, or personal media. Keep source media mounts read-only.
 
 ## Commits and pull requests

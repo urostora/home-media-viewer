@@ -105,7 +105,7 @@ SESSION_COOKIE_SECURE=false
 ```
 
 - **Load dependencies**
-  `docker compose run --rm dependencies bash -c "npm install"`
+  `docker compose run --rm dependencies bash -c "npm ci"`
 - **ORM (Prisma) setup**
   `docker compose run --rm dependencies bash -c "npx prisma generate"`
 - **Load database schema and run seed command**
@@ -143,7 +143,7 @@ SESSION_COOKIE_SECURE=false
 - **dependencies**
   - Run custom node commands, like
     - Node version `docker compose run --rm dependencies sh -c "node --version"`
-    - npm install `docker compose run --rm dependencies sh -c "npm install"`
+    - npm ci `docker compose run --rm dependencies sh -c "npm ci"`
     - Prisma commands
       - Generate schema classes
         `docker compose run --rm dependencies bash -c "npx prisma generate"`
@@ -164,7 +164,7 @@ Node version
 `docker compose run --rm dependencies sh -c "node --version"`
 
 Run npm commands
-`docker compose run --rm dependencies sh -c "npm install"`
+`docker compose run --rm dependencies sh -c "npm ci"`
 
 Run Prisma commands
 
@@ -269,6 +269,8 @@ It tests committed content only. The manual commands below are for a deliberatel
 
 ## Production environment
 
+See [locked container builds, packaging, platform scope and monthly update procedure](docs/container-builds.md).
+
 Create private production settings with `python3 scripts/security/create-env.py .env-prod.example .env-prod` and set ADMIN_EMAIL. Read the [production security and existing-installation transition procedure](docs/production-security.md) before starting or upgrading. Production defaults to HTTPS cookies, a loopback web listener, no published database port, and distinct runtime/migration database identities. Existing volume credentials and grants need an explicit transition.
 
 Build a committed release with the [release pipeline](scripts/build/README.md):
@@ -282,18 +284,18 @@ Set `HMV_APP_IMAGE` and `HMV_MIGRATION_IMAGE` together in the private deployment
 For a **first installation**, deploy the schema, then explicitly create the administrator before starting consumers:
 
 ```sh
-docker compose --file docker-compose-prod.yml --env-file .env-prod run --rm --no-build --pull never migration
-docker compose --file docker-compose-prod.yml --env-file .env-prod run --rm --no-build --pull never migration npx --no-install prisma db seed
+docker compose --file docker-compose-prod.yml --env-file .env-prod run --rm --pull never migration
+docker compose --file docker-compose-prod.yml --env-file .env-prod run --rm --pull never migration npx --no-install prisma db seed
 docker compose --file docker-compose-prod.yml --env-file .env-prod up -d --no-build --pull never app background scheduler
 ```
 
-Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in the deployment environment before bootstrap. The seed requires nonempty credentials in every environment and creates the configured email with a hashed password. Rerunning it preserves an existing active administrator and its password; it fails if that email belongs to an inactive or non-admin account. Migration deployment does not run the seed automatically. Development bootstrap uses `docker compose run --rm dependencies npx --no-install prisma db seed` with credentials set in the development environment file. Test bootstrap uses `docker compose --file docker-compose-test.yml --env-file .env-test run --rm --no-build --pull never migration npx --no-install prisma db seed`.
+Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in the deployment environment before bootstrap. The seed requires nonempty credentials in every environment and creates the configured email with a hashed password. Rerunning it preserves an existing active administrator and its password; it fails if that email belongs to an inactive or non-admin account. Migration deployment does not run the seed automatically. Development bootstrap uses `docker compose run --rm dependencies npx --no-install prisma db seed` with credentials set in the development environment file. Test bootstrap uses `docker compose --file docker-compose-test.yml --env-file .env-test run --rm --pull never migration npx --no-install prisma db seed`.
 
 For an **existing installation**, take a verified backup, stop consumers, select the completed release images, deploy migrations, and start the updated services only if migration succeeds:
 
 ```sh
 docker compose --file docker-compose-prod.yml --env-file .env-prod stop scheduler app background
-docker compose --file docker-compose-prod.yml --env-file .env-prod run --rm --no-build --pull never migration
+docker compose --file docker-compose-prod.yml --env-file .env-prod run --rm --pull never migration
 # Continue only after the migration command exits successfully.
 docker compose --file docker-compose-prod.yml --env-file .env-prod up -d --no-build --pull never app background scheduler
 ```

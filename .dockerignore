@@ -4,3 +4,29 @@
 **/.env*
 **/*.pem
 **/*.key
+
+# Local dependency/output trees never belong in an image context.
+**/node_modules
+**/.next
+**/coverage
+**/*.tsbuildinfo
+**/npm-debug.log*
+**/.cache
+**/.DS_Store
+.vscode
+.idea
+# Runtime data and local archives; scripts/backup remains included.
+/test/files
+/static
+/media
+/storage
+/backups
+/backup
+**/*.sql
+**/*.sql.gz
+**/*.tar
+**/*.tar.gz
+# Prisma migration SQL is an intentional build input, not a database dump.
+!home-media-viewer/prisma/migrations/**/*.sql
+**/__pycache__
+**/*.pyc

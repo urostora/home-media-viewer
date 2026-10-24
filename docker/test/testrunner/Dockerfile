@@ -1,37 +1,22 @@
-FROM node:26 as devdependencies
-
+FROM node:26.12.1-trixie@sha256:a98e6fda54fdbb22d4238054cca9a2a113bcd1191c09193a535aae22f400aa8e AS dependencies
 WORKDIR /home/node/app
-COPY ./home-media-viewer .
-RUN npm install
-RUN npx prisma generate
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+COPY ./home-media-viewer/package.json ./home-media-viewer/package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY ./home-media-viewer/prisma ./prisma
+RUN ./node_modules/.bin/prisma generate
 
+FROM node:26.12.1-trixie@sha256:a98e6fda54fdbb22d4238054cca9a2a113bcd1191c09193a535aae22f400aa8e AS browser
+# Debian Chromium supports amd64 and arm64; Puppeteer uses it instead of downloading a browser.
+RUN sed -i 's|http://deb.debian.org|https://deb.debian.org|g' /etc/apt/sources.list.d/debian.sources \
+    && apt-get update --error-on=any && apt-get install -y --no-install-recommends chromium && rm -rf /var/lib/apt/lists/*
+ENV PUPPETEER_SKIP_DOWNLOAD=true TS_NODE_PROJECT=/home/node/app/tsconfig.json PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
-FROM node:26 as testrunner
-
-ENV TS_NODE_PROJECT /home/node/app/tsconfig.json
-
-# add headless browser for puppeteer tests
-RUN apt-get update && apt-get install gnupg wget -y && \
-  wget --quiet --output-document=- https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor > /etc/apt/trusted.gpg.d/google-archive.gpg && \
-  sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' && \
-  apt-get update && \
-  apt-get install google-chrome-stable -y --no-install-recommends && \
-  rm -rf /var/lib/apt/lists/*
-
+FROM browser AS testrunner
 WORKDIR /home/node/app
-
-RUN chown -R node:node /home/node
-
-COPY --from=devdependencies --chown=node:node /home/node/app/node_modules ./node_modules
-COPY --chown=node:node ./home-media-viewer .
-
-######################################################
-# Comment out the following when the init script was changed
-######################################################
-# ARG CACHEBUST=1
-
+COPY --from=dependencies --chown=node:node /home/node/app/node_modules ./node_modules
+COPY --chown=node:node ./home-media-viewer ./
 COPY --chown=node:node --chmod=755 ./scripts/test/initTestData.sh ./scripts/initTestData.sh
-
-COPY --chown=node:node --chmod=644 ./scripts/test/initTestData.mjs ./scripts/initTestData.mjs
-
+COPY --chown=node:node ./scripts/test/initTestData.mjs ./scripts/initTestData.mjs
+RUN chown node:node /home/node/app
 USER node

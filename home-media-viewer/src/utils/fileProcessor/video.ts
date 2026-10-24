@@ -1,7 +1,5 @@
 import fs, { existsSync } from 'fs';
 import ffprobe from 'ffprobe';
-import ffprobeStatic from 'ffprobe-static';
-import pathToFfmpeg from 'ffmpeg-static';
 
 import { getFullPath, updateContentDate, updateThumbnailDate } from '../fileHelper';
 import { addDateMeta, addFloatMeta, addIntMeta, addPositionMeta, addStringMeta } from '../metaHelper';
@@ -14,6 +12,10 @@ import { type FileProcessor } from './processorFactory';
 import { MetaType } from '../metaUtils';
 import { thumbnailSizes } from '../frontend/thumbnailUtils';
 
+// Container images supply the same distribution's media tools on every supported architecture.
+const ffprobePath = process.env.FFPROBE_PATH ?? '/usr/bin/ffprobe';
+const pathToFfmpeg = process.env.FFMPEG_PATH ?? '/usr/bin/ffmpeg';
+
 const videoFileProcessor: FileProcessor = async (file: File): Promise<boolean> => {
   const path = getFullPath(file);
 
@@ -21,11 +23,11 @@ const videoFileProcessor: FileProcessor = async (file: File): Promise<boolean> =
     throw new Error(`File not found at path ${path}`);
   }
 
-  if (typeof ffprobeStatic?.path !== 'string') {
-    throw new Error('FFMpeg path not available');
+  if (!existsSync(ffprobePath)) {
+    throw new Error('FFprobe executable not available');
   }
 
-  const videoData = await ffprobe(`${path}`, { path: ffprobeStatic.path });
+  const videoData = await ffprobe(`${path}`, { path: ffprobePath });
 
   if (typeof videoData !== 'object') {
     throw new Error(`Could not read video metadata at path ${path}`);
@@ -99,7 +101,7 @@ const videoFileProcessor: FileProcessor = async (file: File): Promise<boolean> =
   //   await addIntMeta(file, MetaType.Fps, Math.round(fpsValue));
   // }
 
-  const customVideoResults = loadCustomVideoData(path, ffprobeStatic.path);
+  const customVideoResults = loadCustomVideoData(path, ffprobePath);
 
   if (customVideoResults != null) {
     // alternative creation date value
@@ -192,9 +194,9 @@ const getKeyValueFromOutputResult = (input: string, key: string): string | null 
   return null;
 };
 
-const loadCustomVideoData = (path: string, ffprobePath?: string): CustomVideoResult => {
+const loadCustomVideoData = (path: string, customFfprobePath?: string): CustomVideoResult => {
   const ret: CustomVideoResult = {};
-  const executablePath = ffprobePath ?? ffprobeStatic.path;
+  const executablePath = customFfprobePath ?? ffprobePath;
 
   const child = spawnSync(executablePath, [path], { encoding: 'utf-8' });
 
