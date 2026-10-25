@@ -1,0 +1,11 @@
+{
+  "revision": "4c70b966440414952d479f7cad30517ad2f4aa84",
+  "app": "hmv-releases/app:git-4c70b966440414952d479f7cad30517ad2f4aa84",
+  "background": "hmv-releases/app:git-4c70b966440414952d479f7cad30517ad2f4aa84",
+  "scheduler": "hmv-releases/app:git-4c70b966440414952d479f7cad30517ad2f4aa84",
+  "migration": "hmv-releases/migration:git-4c70b966440414952d479f7cad30517ad2f4aa84",
+  "image_ids": {
+    "app": "sha256:e5e3d825d46a009a6cf3689a871c60cdfd324350ed8b8f313bc039827bd4ef9a",
+    "migration": "sha256:9f3661f2ed630ab2d06644b8d24713167c2bf12755dee2a67f9f6645b95cd9b8"
+  }
+}

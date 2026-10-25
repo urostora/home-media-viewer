@@ -1,6 +1,6 @@
 # Next.js and React upgrade plan
 
-Last updated: 2026-10-25. Overall status: **Step 5 complete; repository dependencies are at Next.js 16.4.3 and React/React DOM 19.3.1, with iron-session 9 and flat ESLint. Steps 6–7 remain open.**
+Last updated: 2026-10-25. Overall status: **Steps 0–7 complete. Savepoint commit: `4c70b96`. Release and rollback manifests/images are retained in the Step 7 handoff. Deployment and registry publication have not been performed.**
 
 The requested filename is retained, but this application uses Next.js Pages Router, React and TypeScript. Upgrade the existing Pages Router application to the latest stable Next.js and React releases. Keep the current routes, API contracts, session behavior and standalone Docker deployment. App Router adoption, React Compiler adoption, database upgrades and unrelated dependency upgrades are separate work.
 
@@ -35,8 +35,8 @@ Check a task only after recording its evidence. Use **Not started**, **In progre
 | 3 | Establish React 18.3 / Next.js 15 checkpoints | **Done** | Both checkpoints built and tested; Next 15.5.28 / React 18.3.1 applied; 109 tests passed at each checkpoint |
 | 4 | Upgrade React and compatible libraries | **Done** | React 19.3.1 / types 19.3.0; strict clean install, lint/typecheck, both builds, 21 suites / 115 tests passed |
 | 5 | Upgrade Next.js and migrate build/lint/session configuration | **Done** | Next 16.4.3; typed Node proxy/session; flat ESLint; typecheck and both builds pass; 17 focused tests plus session/image/reload probes |
-| 6 | Validate full application and production packaging | Not started | Fresh fixture integration run and final-image smoke results |
-| 7 | Prepare release, rollback instructions and cleanup | Not started | Release manifest, acceptance record and cleanup confirmation |
+| 6 | Validate full application and production packaging | **Done** | Final app/migration/Node 26 browser images built; 22 suites / 118 tests passed; native/media, HTTPS, operations, scheduler and shutdown checks passed |
+| 7 | Prepare release, rollback instructions and cleanup | **Done** | Persistent release/rollback image pairs and manifests, acceptance record, schema/cookie compatibility checks and deployment runbook |
 
 ## Step 1 — Prepare isolation and a reproducible baseline
 
@@ -103,12 +103,12 @@ Acceptance: reproducible clean install, successful lint/typecheck and developmen
 
 ## Step 6 — Validate application behavior and final images
 
-- [ ] Run focused component/utility tests first, including `__tests__/components/albumDetails.test.tsx` and `pathnavigator.test.tsx`. Ensure the Puppeteer Jest preset has its required isolated app/browser environment.
-- [ ] Run full API/browser/Jest validation against a fresh migrated/seeded fixture database. Cover correct/incorrect login, protected APIs, users/albums/search, catch-all browsing/navigation, thumbnails, media playback, metadata/maps and background processing.
-- [ ] Build app, migration and test-runner images from the updated lockfile. Validate startup with the production configuration, static/public assets, generated Prisma client, bcrypt and FFmpeg/ffprobe.
-- [ ] Run `docker/test/runtime-image.test.mjs` inside the final non-root app image and the applicable security, scheduler and graceful-shutdown checks. Verify live/ready health endpoints and background/scheduler startup.
-- [ ] Inspect standalone tracing for missing runtime dependencies and stale explicit Docker COPY paths. Compare build output and startup behavior with the baseline.
-- [ ] Record command, revision, versions, result and any remaining failures here. Add targeted regression tests for behavior changed during migration.
+- [x] Run focused component/utility tests first, including `__tests__/components/albumDetails.test.tsx` and `pathnavigator.test.tsx`. Ensure the Puppeteer Jest preset has its required isolated app/browser environment.
+- [x] Run full API/browser/Jest validation against a fresh migrated/seeded fixture database. Cover correct/incorrect login, protected APIs, users/albums/search, catch-all browsing/navigation, thumbnails, media playback, metadata/maps and background processing.
+- [x] Build app, migration and test-runner images from the updated lockfile. Validate startup with the production configuration, static/public assets, generated Prisma client, bcrypt and FFmpeg/ffprobe.
+- [x] Run `docker/test/runtime-image.test.mjs` inside the final non-root app image and the applicable security, scheduler and graceful-shutdown checks. Verify live/ready health endpoints and background/scheduler startup.
+- [x] Inspect standalone tracing for missing runtime dependencies and stale explicit Docker COPY paths. Compare build output and startup behavior with the baseline.
+- [x] Record command, revision, versions, result and any remaining failures here. Add targeted regression tests for behavior changed during migration.
 
 After the implementation has a selected committed revision, use the repository's isolated workflow:
 
@@ -121,10 +121,10 @@ These wrappers validate committed content, not uncommitted edits. The test runne
 
 ## Step 7 — Release preparation, rollback and cleanup
 
-- [ ] Update this plan, dependency/build documentation and affected command examples with final versions and measured results.
-- [ ] Retain the previous release images and manifest. Prepare rollback by restoring the previous app/background/scheduler and migration image references together. This framework upgrade should introduce no database schema changes; verify schema compatibility before any deployment.
-- [ ] Prepare the release manifest and deployment checklist. After deployment is separately authorized, check login, key pages, media, health and background processing; roll back on failed acceptance.
-- [ ] Record results before removing temporary files, generated credentials, fixture copies, containers, networks, task-owned volumes/images and isolated worktrees. Use the exact task project/files/environment for cleanup. Preserve intentional release artifacts and regression tests; never prune shared resources.
+- [x] Update this plan, dependency/build documentation and affected command examples with final versions and measured results.
+- [x] Retain the previous release images and manifest. Prepare rollback by restoring the previous app/background/scheduler and migration image references together. This framework upgrade should introduce no database schema changes; verify schema compatibility before any deployment.
+- [x] Prepare the release manifest and deployment checklist. After deployment is separately authorized, check login, key pages, media, health and background processing; roll back on failed acceptance.
+- [x] Record results before removing temporary files, generated credentials, fixture copies, containers, networks, task-owned volumes/images and isolated worktrees. Use the exact task project/files/environment for cleanup. Preserve intentional release artifacts and regression tests; never prune shared resources.
 
 ## Current validation record
 
@@ -136,7 +136,9 @@ These wrappers validate committed content, not uncommitted edits. The test runne
 - **Done:** Step 3 intermediate dependency upgrades, compatibility fixes to test/lint dependencies, builds and integration validation; results below.
 - **Done:** Step 4 React 19 upgrade, scoped JSX types, map regression fix and baseline type-error fixes; lint/typecheck, both application builds and 115 tests passed.
 - **Done:** Step 5 framework/session/lint migration, typed builds, authentication and image/reload checks; savepoint commit follows this record.
-- **Not run:** Step 6 final-image integration validation and Step 7 release/deployment preparation.
+- **Done:** Step 6 final-image validation on Node 26/Chromium, 118 tests and runtime/security/media/operations probes.
+- **Done:** Step 7 local release and rollback artifacts, compatibility checks, handoff and cleanup.
+- **Not run:** Registry publication, production deployment and live production rollback; these require separate operational authorization.
 
 ## Step 1 execution record — 2026-10-25
 
@@ -192,7 +194,7 @@ Status: **Done — dependency choices and required migrations established; appli
 | `typescript-eslint` | 8.72.0 | Supports ESLint 9 and TypeScript >=4.8.4, <6.1.0; resolves matching parser/plugin 8.72.0 |
 | `typescript` | Keep 5.2.2 | Satisfies Next's >=5.1 minimum and selected lint types; scoped compiler probe passed. Latest 7.0.2 is outside the lint stack's peer range |
 | `eslint-config-prettier` / `prettier` | Keep 8.10.0 / 3.2.4 | Existing locked versions work with the tested flat configuration; avoid unrelated formatting upgrades |
-| `iron-session` | 9.0.1 in Step 5 | Current Node session/proxy API; Node >=22.13 is satisfied. Requires API/type/module migration and one-time reauthentication |
+| `iron-session` | 9.0.1 in Step 5 | Current Node session/proxy API; Node >=22.13 is satisfied. Requires API/type/module migration; pinned cookie compatibility measured in Step 7 |
 
 Remove legacy direct `eslint-config-standard-with-typescript`, `@typescript-eslint/parser`, `@typescript-eslint/eslint-plugin`, `eslint-plugin-react`, `eslint-plugin-react-hooks` and unused `eslint-plugin-prettier` entries in Step 5. The selected Next config supplies React/Hooks plugins, and `typescript-eslint` supplies the matching parser/plugin. The verified resolution selected React plugin 7.37.5 and Hooks plugin 7.1.1. Keep formatting as a separate Prettier command; retain the existing three rule exceptions when building the flat configuration.
 
@@ -218,7 +220,7 @@ The clean candidate install intentionally skipped lifecycle scripts: this step p
 
 ### Session and TypeScript migration decision for Step 5
 
-Select iron-session 9.0.1 and the Node proxy path. Preserve the cookie name, secret configuration, 14-day browser lifetime and HttpOnly/SameSite/Secure policy. v9 cannot read v6 cookies, so deployment requires existing users to sign in once; unchanged keys cannot avoid that format break. Version 8.0.4 was evaluated as a cookie-preserving bridge but is not the final target. Document reauthentication in deployment/rollback notes, and test rollback-cookie behavior explicitly. [Upstream session migration guide](https://github.com/vvo/iron-session/blob/main/MIGRATION.md)
+Select iron-session 9.0.1 and the Node proxy path. Preserve the cookie name, secret configuration, 14-day browser lifetime and HttpOnly/SameSite/Secure policy. The initial blanket reauthentication assumption was corrected in Step 7: real 6.3.1/9.0.1 session save/read succeeds in both directions for their current format-2 cookies. Legacy format-1 cookies are rejected by v9. Version 8.0.4 was evaluated as a cookie-preserving bridge but is not the final target. Document legacy-cookie sign-in behavior in deployment/rollback notes, and test rollback-cookie behavior explicitly. [Upstream session migration guide](https://github.com/vvo/iron-session/blob/main/MIGRATION.md)
 
 Migrate the shared `src/utils/sessionRoute.ts` wrapper and the direct login/logout wrappers from removed `withIronSessionApiRoute` to awaited `getIronSession<SessionData>(req, res, options)`. Replace the old `IronSessionData` augmentation with an explicit shared data type and typed request/session boundary. Update `sessionHelper.ts` from `IronSessionOptions` to `SessionOptions`. Read sessions in `src/proxy.ts` through `nextProxyCookies`; retain the exact matcher, existing 403 behavior and API-side authorization. Cover failed login, expired/tampered sessions, logout and admin checks. Step 4 fixed the recorded `/api/me` TTL/type issues and added login/me expiry-unit regression checks; retain those checks through the session migration. [Session API and adapters](https://github.com/vvo/iron-session#usage)
 
@@ -342,8 +344,82 @@ Initial strict resolution saw obsolete ESLint 6-era plugin peers in the old lock
 
 The reused browser/Jest image is still Node 20/Chrome; app, dependency commands, session probes and builds use Node 26. Step 6 will build the actual Node 26 runner and production app/migration images, verify migration-container seeding and run complete fixture/security/runtime checks. Both independent lint/typecheck and Next's build type validation now pass. No production deployment occurred.
 
-Session compatibility: pre-v8 cookies require sign-in once after upgrade; rolling back to v6 requires a fresh sign-in for cookies minted by v9. Cookie name, configured secret and 14-day policy remain unchanged. See the [upstream migration guide](https://github.com/vvo/iron-session/blob/main/MIGRATION.md).
+Session compatibility (corrected by Step 7 probes): pinned v6.3.1/v9.0.1 current cookies survive upgrade and rollback with the same password; legacy format-1 cookies require sign-in again on v9. Cookie name, configured secret and 14-day policy remain unchanged. See the [upstream migration guide](https://github.com/vvo/iron-session/blob/main/MIGRATION.md).
 
 The original development app still had Next 14 installed. Once upgraded source files were transferred, that running process rewrote `jsx` to `preserve` and patched the new lockfile with an old SWC entry. Stopped only that app, restored the validated files, refreshed shared development dependencies with Docker strict `npm ci` and Prisma generation, then restarted it on Next 16. No image rebuild or shared database migration/reset was needed. This deliberate refresh supersedes the earlier steps' decision to leave installed development dependencies unchanged.
 
 Cleanup: **complete** before the savepoint commit. Verified ownership and deliverable copies, then removed the isolated containers, volumes, network, checkout/dependencies, generated credentials and logs/scripts. Existing development services/data were preserved. No images were built or removed. `git diff --check` passed.
+
+
+## Step 6 execution record — 2026-10-25
+
+Status: **Done**. Built and validated full savepoint revision `4c70b966440414952d479f7cad30517ad2f4aa84` in a fresh isolated checkout using project `hmv-next6-6f6261a7`. Used test Compose definitions, unique image tags and revision labels, generated private settings, no published ports, fresh database/storage volumes and read-only fixtures. Built **app**, **migration** and **testrunner** once, reusing shared BuildKit cache where applicable. The app Dockerfile is also the production Dockerfile; background and scheduler use that exact app image. No production deployment or release publication was performed.
+
+The three images' inspected revision labels match the savepoint. Local image identities recorded before cleanup:
+
+| Image role | Inspected image ID |
+| --- | --- |
+| App/background/scheduler | `sha256:c007efd1e7d45c38ee5c6c759ce75176256b2193689e7170e34603d96cc92438` |
+| Migration | `sha256:3abb7783f983368b3ad78ee0edbd9288f1109ae3c33111d2991c76e5022a6958` |
+| Browser test runner | `sha256:742b8788c78f4b7facd6edecfcb6aa97578c5cb1e5dbc103953f0af614579d76` |
+
+These are local validation artifacts, not published release references. Linux **amd64** was validated. The new runner reports **Node 26.12.1, npm 11.20.0 and Chromium 156.0.8078.47 on Debian trixie**. This closes the earlier steps' Node 20 browser-runner limitation.
+
+### Commands and results
+
+Every application/test/build command ran through the isolated Compose project. Relevant commands omit only project/private-file arguments below; they never target the shared development database.
+
+| Check | Command / evidence | Result |
+| --- | --- | --- |
+| Final image builds | `build app migration testrunner`; production builder runs lint, typed Webpack build and standalone tracing | Passed; no type bypass or invalid Next configuration warnings; 31 recorded lint warnings remain |
+| Database setup | `up -d --wait db`; `run --rm --no-deps migration`; migration `npx --no-install prisma db seed` | Passed; fresh schema deploy and real migration-container seed validate the ts-node override |
+| App/background startup and fixtures | `up -d --no-build app background`; testrunner `bash ./scripts/initTestData.sh` | Passed, including metadata processing and generated media |
+| Focused component/session checks | testrunner Jest over albumDetails, pathnavigator, locationMaps and session lifecycle | **4 suites / 12 tests passed** |
+| Full fixture suite | `run --rm --no-deps testrunner npm test -- --runInBand` | **22 suites / 118 tests passed**, with no React console warnings |
+| Final non-root runtime | app `node /workspace/docker/test/runtime-image.test.mjs`, with `HMV_CHECK_FIXTURES=true` | Passed: UID 1000, Node 26, standalone entry/static/public assets, generated Prisma 5.8.1 and real query, bcrypt hash/compare, FFmpeg/ffprobe execution, processed video duration and all three generated video thumbnails; no full compiler/test/Prisma CLI tree shipped |
+| Authenticated images | testrunner `framework-live.test.mjs` | Passed: protected thumbnail delivery, image content/cache headers, optimized public image quality 75, unsupported quality rejection |
+| Media and catch-all browsing | testrunner `media-live.test.mjs` | Passed: nested-directory API browsing, processed video metadata, unauthorized rejection and authenticated HTTP 206 range playback |
+| Live health/role boundary | testrunner `operations-live.test.mjs` | Passed: web/background live/ready, no-store, unauthenticated 403, disabled web processing, bearer-only background access and durable success state |
+| Security/session library probes | Node `--test security.test.mjs session.test.mjs` | **6 tests passed**, including validation, Secure/HttpOnly/SameSite policy, real proxy/Node route cookie save/read/destroy, expired/tampered sessions |
+| HTTPS browser session | testrunner `security-browser.test.mjs`, disposable TLS proxy/assets and task-only Secure-cookie app override | Passed: browser cookie flags, cookie hidden from document.cookie, session/API access after reload, rejection over ordinary HTTP |
+| Operations failures/media shutdown | testrunner `operations.test.cjs` with `TS_NODE_PROJECT=/workspace/home-media-viewer/tsconfig.json` | Passed: concurrency bounds, storage/auth, cross-process locking, durable status, readiness failure cases and media command shutdown |
+| Scheduler | `node --experimental-vm-modules scheduler.test.mjs`, then actual scheduler start/stop from the app image | Passed: retries/success/serial calls/configuration/shutdown; actual container exit 0 |
+| Graceful server shutdown | `shutdown.test.cjs`, then actual final app `stop -t 25 app` | Passed: accepted request drained in the probe; production app logs HTTP requests drained and exits 0 |
+
+Source/bundle comparison: the same Pages Router page/API inventory and existing authorization contract remain; the build now reports a Node Proxy rather than Edge middleware and enforces TypeScript rather than skipping it. Explicit runtime dependency/asset checks, API/browser tests and real media queries establish that standalone tracing and existing Docker COPY paths remain sufficient with Next 16. The original development app was separately confirmed running Next 16.4.3 / React 19.3.1 with liveness HTTP 200 after its Step 5 dependency refresh.
+
+### Validation adjustments and remaining limits
+
+The first thumbnail probe selected the first search result after the integration suite added new, unprocessed files, producing a fixture-related 404. Updated the reusable probe to select a processed image with a processed thumbnail, then it passed. No application change or image rebuild was needed. Added `docker/test/media-live.test.mjs` for the nested browse/video acceptance checks. These Step 6 probe/documentation changes remain after the savepoint; application images were built from the unchanged savepoint source.
+
+The first source-oriented operations probe loaded modules through two source roots, so its mocked database client did not match the health handler's client. Set its `TS_NODE_PROJECT` to the mounted source tree, then all failure assertions passed. This was a test invocation adjustment; application health logic was unchanged. Existing Docker ARG-default lint warnings and the scheduler probe's expected experimental VM warning do not affect the passing results.
+
+No ARM acceptance, production deployment, external tile-service availability, published release manifest or rollback execution is claimed. Those release tasks remain Step 7 or environment-specific follow-up. Existing lint warnings are visible debt; the compiler and build gates pass.
+
+Cleanup: **complete**. Verified image revision/tag ownership and that every task volume was attached only to task containers, then removed app/background/scheduler/migration/test containers, network, both disposable volumes, all three validation image tags, temporary checkout, TLS assets, credentials, Docker configuration and probe logs/scripts. Shared base images/BuildKit cache and the original development services/data remain. `git diff --check` passed.
+
+
+## Step 7 execution record — 2026-10-25
+
+Status: **Done — release preparation complete; deployment remains separately authorized work.** Intentional handoff: [releases/next-react-2026-10-25/README.md](releases/next-react-2026-10-25/README.md), with `release.json`, `rollback.json` and `acceptance.json`. Earlier uncommitted Step 6 probe/documentation changes are preserved; no additional Git commit was made.
+
+The repository's production wrapper built and retained both image pairs using explicit source commits and prefix `hmv-releases`:
+
+```sh
+bash scripts/build/production/build-prod.sh --ref 4c70b966440414952d479f7cad30517ad2f4aa84 --image-prefix hmv-releases --manifest releases/next-react-2026-10-25/release.json
+bash scripts/build/production/build-prod.sh --ref 2d10888150179c7b13d671c728c58065b1dd4b5f --image-prefix hmv-releases --manifest releases/next-react-2026-10-25/rollback.json
+```
+
+Both commands passed. Existing BuildKit cache was reused; release output is intentionally retained rather than deleting it as disposable validation output. Manifest roles, inspected image IDs and revision labels were verified. The rollback artifact is the validated Step 4 checkpoint, **not a claim about an external host's deployed release**; the runbook requires inventory/retention of the actual deployed artifacts before deployment. No existing tags were overwritten, pushed or removed.
+
+Compatibility and validation:
+
+- Prisma schema/seed/migration tree and centralized base-image configuration are identical between both release revisions. The exact tree ID and lockfile hash are recorded in `acceptance.json`. No database/schema operation was performed for Step 7.
+- New release native/runtime packaging probe passed with the existing strict checker: non-root UID, Node 26, generated Prisma, bcrypt, media binaries, assets and no compiler tree.
+- The rollback image retained TypeScript in its older Next 15 standalone trace and therefore failed the new no-compiler packaging assertion. A separate legacy runtime probe retained every other assertion and passed; the baseline limitation is recorded prominently rather than weakening the new release checker or changing the old revision.
+- Real `getIronSession(...).save()` / session reads with versions **6.3.1** and **9.0.1**, generated credentials and the same cookie policy passed in both directions. A legacy format-1 envelope accepted by v6 is rejected by v9. This corrects the earlier assumption that all v6 cookies require forced sign-in: the pinned v6.3.1 current format is compatible. The runbook and current build documentation now reflect the measured behavior. Initial probe setup used a directory require for the ESM package and a response fixture with a misleading `headers` field; using package exports and the Node response interface fixed those setup errors before the successful actual session test.
+- Docker `dependencies python3 /workspace/docker/test/release.test.py`: **11 orchestration regression tests passed**, covering identity, existing-tag refusal, failure gating and cleanup. Step 6's 118-test acceptance belongs to the same unchanged application source revision; no unnecessary full-suite rerun was performed for this handoff-only work.
+
+The runbook includes preflight image verification, backup/schema/mount/project checks, paired image selection, migration/start commands, HTTPS/auth/admin/media/maps/health/background acceptance, rollback triggers and paired rollback commands. Deployment/rollback execution and publication are deliberately unchecked operational gates in that handoff. Local tags and image IDs require verification/transfer before use on another host; they are not registry digests.
+
+Cleanup: **complete**. Production wrappers removed their temporary image tags, private build settings and worktrees. Removed the tools project containers/networks, disposable v6 installation, generated cookie probe, temporary Docker configuration and probe/build logs/scripts after recording results. Reverified all four intentional release/rollback tags against their manifests; handoff artifacts and pre-existing/shared images/services remain. `git diff --check` passed.

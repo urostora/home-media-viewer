@@ -4,11 +4,12 @@ const login = await fetch(new URL('/api/login', base), { method: 'POST', headers
 assert.equal(login.status, 200);
 const cookie = login.headers.getSetCookie().map(value => value.split(';')[0]).join('; ');
 assert(cookie);
-const search = await fetch(new URL('/api/file/search', base), { method: 'POST', headers: { cookie, 'content-type': 'application/json' }, body: JSON.stringify({ take: 1, contentType: 'image', thumbnailStatus: 'Processed', returnThumbnails: false }) });
+const search = await fetch(new URL('/api/file/search', base), { method: 'POST', headers: { cookie, 'content-type': 'application/json' }, body: JSON.stringify({ take: 0, contentType: 'image', metadataStatus: 'Processed', returnThumbnails: false }) });
 assert.equal(search.status, 200);
 const data = await search.json();
-assert(data.data?.length);
-const thumbnail = new URL('/api/file/thumbnail/' + data.data[0].id + '/200', base);
+const file = data.data?.find(file => file.thumbnailStatus === 'Processed');
+assert(file, 'A processed image fixture is required');
+const thumbnail = new URL('/api/file/thumbnail/' + file.id + '/200', base);
 assert.equal((await fetch(thumbnail)).status, 403);
 const image = await fetch(thumbnail, { headers: { cookie } });
 assert.equal(image.status, 200);

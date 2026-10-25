@@ -1,0 +1,51 @@
+{
+  "prepared_on": "2026-10-25",
+  "platform": "linux/amd64",
+  "release_manifest": "release.json",
+  "rollback_candidate_manifest": "rollback.json",
+  "release_revision": "4c70b966440414952d479f7cad30517ad2f4aa84",
+  "rollback_candidate_revision": "2d10888150179c7b13d671c728c58065b1dd4b5f",
+  "rollback_candidate_is_known_deployed_release": false,
+  "registry_published": false,
+  "production_deployed": false,
+  "versions": {
+    "next": "16.4.3",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "iron-session": "9.0.1",
+    "node": "26.12.1",
+    "prisma": "5.8.1"
+  },
+  "release_lockfile_sha256": "022eb21eec5cca2f6b3d14e21da956ec9d1d6722194a48182ee3f1bea63a1740",
+  "prisma_tree_identical": true,
+  "prisma_tree_git_id": "ecba69e22d7cb393eaa3293d7c6c14371d8ad845",
+  "base_image_configuration_identical": true,
+  "validation": {
+    "step6_revision": "4c70b966440414952d479f7cad30517ad2f4aa84",
+    "step6_jest_suites": 22,
+    "step6_jest_tests": 118,
+    "step6_status": "passed",
+    "release_manifest_id_and_revision_labels": "passed",
+    "release_native_runtime_check": "passed",
+    "rollback_manifest_id_and_revision_labels": "passed",
+    "rollback_native_runtime_check": "passed except known baseline TypeScript trace retention; tested separately with that assertion omitted",
+    "rollback_checkpoint_jest_suites": 21,
+    "rollback_checkpoint_jest_tests": 115,
+    "release_orchestration_tests": 11,
+    "release_orchestration_status": "passed",
+    "cookie_save_read_v6_3_1_to_v9_0_1": true,
+    "cookie_save_read_v9_0_1_to_v6_3_1": true,
+    "legacy_v1_cookie_readable_by_v9": false
+  },
+  "remaining_deployment_gates": [
+    "Identify the actual deployed release and retain its manifest/images; supplied rollback is a validated checkpoint candidate.",
+    "Verify current production schema/migration state, media/volume mappings and a restorable backup.",
+    "Verify manifest image identities on the destination host; local tags are not registry digests.",
+    "Authorize deployment separately, then execute the acceptance checklist."
+  ],
+  "known_limits": [
+    "31 lint warnings remain; builds/typechecks pass.",
+    "Rollback baseline standalone image retains TypeScript; it fails the new release no-compiler packaging assertion.",
+    "No ARM validation or production deployment performed."
+  ]
+}
