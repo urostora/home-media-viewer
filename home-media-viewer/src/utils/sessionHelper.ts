@@ -1,6 +1,6 @@
-import type { IronSessionOptions } from 'iron-session';
+import type { SessionOptions } from 'iron-session';
 
-export const getIronSessionOptions = (): IronSessionOptions => {
+export const getIronSessionOptions = (): SessionOptions => {
   const isProduction = process.env.NODE_ENV === 'production';
   const secret = process.env.APP_SESSION_SECRET;
   if (secret === undefined || secret.trim().length < 32) {

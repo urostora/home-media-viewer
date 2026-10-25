@@ -1,11 +1,12 @@
-import { getIronSession } from 'iron-session/edge';
+import { getIronSession, nextProxyCookies } from 'iron-session';
+import type { SessionData } from './types/session';
 import { type NextRequest, NextResponse } from 'next/server';
 import { getApiResponse } from './utils/apiHelpers';
 import { getIronSessionOptions } from './utils/sessionHelper';
 
-export const middleware = async (req: NextRequest): Promise<NextResponse> => {
+export const proxy = async (req: NextRequest): Promise<NextResponse> => {
   const res = NextResponse.next();
-  const session = await getIronSession(req, res, getIronSessionOptions());
+  const session = await getIronSession<SessionData>(nextProxyCookies(req, res), getIronSessionOptions());
 
   const { user } = session;
 

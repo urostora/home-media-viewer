@@ -1,8 +1,7 @@
 import { getApiResponse } from '@/utils/apiHelpers';
-import { getIronSessionOptions } from '@/utils/sessionHelper';
-import { withIronSessionApiRoute } from 'iron-session/next';
+import { withSessionRoute } from '@/utils/sessionRoute';
 
-export default withIronSessionApiRoute(function logoutRoute(req, res) {
+export default withSessionRoute(function logoutRoute(req, res) {
   req.session.destroy();
   res.send(getApiResponse({ ok: true }));
-}, getIronSessionOptions());
+});

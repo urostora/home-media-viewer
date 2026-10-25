@@ -1,4 +1,4 @@
-import { withIronSessionApiRoute } from 'iron-session/next';
+import { withSessionRoute } from '@/utils/sessionRoute';
 
 import { HmvError, getApiResponseWithData, getRequestBodyObject, handleApiError } from '@/utils/apiHelpers';
 import { getIronSessionOptions } from '@/utils/sessionHelper';
@@ -61,4 +61,4 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
   }
 };
 
-export default withIronSessionApiRoute(handler, getIronSessionOptions());
+export default withSessionRoute(handler);

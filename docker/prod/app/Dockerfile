@@ -15,9 +15,11 @@ ARG TARGETARCH
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1
 COPY ./home-media-viewer/src ./src
 COPY ./home-media-viewer/public ./public
+COPY ./home-media-viewer/__tests__ ./__tests__
+COPY ./home-media-viewer/eslint.config.mjs ./eslint.config.mjs
 COPY ./home-media-viewer/tsconfig.json ./home-media-viewer/jsconfig.json ./
 COPY ./home-media-viewer/next.config.js.prod ./next.config.js
-RUN --mount=type=cache,id=hmv-next26-${TARGETARCH},target=/home/node/app/.next/cache,sharing=locked APP_SESSION_SECRET="$(node -e 'process.stdout.write(require("node:crypto").randomBytes(32).toString("hex"))')" npm run build
+RUN --mount=type=cache,id=hmv-next26-${TARGETARCH},target=/home/node/app/.next/cache,sharing=locked export APP_SESSION_SECRET="$(node -e 'process.stdout.write(require("node:crypto").randomBytes(32).toString("hex"))')" && npm run lint && npm run build
 
 FROM ${NODE_SLIM_IMAGE} AS runtime-base
 ARG DEBIAN_MIRROR=https://deb.debian.org

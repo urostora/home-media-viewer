@@ -41,6 +41,22 @@ export default function AlbumList( props: AlbumListPropsType ): JSX.Element {
         }
     };
 
+    useEffect(() => {
+        if (scrollResetCompleted || !Array.isArray(albumData)) {
+            return;
+        }
+        const lastSelectedAlbumId = ScrollPositionReset.lastAlbumSelected;
+        if (lastSelectedAlbumId === undefined) {
+            return;
+        }
+        const timeout = setTimeout(() => {
+            ScrollPositionReset.scrollToLastElement(lastSelectedAlbumId);
+            ScrollPositionReset.lastAlbumSelected = undefined;
+            setScrollResetCompleted(true);
+        }, 100);
+        return () => { clearTimeout(timeout); };
+    }, [scrollResetCompleted, albumData]);
+
     const onOrderChanged = (e: React.FormEvent<HTMLSelectElement>): void => {
         const newValue = e.currentTarget.value;
 
@@ -77,20 +93,6 @@ export default function AlbumList( props: AlbumListPropsType ): JSX.Element {
 
         return a1.name.localeCompare(a2.name) * (order === 'nameDesc' ? -1 : 1);
     });
-
-    if (!scrollResetCompleted) {
-        // scroll to last selected item
-        const lastSelectedAlbumId = ScrollPositionReset.lastAlbumSelected;
-
-        if (lastSelectedAlbumId !== undefined) {
-            setTimeout(() => {
-                ScrollPositionReset.scrollToLastElement(lastSelectedAlbumId);
-            }, 100);
-
-            ScrollPositionReset.lastAlbumSelected = undefined;
-            setScrollResetCompleted(true);
-        }
-    }
 
     return (<>
         <div className={hmvStyle.navigationBar}>

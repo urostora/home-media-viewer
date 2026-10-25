@@ -61,7 +61,7 @@ export interface FileResultType {
   albums?: AlbumConnectedData[];
 }
 
-export interface FileUpdateType extends EntityWithStatusType {}
+export type FileUpdateType = EntityWithStatusType;
 
 export interface FileMetaUpdateType {
   key: string;

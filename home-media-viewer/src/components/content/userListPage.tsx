@@ -13,10 +13,6 @@ const UserListPage = (): JSX.Element => {
     const [ users, setUsers ] = useState<UserDataType[] | null | undefined>(undefined);
     const [ error, setError ] = useState<string | null>(null);
 
-    useEffect(() => {
-        loadUsers();
-    }, []);
-
     const loadUsers = (): void => {
         setIsLoading(true);
         setError(null);
@@ -33,6 +29,10 @@ const UserListPage = (): JSX.Element => {
                 setIsLoading(false);
             });
     }
+
+    useEffect(() => {
+        loadUsers();
+    }, []);
 
     const onUserChanged = (user: UserDataType): void => {
         loadUsers();

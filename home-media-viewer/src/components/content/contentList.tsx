@@ -45,6 +45,12 @@ const ContentList = (props: ContentListPropsType): JSX.Element => {
             }
         };
 
+    const displayNextItems = (): void => {
+        if (itemsDisplayed <= data.length) {
+            setItemsDisplayed(itemsDisplayed + PAGE_SIZE);
+        }
+    };
+
     useEffect(
         () => {
             if (isScrolledToTheEnd) {
@@ -69,12 +75,6 @@ const ContentList = (props: ContentListPropsType): JSX.Element => {
             }
         }
     });
-
-    const displayNextItems = (): void => {
-        if (itemsDisplayed <= data.length) {
-            setItemsDisplayed(itemsDisplayed + PAGE_SIZE);
-        }
-    };
 
     const onContentSelectedHandler = (content: FileResultType | AlbumResultType): void => {
         if (
