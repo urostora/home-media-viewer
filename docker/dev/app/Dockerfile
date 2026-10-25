@@ -23,7 +23,7 @@ VOLUME /mnt/storage
 VOLUME /home/node/app
 
 USER root
-ENV PORT 3000
+ENV PORT=3000
 
 # CMD crond && npm run dev
 CMD env >> /etc/environment && service cron start && npm run dev
