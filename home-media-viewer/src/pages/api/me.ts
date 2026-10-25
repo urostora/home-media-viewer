@@ -11,7 +11,7 @@ import prisma from '@/utils/prisma/prismaImporter';
 const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
   const isAuthenticated = req?.session?.user?.id != null;
 
-  if (!isAuthenticated == null) {
+  if (!isAuthenticated) {
     res.status(403).send(getApiResponse({ ok: false, error: 'No user is authenticated' }));
     return;
   }
@@ -25,13 +25,15 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
     return;
   }
 
+  const sessionDurationSeconds = getIronSessionOptions().cookieOptions?.maxAge ?? 14 * 24 * 60 * 60;
+
   res.send(
     getApiResponseWithData<LoginResponseDataType>({
       name: user.name,
       email: user.email,
       isAdmin: user.isAdmin,
-      sessionExpiresOn: new Date().getTime() + getIronSessionOptions().cookieOptions.ttl,
-      sessionExpiresInSeconds: getIronSessionOptions().cookieOptions.ttl,
+      sessionExpiresOn: Date.now() + sessionDurationSeconds * 1000,
+      sessionExpiresInSeconds: sessionDurationSeconds,
     }),
   );
 };

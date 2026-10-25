@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { type JSX, useState } from "react";
 import { type Bounds, Map } from "pigeon-maps"
 
 import hmvStyle from '@/styles/hmv.module.scss';
@@ -27,6 +27,9 @@ export interface ContentFilterPropsType {
     onFilterChanged?: (filter: ContentFilterType) => void,
     currentFilter?: ContentFilterType
 }
+
+// Pigeon Maps injects layout props into direct children. Keep them off the DOM.
+const MapCenter = (): JSX.Element => <div className={hmvStyle.mapCenter}></div>;
 
 const ContentFilter = (props: ContentFilterPropsType): JSX.Element => {
     const { onFilterChanged, currentFilter = null } = props;
@@ -222,9 +225,7 @@ const ContentFilter = (props: ContentFilterPropsType): JSX.Element => {
                 </div>
                 <div className={hmvStyle.filterMap}>
                     <Map defaultCenter={[ finalFilter?.location?.latitude ?? defaultCenter.latitude, finalFilter?.location?.longitude ?? defaultCenter.longitude]} defaultZoom={defaultZoom} zoom={finalFilter?.location?.zoom ?? defaultZoom} onBoundsChanged={handleMapBoundsChanged}>
-                        <>
-                            <div className={hmvStyle.mapCenter}></div>
-                        </>
+                        <MapCenter />
                     </Map>
                 </div>
             </div>

@@ -20,11 +20,11 @@ export const getTestFilesInPath = (path: string, flattened: boolean = false): Te
 
   for (const part of pathParts) {
     const partFile = currentPathFiles.find((f) => f.name === part && f.isDirectory);
-    if (partFile === null || !Array.isArray(partFile?.files)) {
+    if (partFile === undefined || !Array.isArray(partFile.files)) {
       throw Error(`Could not get test files from path ${path}`);
     }
 
-    currentPathFiles = partFile?.files;
+    currentPathFiles = partFile.files;
   }
 
   return flattened ? getAllChildrenFlattened(currentPathFiles) : currentPathFiles;

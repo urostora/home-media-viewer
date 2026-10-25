@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { type JSX, useState, useEffect } from 'react';
 
 import UserList from './userList';
 import { apiLoadUsers } from '@/utils/frontend/dataSource/user';

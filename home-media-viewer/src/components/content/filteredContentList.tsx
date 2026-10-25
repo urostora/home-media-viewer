@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { type JSX, useState, useEffect } from 'react';
 import { type FileResultType, type FileSearchType } from "@/types/api/fileTypes";
 import { apiLoadFiles } from '@/utils/frontend/dataSource/file';
 import ContentList from './contentList';

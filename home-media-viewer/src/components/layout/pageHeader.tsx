@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import MainMenu from '@/components/layout/mainMenu'
 import TitleArea from '@/components/layout/titleArea';
 import hmvStyle from '@/styles/hmv.module.scss';

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { type JSX, useState } from 'react';
 
 import { apiAddUser, apiEditUser, apiGetUserData, apiUserAlbumConnection } from '@/utils/frontend/dataSource/user';
 import { apiLoadAlbums } from '@/utils/frontend/dataSource/album';

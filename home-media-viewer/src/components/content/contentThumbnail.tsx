@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { type ReactElement } from "react";
+import { type JSX, type ReactElement } from "react";
 
 import { type FileMetadataType, type FileResultType } from "@/types/api/fileTypes";
 import { MetaType, contentSizeToString, durationInSecToString } from "@/utils/metaUtils";

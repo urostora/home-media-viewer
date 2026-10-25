@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import { type UserDataType } from "@/types/api/userTypes";
 import UserRowItem from './userRowItem';
 

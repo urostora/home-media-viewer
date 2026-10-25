@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import { getVersionString } from "@/utils/package";
 
 import style from '@/styles/hmv.module.scss';

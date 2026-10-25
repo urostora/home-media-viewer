@@ -1,4 +1,4 @@
-import { useState, useEffect, type ReactElement } from 'react'
+import { type JSX, useState, useEffect, type ReactElement } from 'react'
 import Head from 'next/head'
 
 import LayoutLoggedIn from '@/components/layout/layoutLoggedIn'

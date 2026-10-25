@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { type JSX, useState, useEffect } from 'react'
 
 import ContentFilter, { type ContentFilterType } from '@/components/content/filter/contentFilter';
 import ContentList from '@/components//content/contentList';

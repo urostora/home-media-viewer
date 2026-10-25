@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import { useRouter } from 'next/router'
 
 import Browser from '@/components/browser';

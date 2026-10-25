@@ -1,4 +1,4 @@
-import { useContext } from 'react';
+import { type JSX, useContext } from 'react';
 
 import { AuthContext } from '@/components/auth/authContext';
 

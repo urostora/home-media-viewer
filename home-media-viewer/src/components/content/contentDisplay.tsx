@@ -1,6 +1,6 @@
 import { type FileResultType } from "@/types/api/fileTypes"
 import hmvStyle from '@/styles/hmv.module.scss';
-import { type ReactElement } from "react";
+import { type JSX, type ReactElement } from "react";
 import { getContentUrl, getThumbnailUrl, isImageByExtension, isVideoByExtension } from "@/utils/frontend/contentUtils";
 import { thumbnailSize } from "@/utils/frontend/thumbnailUtils";
 

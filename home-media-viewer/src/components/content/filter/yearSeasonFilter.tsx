@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import style from '@/styles/hmv.module.scss';
 
 export interface YearSeasonFilterPropsType {

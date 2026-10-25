@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import { type AuthData } from "../auth/authContext";
 import Login from "../auth/login";
 

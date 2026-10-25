@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import { useRouter } from 'next/router';
 
 import AlbumList from '@/components/albumList';

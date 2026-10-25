@@ -28,5 +28,8 @@ describe('web/api/login', () => {
     expect(response.ok).toBe(true);
     expect(response?.data?.email).toBe(email);
     expect(response?.data?.isAdmin).toBe(true);
+    expect(response.data?.sessionExpiresInSeconds).toBe(14 * 24 * 60 * 60);
+    expect(response.data?.sessionExpiresOn).toBeGreaterThan(Date.now() + 13 * 24 * 60 * 60 * 1000);
+    expect(response.data?.sessionExpiresOn).toBeLessThanOrEqual(Date.now() + 14 * 24 * 60 * 60 * 1000);
   });
 });

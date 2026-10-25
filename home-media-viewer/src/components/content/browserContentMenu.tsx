@@ -1,4 +1,4 @@
-import { type MouseEventHandler, useState } from "react";
+import { type JSX, type MouseEventHandler, useState } from "react";
 
 import { apiFileActivate, apiFileDelete, apiFileDisable, apiFileRefreshMetadata, apiGetFile } from "@/utils/frontend/dataSource/file";
 import { apiAlbumAdd, apiAlbumUpdate } from "@/utils/frontend/dataSource/album";
@@ -228,7 +228,7 @@ const BrowseContentMenu = (props: BrowseContentMenuProps): JSX.Element => {
         }
     }
 
-    if (typeof fileData === 'object' && Array.isArray(fileData?.albums) && !fileData.isDirectory) {
+    if (fileData != null && Array.isArray(fileData.albums) && !fileData.isDirectory) {
         for(const album of fileData.albums) {
             menuList.push({
                 key: `${OperationCode.setThumbnail}-${album.id}`,

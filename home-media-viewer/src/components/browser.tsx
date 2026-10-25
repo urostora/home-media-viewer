@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import BrowserContentList from "./content/browserContentList";
 import PathNavigator from "./content/pathNavigator";
 import hmvStyle from '@/styles/hmv.module.scss';

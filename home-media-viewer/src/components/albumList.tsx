@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { type JSX, useEffect, useState } from "react";
 
 import { apiLoadAlbums } from "@/utils/frontend/dataSource/album";
 import ContentList from "./content/contentList";

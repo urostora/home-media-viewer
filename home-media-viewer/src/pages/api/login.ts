@@ -53,7 +53,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
         email: user.email,
         isAdmin: user.isAdmin,
         sessionExpiresOn: new Date().getTime() + (sessionOptions?.cookieOptions?.maxAge ?? 24 * 60 * 60) * 1000,
-        sessionExpiresInSeconds: (sessionOptions?.cookieOptions?.maxAge ?? 24 * 60 * 60) * 1000,
+        sessionExpiresInSeconds: sessionOptions?.cookieOptions?.maxAge ?? 24 * 60 * 60,
       }),
     );
   } catch (e) {

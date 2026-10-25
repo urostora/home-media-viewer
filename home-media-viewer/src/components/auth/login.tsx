@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from "react";
+import { type JSX, type FormEvent, useState } from "react";
 
 import { apiLogin } from "@/utils/frontend/dataSource/auth";
 import { type AuthData } from "./authContext";

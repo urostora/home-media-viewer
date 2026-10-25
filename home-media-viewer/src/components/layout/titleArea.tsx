@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import hmvStyle from '@/styles/hmv.module.scss';
 import Link from 'next/link';
 

@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import UserListPage from '@/components/content/userListPage';
 
 const UsersPage = (): JSX.Element => <UserListPage />;

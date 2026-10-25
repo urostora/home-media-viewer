@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import type { AlbumExtendedResultType } from "@/types/api/albumTypes";
 
 import hmvStyle from '@/styles/hmv.module.scss';
