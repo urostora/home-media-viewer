@@ -36,5 +36,4 @@ RUN mkdir -p /mnt/storage && chown node:node /mnt/storage
 USER node
 ENV HOSTNAME=0.0.0.0
 EXPOSE 3000
-VOLUME /mnt/storage
 CMD ["sh", "-ec", "node validateProductionConfig.mjs && exec node startServer.cjs"]

@@ -8,5 +8,3 @@ RUN mkdir -p /etc/ssl/certs \
 ENV TS_NODE_PROJECT=/home/node/app/tsconfig.json PUPPETEER_SKIP_DOWNLOAD=true PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 WORKDIR /home/node/app
 RUN mkdir -p /home/node/scripts
-VOLUME /home/node/app
-VOLUME /home/node/scripts

@@ -1,0 +1,7 @@
+# Maintenance only: combine with docker-compose-prod.yml after a restored-data rehearsal.
+# Use the deliberately selected/pinned DB image in that release's production definition.
+services:
+  db:
+    restart: "no"
+    environment:
+      MARIADB_AUTO_UPGRADE: "1"

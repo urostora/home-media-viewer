@@ -269,6 +269,8 @@ It tests committed content only. The manual commands below are for a deliberatel
 
 ## Production environment
 
+Use the [database lifecycle and unified update/rollback procedure](docs/database-lifecycle.md) for stable Compose project/volume mappings, existing-installation addressing, separate MariaDB upgrades and recovery. Production commands must use the existing project explicitly (`-p PROJECT`); the abbreviated commands below assume that project is already selected.
+
 See [locked container builds, packaging, platform scope and monthly update procedure](docs/container-builds.md).
 
 Create private production settings with `python3 scripts/security/create-env.py .env-prod.example .env-prod` and set ADMIN_EMAIL. Read the [production security and existing-installation transition procedure](docs/production-security.md) before starting or upgrading. Production defaults to HTTPS cookies, a loopback web listener, no published database port, and distinct runtime/migration database identities. Existing volume credentials and grants need an explicit transition.

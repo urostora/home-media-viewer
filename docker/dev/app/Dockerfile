@@ -15,9 +15,6 @@ RUN mkdir -p /mnt/storage
 RUN chown -R node:node /mnt/storage
 
 EXPOSE 3000
-VOLUME /mnt/albums
-VOLUME /mnt/storage
-VOLUME /home/node/app
 
 USER root
 ENV PORT=3000

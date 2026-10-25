@@ -37,6 +37,8 @@ Use the recorded application revision and MariaDB server version/image first. Lo
 
 Never restore these logical SQL files as raw files under /var/lib/mysql. For legacy **physical** archives, use a mariadb-backup tool compatible with the original server version (prefer the same exact release), run `mariadb-backup --prepare --target-dir=...` on a separate extracted copy, stop MariaDB, use an empty datadir, run `--copy-back`, restore datadir ownership to the image's mysql UID/GID, then start the original server version and verify it before considering upgrades. Never copy live physical files over a running server. The replaced legacy script did not establish preparation or integrity; do not assume its archives are recoverable. See [MariaDB physical recovery](https://mariadb.com/docs/server/server-usage/backup-and-restore/mariadb-backup/full-backup-and-restore-with-mariadb-backup).
 
+See the [database lifecycle and update/rollback runbook](../../docs/database-lifecycle.md) for persistent project/volume mapping and a separate MariaDB server upgrade rehearsal.
+
 ## Recovery policy and operational checklist
 
 | Data | Policy |
