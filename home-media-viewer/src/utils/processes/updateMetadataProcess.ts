@@ -1,3 +1,6 @@
+import { withIndexingLock } from './indexingState';
+import { getWorkerCount } from './processConfig';
+
 import { syncAlbumFiles } from '@/utils/albumHelper';
 import { loadMetadata } from '@/utils/fileHelper';
 
@@ -37,151 +40,164 @@ const updateMetadataProcess = {
     processTimeout: number = 50,
     threadCount: number = 2,
     albumToProcess: string | null = null,
-  ): Promise<MetadataProcessStatistics | undefined> => {
-    if (isDevEnv) {
-      threadCount = 1;
-    }
-
-    const activeAlbums = await prisma.album.findMany({
-      where: { id: albumToProcess ?? undefined, status: { in: ['Active', 'Disabled'] } },
-      orderBy: { basePath: 'asc' },
-    });
-
-    const startedOn = Date.now();
-
-    const parallelJobs: Array<Promise<boolean>> = [];
-
-    // console.log(
-    //   `[${new Date().toLocaleDateString('hu-HU')} ${new Date().toLocaleTimeString('hu-HU')}] updateMetadataProcess${
-    //     isDevEnv ? ' (DEV settings)' : ''
-    //   } started with ${threadCount} threads, time limit is ${processTimeout} (${activeAlbums.length} albums found)`,
-    // );
-
-    for (const album of activeAlbums) {
-      if (typeof albumToProcess === 'string' && albumToProcess !== album.id) {
-        continue;
+  ): Promise<MetadataProcessStatistics | undefined> =>
+    await withIndexingLock(async () => {
+      if (isShuttingDownHandler.isShuttingDown()) return;
+      threadCount = getWorkerCount(threadCount);
+      let failures = 0;
+      if (isDevEnv) {
+        threadCount = 1;
       }
 
-      try {
-        await syncAlbumFiles(album.id);
-      } catch (e) {
-        console.error(`  ERROR while syncing album ${album.name} (${album.id}) files: ${e}`);
-      }
-
-      if (isShuttingDownHandler.isShuttingDown()) {
-        console.log('Exit background process (1) - Shutting down');
-        return;
-      }
-    }
-
-    const directorySyncTimeInMs = Math.floor(Date.now() - startedOn);
-
-    let processedFileCount = 0;
-    let processedDirectoryCount = 0;
-
-    for (const album of activeAlbums) {
-      if (typeof albumToProcess === 'string' && albumToProcess !== album.id) {
-        continue;
-      }
-
-      if (startedOn + processTimeout * 1000 < Date.now()) {
-        const timedOutAfter = Math.floor((Date.now() - startedOn) / 1000);
-        console.log(`UpdateMetadataProcess timed out after ${timedOutAfter}s`);
-        break;
-      }
-
-      const filesUnprocessed = await prisma.file.findMany({
-        where: {
-          AND: [
-            { albums: { some: { id: album.id } }, status: 'Active' },
-            { OR: [{ metadataStatus: 'New' }, { isDirectory: true }] },
-          ],
-        },
+      const activeAlbums = await prisma.album.findMany({
+        where: { id: albumToProcess ?? undefined, status: { in: ['Active', 'Disabled'] } },
+        orderBy: { basePath: 'asc' },
       });
 
-      if (filesUnprocessed.length === 0) {
-        continue;
-      }
+      const startedOn = Date.now();
 
-      if (filesUnprocessed.filter((f) => !f.isDirectory).length > 0) {
-        console.log(`  ${filesUnprocessed.length} unprocessed files found in album ${album.name} (${album.id})`);
-      }
+      const parallelJobs: Array<Promise<boolean>> = [];
 
-      for (const file of filesUnprocessed) {
-        if (file.isDirectory) {
-          processedDirectoryCount++;
-        } else {
-          processedFileCount++;
+      // console.log(
+      //   `[${new Date().toLocaleDateString('hu-HU')} ${new Date().toLocaleTimeString('hu-HU')}] updateMetadataProcess${
+      //     isDevEnv ? ' (DEV settings)' : ''
+      //   } started with ${threadCount} threads, time limit is ${processTimeout} (${activeAlbums.length} albums found)`,
+      // );
+
+      for (const album of activeAlbums) {
+        if (typeof albumToProcess === 'string' && albumToProcess !== album.id) {
+          continue;
         }
 
-        parallelJobs.push(loadMetadata(file));
+        try {
+          await syncAlbumFiles(album.id);
+        } catch (e) {
+          failures++;
+          console.error(`  ERROR while syncing album ${album.name} (${album.id}) files: ${e}`);
+        }
 
-        if (parallelJobs.length >= threadCount) {
+        if (isShuttingDownHandler.isShuttingDown()) {
+          console.log('Exit background process (1) - Shutting down');
+          return;
+        }
+      }
+
+      const directorySyncTimeInMs = Math.floor(Date.now() - startedOn);
+
+      let processedFileCount = 0;
+      let processedDirectoryCount = 0;
+
+      for (const album of activeAlbums) {
+        if (typeof albumToProcess === 'string' && albumToProcess !== album.id) {
+          continue;
+        }
+
+        if (startedOn + processTimeout * 1000 < Date.now()) {
+          const timedOutAfter = Math.floor((Date.now() - startedOn) / 1000);
+          console.log(`UpdateMetadataProcess timed out after ${timedOutAfter}s`);
+          break;
+        }
+
+        const filesUnprocessed = await prisma.file.findMany({
+          where: {
+            AND: [
+              { albums: { some: { id: album.id } }, status: 'Active' },
+              { OR: [{ metadataStatus: 'New' }, { isDirectory: true }] },
+            ],
+          },
+        });
+
+        if (filesUnprocessed.length === 0) {
+          continue;
+        }
+
+        if (filesUnprocessed.filter((f) => !f.isDirectory).length > 0) {
+          console.log(`  ${filesUnprocessed.length} unprocessed files found in album ${album.name} (${album.id})`);
+        }
+
+        for (const file of filesUnprocessed) {
+          if (file.isDirectory) {
+            processedDirectoryCount++;
+          } else {
+            processedFileCount++;
+          }
+
+          parallelJobs.push(
+            loadMetadata(file).then((ok) => {
+              if (!ok) failures++;
+              return ok;
+            }),
+          );
+
+          if (parallelJobs.length >= threadCount) {
+            try {
+              const results = await Promise.allSettled(parallelJobs);
+              failures += results.filter((result) => result.status === 'rejected').length;
+            } catch (e) {
+              console.error(`  ERROR while loading metadata: ${e}`);
+            }
+
+            void parallelJobs.splice(0, parallelJobs.length);
+
+            if (isShuttingDownHandler.isShuttingDown()) {
+              console.log('Exit background process (2) - Shutting down');
+              return;
+            }
+
+            if (startedOn + processTimeout * 1000 < Date.now()) {
+              break;
+            }
+
+            if (isDevEnv) {
+              // decrease load on dev environment
+              await new Promise((resolve) => setTimeout(resolve, 300));
+            }
+          }
+        }
+
+        if (parallelJobs.length > 0) {
           try {
-            await Promise.all(parallelJobs);
+            const results = await Promise.allSettled(parallelJobs);
+            failures += results.filter((result) => result.status === 'rejected').length;
           } catch (e) {
-            console.error(`  ERROR while loading metadata: ${e}`);
+            console.error(`  ERROR whole loading metadata: ${e}`);
           }
 
           void parallelJobs.splice(0, parallelJobs.length);
-
-          if (isShuttingDownHandler.isShuttingDown()) {
-            console.log('Exit background process (2) - Shutting down');
-            return;
-          }
-
-          if (startedOn + processTimeout * 1000 < Date.now()) {
-            break;
-          }
-
-          if (isDevEnv) {
-            // decrease load on dev environment
-            await new Promise((resolve) => setTimeout(resolve, 300));
-          }
-        }
-      }
-
-      if (parallelJobs.length > 0) {
-        try {
-          await Promise.all(parallelJobs);
-        } catch (e) {
-          console.error(`  ERROR whole loading metadata: ${e}`);
         }
 
-        void parallelJobs.splice(0, parallelJobs.length);
+        if (isShuttingDownHandler.isShuttingDown()) {
+          console.log('Exit background process (3) - Shutting down');
+          return;
+        }
+
+        // console.log(`  Album ${album.name} processing finished`);
       }
 
-      if (isShuttingDownHandler.isShuttingDown()) {
-        console.log('Exit background process (3) - Shutting down');
-        return;
-      }
+      // const processingTimeInSec = Math.floor((Date.now() - startedOn) / 1000);
+      // console.log(
+      //   `[${new Date().toLocaleDateString('hu-HU')} ${new Date().toLocaleTimeString(
+      //     'hu-HU',
+      //   )}] updateMetadataProcess finished in ${processingTimeInSec}s`,
+      // );
 
-      // console.log(`  Album ${album.name} processing finished`);
-    }
+      const processStatistics = {
+        isDeveloperEnvironment: isDevEnv,
+        lastProcessedOn: new Date(),
+        threadCount,
+        processTimeoutInSec: processTimeout,
+        processedAlbumCount: activeAlbums.length,
+        processedDirectoryCount,
+        processedFileCount,
+        directorySyncTimeInMs,
+        fullProcessingTimeSec: Math.floor((Date.now() - startedOn) / 1000),
+      };
 
-    // const processingTimeInSec = Math.floor((Date.now() - startedOn) / 1000);
-    // console.log(
-    //   `[${new Date().toLocaleDateString('hu-HU')} ${new Date().toLocaleTimeString(
-    //     'hu-HU',
-    //   )}] updateMetadataProcess finished in ${processingTimeInSec}s`,
-    // );
+      if (failures > 0) throw new Error(`Indexing encountered ${failures} failures`);
+      lastStatistics.setLastStatistics(processStatistics);
 
-    const processStatistics = {
-      isDeveloperEnvironment: isDevEnv,
-      lastProcessedOn: new Date(),
-      threadCount,
-      processTimeoutInSec: processTimeout,
-      processedAlbumCount: activeAlbums.length,
-      processedDirectoryCount,
-      processedFileCount,
-      directorySyncTimeInMs,
-      fullProcessingTimeSec: Math.floor((Date.now() - startedOn) / 1000),
-    };
-
-    lastStatistics.setLastStatistics(processStatistics);
-
-    return processStatistics;
-  },
+      return processStatistics;
+    }),
 };
 
 export default updateMetadataProcess;

@@ -72,6 +72,8 @@ services:
         condition: service_completed_successfully
     environment:
       APP_ALBUM_ROOT_PATH: ${APP_ALBUM_ROOT_PATH}
+      APP_STORAGE_PATH: ${APP_STORAGE_PATH:-/mnt/storage}
+      APP_THUMBNAIL_SUBDIRECTORY: ${APP_THUMBNAIL_SUBDIRECTORY:-thumbnail}
       DATABASE_URL: ${DATABASE_URL}
       LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
       PROCESS_TOKEN: ${PROCESS_TOKEN}
@@ -97,6 +99,22 @@ services:
           cpus: "2"
           memory: 800m
 
+  scheduler:
+    image: "node:26.12.1-trixie@sha256:a98e6fda54fdbb22d4238054cca9a2a113bcd1191c09193a535aae22f400aa8e"
+    profiles: [scheduled]
+    init: true
+    working_dir: /home/node/app
+    command: ["node", "runBackgroundScheduler.mjs"]
+    depends_on: [app]
+    environment:
+      BACKGROUND_URL: http://app:3000
+      PROCESS_TOKEN: ${PROCESS_TOKEN}
+      LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
+    volumes:
+      - ./home-media-viewer:/home/node/app:ro
+    networks:
+      - home-media-dev-network
+
   testrunner:
     container_name: media-viewer-dev-testrunner
     hostname: media-viewer-dev-testrunner
@@ -108,6 +126,8 @@ services:
       - app
     environment:
       APP_ALBUM_ROOT_PATH: ${APP_ALBUM_ROOT_PATH}
+      APP_STORAGE_PATH: ${APP_STORAGE_PATH:-/mnt/storage}
+      APP_THUMBNAIL_SUBDIRECTORY: ${APP_THUMBNAIL_SUBDIRECTORY:-thumbnail}
       DATABASE_URL: ${DATABASE_URL}
       LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
       APP_SESSION_SECRET: ${APP_SESSION_SECRET}

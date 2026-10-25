@@ -1,6 +1,23 @@
 version: "3"
+x-logging: &bounded-logging
+  driver: local
+  options:
+    max-size: "10m"
+    max-file: "3"
+x-app-health: &app-health
+  test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health/ready', {signal: AbortSignal.timeout(12000)}).then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+  interval: 30s
+  timeout: 15s
+  retries: 3
+  start_period: 60s
 services:
   db:
+    restart: unless-stopped
+    logging: *bounded-logging
+    cpus: ${DB_CPUS:-1.0}
+    mem_limit: ${DB_MEMORY:-1g}
+    stop_grace_period: 60s
+    command: ["--innodb-buffer-pool-size=${DB_BUFFER_POOL_SIZE:-384M}", "--max-connections=${DB_MAX_CONNECTIONS:-40}"]
     container_name: home-media-viewer-db
     hostname: home-media-viewer-db
     image: "mariadb:13.0.2-resolute@sha256:0e4bb0f339feba125d1154fbacd36c16ec8518f52e44e1f82ecec7d6771caf39"
@@ -26,11 +43,17 @@ services:
       - home-media-network
 
   scheduler:
+    restart: unless-stopped
+    logging: *bounded-logging
     image: ${HMV_APP_IMAGE:-urostora/home-media-viewer/app:latest}
     init: true
+    cpus: ${SCHEDULER_CPUS:-0.25}
+    mem_limit: ${SCHEDULER_MEMORY:-128m}
+    stop_grace_period: 20s
     command: ["sh", "-ec", "node validateProductionConfig.mjs scheduler && exec node runBackgroundScheduler.mjs"]
     depends_on:
-      - background
+      background:
+        condition: service_healthy
     environment:
       BACKGROUND_URL: http://background:3000
       PROCESS_TOKEN: ${PROCESS_TOKEN:?Set PROCESS_TOKEN in the private production environment file}
@@ -39,7 +62,14 @@ services:
       - home-media-network
 
   background:
+    restart: unless-stopped
+    logging: *bounded-logging
     image: ${HMV_APP_IMAGE:-urostora/home-media-viewer/app:latest}
+    init: true
+    cpus: ${BACKGROUND_CPUS:-2.0}
+    mem_limit: ${BACKGROUND_MEMORY:-2g}
+    stop_grace_period: 180s
+    healthcheck: *app-health
     container_name: home-media-viewer-background
     hostname: home-media-viewer-background
     depends_on:
@@ -49,6 +79,11 @@ services:
         condition: service_completed_successfully
     environment:
       APP_ALBUM_ROOT_PATH: ${APP_ALBUM_ROOT_PATH}
+      APP_STORAGE_PATH: ${APP_STORAGE_PATH:-/mnt/storage}
+      APP_THUMBNAIL_SUBDIRECTORY: ${APP_THUMBNAIL_SUBDIRECTORY:-thumbnail}
+      DB_CONNECTION_LIMIT: ${DB_CONNECTION_LIMIT:-5}
+      MEDIA_WORKERS: ${MEDIA_WORKERS:-2}
+      MIN_STORAGE_FREE_BYTES: ${MIN_STORAGE_FREE_BYTES:-268435456}
       DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in the private production environment file}
       LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
       TS_NODE_PROJECT: /home/node/app/tsconfig.json
@@ -58,12 +93,19 @@ services:
       IS_BACKGROUND_PROCESS_ENABLED: 1
     volumes:
       - ./test/files:${APP_ALBUM_ROOT_PATH}:ro
-      - home-media-storage:${APP_STORAGE_PATH}
+      - home-media-storage:${APP_STORAGE_PATH:-/mnt/storage}
     networks:
       - home-media-network
 
   app:
+    restart: unless-stopped
+    logging: *bounded-logging
     image: ${HMV_APP_IMAGE:-urostora/home-media-viewer/app:latest}
+    init: true
+    cpus: ${APP_CPUS:-1.0}
+    mem_limit: ${APP_MEMORY:-1g}
+    stop_grace_period: 180s
+    healthcheck: *app-health
     container_name: home-media-viewer-app
     hostname: home-media-viewer-app
     build:
@@ -77,6 +119,11 @@ services:
         condition: service_completed_successfully
     environment:
       APP_ALBUM_ROOT_PATH: ${APP_ALBUM_ROOT_PATH}
+      APP_STORAGE_PATH: ${APP_STORAGE_PATH:-/mnt/storage}
+      APP_THUMBNAIL_SUBDIRECTORY: ${APP_THUMBNAIL_SUBDIRECTORY:-thumbnail}
+      DB_CONNECTION_LIMIT: ${DB_CONNECTION_LIMIT:-5}
+      MEDIA_WORKERS: ${MEDIA_WORKERS:-2}
+      MIN_STORAGE_FREE_BYTES: ${MIN_STORAGE_FREE_BYTES:-268435456}
       DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in the private production environment file}
       LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
       APP_SESSION_SECRET: ${APP_SESSION_SECRET:?Set APP_SESSION_SECRET in the private production environment file}
@@ -86,13 +133,14 @@ services:
       IS_BACKGROUND_PROCESS_ENABLED: 0
     volumes:
       - ./test/files:${APP_ALBUM_ROOT_PATH}:ro
-      - home-media-storage:${APP_STORAGE_PATH}
+      - home-media-storage:${APP_STORAGE_PATH:-/mnt/storage}
     ports:
       - "${WEB_BIND_ADDRESS:-127.0.0.1}:${WEB_PORT:-25080}:3000"
     networks:
       - home-media-network
 
   migration:
+    logging: *bounded-logging
     command: ["npx", "--no-install", "prisma", "migrate", "deploy"]
     restart: "no"
     image: ${HMV_MIGRATION_IMAGE:-urostora/home-media-viewer/migration:latest}

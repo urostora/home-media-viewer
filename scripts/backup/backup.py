@@ -105,7 +105,7 @@ def main():
                 raise ValueError('Create the selected app container first (it must be stopped)')
             env = dict(item.split('=', 1) for item in app['Config']['Env'])
             media_path = env.get('APP_ALBUM_ROOT_PATH')
-            for key, target in [('storage', '/mnt/storage'), ('media', media_path)]:
+            for key, target in [('storage', env.get('APP_STORAGE_PATH', '/mnt/storage')), ('media', media_path)]:
                 matches = [m for m in app['Mounts'] if m['Destination'] == target]
                 if len(matches) != 1 or matches[0]['Type'] not in ('volume', 'bind'):
                     raise ValueError('Expected explicit mount at ' + str(target))

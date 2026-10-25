@@ -4,7 +4,7 @@ const token = process.env.PROCESS_TOKEN;
 if (!token) throw new Error('PROCESS_TOKEN is required');
 
 const endpoint = new URL('/api/process/updateMetadata', process.env.BACKGROUND_URL);
-endpoint.searchParams.set('token', token);
+
 
 const intervalMs = 180_000;
 const timeoutMs = (Number(process.env.LONG_PROCESS_TIMEOUT_SEC ?? 120) + 60) * 1000;
@@ -22,9 +22,14 @@ while (!shutdown.signal.aborted) {
   try {
     await setTimeout(intervalMs, undefined, { signal: shutdown.signal });
     const response = await fetch(endpoint, {
+      headers: { Authorization: `Bearer ${token}` },
       signal: AbortSignal.any([shutdown.signal, AbortSignal.timeout(timeoutMs)]),
     });
     await response.body?.cancel();
+    if (response.status === 409) {
+      console.error('Background indexing locked; inspect status if this persists');
+      continue;
+    }
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     console.log('Background indexing completed');
   } catch (error) {

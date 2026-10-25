@@ -1,10 +1,12 @@
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 
+import { thumbnailRoot } from './storagePaths';
+
 import type { EntityType } from '@/types/api/generalTypes';
 import { thumbnailSize } from '@/utils/frontend/thumbnailUtils';
 
 const getThumbnailBaseDirectory = (): string => {
-  const dir = process.env.APP_STORAGE_PATH ?? '/mnt/storage/thumbnail';
+  const dir = thumbnailRoot();
 
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true });

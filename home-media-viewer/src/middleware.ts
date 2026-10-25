@@ -18,5 +18,5 @@ export const middleware = async (req: NextRequest): Promise<NextResponse> => {
 };
 
 export const config = {
-  matcher: ['/(api/(?!log|process).*)'],
+  matcher: ['/(api/(?!log|process|health/(?:live|ready)$).*)'],
 };

@@ -9,6 +9,7 @@ const require = createRequire(resolve("package.json"));
 assert.equal(process.getuid(), 1000);
 assert.equal(process.versions.node.split(".")[0], "26");
 assert(existsSync(".next/BUILD_ID"));
+assert(existsSync("startServer.cjs"), "Graceful-shutdown launcher must be shipped");
 assert(statSync("public").isDirectory());
 assert(
   existsSync("server.js"),
@@ -82,7 +83,7 @@ if (process.env.HMV_CHECK_FIXTURES === "true") {
         else if (entry.name.startsWith(video.id + "_")) thumbnails.push(path);
       }
     };
-    scan("/mnt/storage");
+    scan(process.env.APP_STORAGE_PATH ?? "/mnt/storage");
     assert.equal(thumbnails.length, 3);
     assert(thumbnails.every((path) => statSync(path).size > 0));
     console.log(

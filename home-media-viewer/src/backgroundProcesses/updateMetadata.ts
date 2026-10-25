@@ -1,9 +1,9 @@
-import os from 'os';
+import { getWorkerCount, getProcessTimeout } from '@/utils/processes/processConfig';
 
 import updateMetadataProcess from '@/utils/processes/updateMetadataProcess';
 
-const threadCount = Math.max(1, os.cpus().length - 2);
-const processTimeout = Number.parseInt(process.env?.LONG_PROCESS_TIMEOUT_SEC ?? '50');
+const threadCount = getWorkerCount();
+const processTimeout = getProcessTimeout();
 
 updateMetadataProcess
   .update(processTimeout, threadCount)
@@ -12,4 +12,5 @@ updateMetadataProcess
   })
   .catch((error) => {
     console.error(`${error}`);
+    process.exitCode = 1;
   });

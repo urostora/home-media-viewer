@@ -1,10 +1,10 @@
 import fs, { existsSync } from 'fs';
-import ffprobe from 'ffprobe';
+import type { FFProbeResult } from 'ffprobe';
+import { mediaCommand } from '../mediaCommand';
 
 import { getFullPath, updateContentDate, updateThumbnailDate } from '../fileHelper';
 import { addDateMeta, addFloatMeta, addIntMeta, addPositionMeta, addStringMeta } from '../metaHelper';
 import { getDateObject } from '../utils';
-import { spawnSync } from 'child_process';
 import { getFileThumbnailPath } from '../thumbnailHelper';
 
 import { type File } from '@prisma/client';
@@ -27,7 +27,9 @@ const videoFileProcessor: FileProcessor = async (file: File): Promise<boolean> =
     throw new Error('FFprobe executable not available');
   }
 
-  const videoData = await ffprobe(`${path}`, { path: ffprobePath });
+  const videoData = JSON.parse(
+    await mediaCommand(ffprobePath, ['-v', 'quiet', '-print_format', 'json', '-show_streams', path]),
+  ) as FFProbeResult;
 
   if (typeof videoData !== 'object') {
     throw new Error(`Could not read video metadata at path ${path}`);
@@ -101,7 +103,7 @@ const videoFileProcessor: FileProcessor = async (file: File): Promise<boolean> =
   //   await addIntMeta(file, MetaType.Fps, Math.round(fpsValue));
   // }
 
-  const customVideoResults = loadCustomVideoData(path, ffprobePath);
+  const customVideoResults = await loadCustomVideoData(path, ffprobePath);
 
   if (customVideoResults != null) {
     // alternative creation date value
@@ -142,12 +144,12 @@ const videoFileProcessor: FileProcessor = async (file: File): Promise<boolean> =
   }
 
   // create thumbnail
-  thumbnailSizes.forEach((size) => {
+  for (const size of thumbnailSizes) {
     const thumbnailFilePath = getFileThumbnailPath(file, size);
-    createThumbnailImage(path, thumbnailFilePath, size);
+    await createThumbnailImage(path, thumbnailFilePath, size);
 
     console.log(`Thumbnail size ${size} saved to path ${thumbnailFilePath}`);
-  });
+  }
 
   await updateThumbnailDate(file);
 
@@ -194,21 +196,13 @@ const getKeyValueFromOutputResult = (input: string, key: string): string | null 
   return null;
 };
 
-const loadCustomVideoData = (path: string, customFfprobePath?: string): CustomVideoResult => {
+const loadCustomVideoData = async (path: string, customFfprobePath?: string): Promise<CustomVideoResult> => {
   const ret: CustomVideoResult = {};
   const executablePath = customFfprobePath ?? ffprobePath;
 
-  const child = spawnSync(executablePath, [path], { encoding: 'utf-8' });
+  const output = await mediaCommand(executablePath, ['-hide_banner', path]);
 
-  if (!Array.isArray(child?.output)) {
-    return ret;
-  }
-
-  child.output.forEach((str) => {
-    if (typeof str !== 'string') {
-      return;
-    }
-
+  [output].forEach((str) => {
     if (ret?.manufacturer == null) {
       const res = getKeyValueFromOutputResult(str, 'manufacturer');
       if (res != null) {
@@ -259,15 +253,30 @@ const loadCustomVideoData = (path: string, customFfprobePath?: string): CustomVi
   return ret;
 };
 
-const createThumbnailImage = (videoFilePath: string, thumbnailPath: string, size: number): void => {
+const createThumbnailImage = async (videoFilePath: string, thumbnailPath: string, size: number): Promise<void> => {
   const executablePath = pathToFfmpeg;
   if (typeof executablePath !== 'string' || !existsSync(executablePath)) {
-    return;
+    throw new Error('FFmpeg executable not available');
   }
 
-  const args = ['-i', videoFilePath, '-frames:v', '1', '-vf', `scale=${Math.round(size)}:-1`, thumbnailPath];
+  const args = [
+    '-y',
+    '-threads',
+    '1',
+    '-i',
+    videoFilePath,
+    '-threads',
+    '1',
+    '-filter_threads',
+    '1',
+    '-frames:v',
+    '1',
+    '-vf',
+    `scale=${Math.round(size)}:-1`,
+    thumbnailPath,
+  ];
 
-  spawnSync(executablePath, args);
+  await mediaCommand(executablePath, args);
 };
 
 const supportedExtensions: string[] = ['mp4', 'mkv', 'avi', 'mpg', 'mpeg', 'mov'];

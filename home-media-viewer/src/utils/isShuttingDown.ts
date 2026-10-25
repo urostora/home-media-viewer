@@ -7,7 +7,7 @@ export const isShuttingDownHandler = (() => {
 
   return {
     setIsShuttingDown,
-    isShuttingDown: () => isShuttingDown,
+    isShuttingDown: () => isShuttingDown || process.env.HMV_SHUTTING_DOWN === '1',
   };
 })();
 

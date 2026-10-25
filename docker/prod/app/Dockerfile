@@ -31,10 +31,10 @@ COPY --from=builder --chown=node:node /home/node/app/.next/static ./.next/static
 COPY --from=dependencies --chown=node:node /home/node/app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=dependencies --chown=node:node /home/node/app/node_modules/bcrypt ./node_modules/bcrypt
 COPY --chown=node:node ./home-media-viewer/public ./public
-COPY --chown=node:node ./home-media-viewer/runBackgroundScheduler.mjs ./home-media-viewer/validateProductionConfig.mjs ./
+COPY --chown=node:node ./home-media-viewer/runBackgroundScheduler.mjs ./home-media-viewer/validateProductionConfig.mjs ./home-media-viewer/startServer.cjs ./
 RUN mkdir -p /mnt/storage && chown node:node /mnt/storage
 USER node
 ENV HOSTNAME=0.0.0.0
 EXPOSE 3000
 VOLUME /mnt/storage
-CMD ["sh", "-ec", "node validateProductionConfig.mjs && exec node server.js"]
+CMD ["sh", "-ec", "node validateProductionConfig.mjs && exec node startServer.cjs"]

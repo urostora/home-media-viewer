@@ -114,10 +114,10 @@ const imageFileProcessor: FileProcessor = async (file: File): Promise<boolean> =
       const thumbnailPath = getFileThumbnailPath(file, size);
 
       const image = await jimp.read(path);
-      image
+      await image
         .scaleToFit(size, size)
         .quality(size < 400 ? 50 : 75)
-        .write(thumbnailPath);
+        .writeAsync(thumbnailPath);
       console.log(`  Thumbnail size ${size} saved to path ${thumbnailPath}`);
     }
 

@@ -10,7 +10,7 @@ let cookie = '';
 async function request(base, path, method = 'GET', data) {
   const response = await fetch(new URL(path, base), {
     method,
-    headers: { 'Content-Type': 'application/json', Cookie: cookie },
+    headers: { 'Content-Type': 'application/json', Cookie: cookie, Authorization: `Bearer ${process.env.PROCESS_TOKEN}` },
     body: data === undefined ? undefined : JSON.stringify(data),
     signal: AbortSignal.timeout(300_000),
   });
@@ -52,6 +52,6 @@ await request(app, '/api/user', 'PUT', {
   password: 'Guest+P4ssw0rd+Test',
 });
 for (let index = 0; index < 3; index++) {
-  await request(background, `/api/process/updateMetadata?token=${encodeURIComponent(process.env.PROCESS_TOKEN)}`);
+  await request(background, '/api/process/updateMetadata');
 }
 console.log('Fixture initialization passed');

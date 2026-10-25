@@ -4,7 +4,7 @@ Run from the repository root with Python 3.9+ on Linux and Docker Compose v2. Th
 
 ## Create a consistent set
 
-Stop all writers, including external source-media imports and schema changes. Keep MariaDB running. The script refuses running app/background/scheduler containers; it does not stop services itself. Existing stopped app containers are required to identify actual mounts. Source media must be a direct mount at APP_ALBUM_ROOT_PATH and generated storage a direct mount at /mnt/storage. Other storage layouts fail explicitly. Symlinks, hard links, special files and nested mounts are rejected rather than silently producing an incomplete portable recovery archive. Remote FTP albums need a separate provider backup.
+Stop all writers, including external source-media imports and schema changes. Keep MariaDB running. The script refuses running app/background/scheduler containers; it does not stop services itself. Existing stopped app containers are required to identify actual mounts. Source media must be a direct mount at APP_ALBUM_ROOT_PATH and generated storage a direct mount at APP_STORAGE_PATH (/mnt/storage by default). Other storage layouts fail explicitly. Symlinks, hard links, special files and nested mounts are rejected rather than silently producing an incomplete portable recovery archive. Remote FTP albums need a separate provider backup.
 
 ```sh
 docker compose -f docker-compose-prod.yml --env-file /secure/hmv.env -p media stop scheduler app background

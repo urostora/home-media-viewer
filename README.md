@@ -344,3 +344,5 @@ docker compose --file docker-compose-prod.yml --env-file .env-prod run --rm --no
 ### Backup and recovery
 
 Use the [backup and isolated recovery runbook](scripts/backup/README.md) before upgrades. It covers Compose project selection, verified logical database dumps, generated storage and source-media archives, safe retention, empty-target recovery, ownership, and separate off-host/configuration/secret policies. The scripts require explicit Compose, environment, project and destination arguments; the old no-argument backup scripts are no longer supported.
+
+Operational health, resource budgets, scheduling, shutdown and monitoring: [operations runbook](docs/operations.md).

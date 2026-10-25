@@ -19,7 +19,8 @@ async function check({ token = 'test-secret', timeout = '120', statuses = [503, 
       console: { log: (...args) => logs.push(args.join(' ')), error: (...args) => logs.push(args.join(' ')) },
       fetch: async (url, options) => {
         assert.equal(url.hostname, 'background');
-        assert.equal(url.searchParams.get('token'), token);
+        assert.equal(url.search, '');
+        assert.equal(options.headers.Authorization, `Bearer ${token}`);
         assert.ok(options.signal);
         const status = statuses[calls++];
         if (calls === statuses.length) signals.SIGTERM();

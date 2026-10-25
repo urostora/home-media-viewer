@@ -26,6 +26,8 @@ for (const path of [
   "docker/prod/migration/package-lock.json",
   "home-media-viewer/public",
   "home-media-viewer/validateProductionConfig.mjs",
+  "home-media-viewer/startServer.cjs",
+  "home-media-viewer/src/pages/api/health/ready.ts",
   "scripts/backup/backup.py",
 ]) {
   assert(existsSync(path), `Required build input excluded: ${path}`);

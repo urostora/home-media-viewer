@@ -35,6 +35,13 @@ class BackupTest(unittest.TestCase):
                                {'Type': 'volume', 'Name': 'real-storage-volume', 'Destination': '/mnt/storage'}]}
         self.db = {'State': {'Running': True}, 'Config': {'Image': 'mariadb:verified'}}
 
+    def test_non_default_storage_root_is_recorded(self):
+        self.app['Config']['Env'].append('APP_STORAGE_PATH=/srv/hmv-generated')
+        self.app['Mounts'][1]['Destination'] = '/srv/hmv-generated'
+        self.invoke()
+        manifest = json.loads((self.sets()[0] / 'manifest.json').read_text())
+        self.assertEqual(manifest['mounts']['storage']['target'], '/srv/hmv-generated')
+
     def capture(self, args):
         if args[-2:] == ['config', '--services']:
             return 'db\napp'
