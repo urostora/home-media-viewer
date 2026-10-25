@@ -1,7 +1,9 @@
 services:
   dependencies:
     profiles: [tools]
-    image: "node:26.12.1-trixie@sha256:a98e6fda54fdbb22d4238054cca9a2a113bcd1191c09193a535aae22f400aa8e"
+    extends:
+      file: ./docker/base-images.yml
+      service: node
     working_dir: /home/node/app
     environment:
       PUPPETEER_SKIP_DOWNLOAD: 'true'
@@ -16,7 +18,9 @@ services:
 
   db:
     hostname: media-viewer-dev-db
-    image: "mariadb:13.0.2-resolute@sha256:0e4bb0f339feba125d1154fbacd36c16ec8518f52e44e1f82ecec7d6771caf39"
+    extends:
+      file: ./docker/base-images.yml
+      service: mariadb
     environment:
       MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
       MARIADB_DATABASE: ${MARIADB_DATABASE}
@@ -42,7 +46,9 @@ services:
           memory: 800m
 
   migration:
-    image: "node:26.12.1-trixie@sha256:a98e6fda54fdbb22d4238054cca9a2a113bcd1191c09193a535aae22f400aa8e"
+    extends:
+      file: ./docker/base-images.yml
+      service: node
     working_dir: /home/node/app
     command: ["npx", "--no-install", "prisma", "migrate", "deploy"]
     restart: "no"
@@ -58,6 +64,9 @@ services:
 
   app:
     hostname: media-viewer-dev-app
+    extends:
+      file: ./docker/base-images.yml
+      service: build
     build:
       dockerfile: ./docker/dev/app/Dockerfile
       context: .
@@ -96,7 +105,9 @@ services:
           memory: 800m
 
   scheduler:
-    image: "node:26.12.1-trixie@sha256:a98e6fda54fdbb22d4238054cca9a2a113bcd1191c09193a535aae22f400aa8e"
+    extends:
+      file: ./docker/base-images.yml
+      service: node
     profiles: [scheduled]
     init: true
     working_dir: /home/node/app
@@ -114,6 +125,9 @@ services:
   testrunner:
     profiles: [test]
     hostname: media-viewer-dev-testrunner
+    extends:
+      file: ./docker/base-images.yml
+      service: build
     build:
       dockerfile: ./docker/dev/testrunner/Dockerfile
       context: .

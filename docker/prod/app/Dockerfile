@@ -1,4 +1,7 @@
-FROM node:26.12.1-trixie@sha256:a98e6fda54fdbb22d4238054cca9a2a113bcd1191c09193a535aae22f400aa8e AS dependencies
+# Base images are supplied by Compose from docker/base-images.yml.
+ARG NODE_IMAGE
+ARG NODE_SLIM_IMAGE
+FROM ${NODE_IMAGE} AS dependencies
 WORKDIR /home/node/app
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 # Install from the lockfile before copying source to preserve this cache layer.
@@ -16,7 +19,7 @@ COPY ./home-media-viewer/tsconfig.json ./home-media-viewer/jsconfig.json ./
 COPY ./home-media-viewer/next.config.js.prod ./next.config.js
 RUN --mount=type=cache,id=hmv-next26-${TARGETARCH},target=/home/node/app/.next/cache,sharing=locked APP_SESSION_SECRET="$(node -e 'process.stdout.write(require("node:crypto").randomBytes(32).toString("hex"))')" npm run build
 
-FROM node:26.12.1-trixie-slim@sha256:36793bcbb160a6a16cede1e62b93f84e26b78a972a8a4c0b879c1c12f22761ec AS runtime-base
+FROM ${NODE_SLIM_IMAGE} AS runtime-base
 ARG DEBIAN_MIRROR=https://deb.debian.org
 # Slim omits CA certificates; bootstrap HTTPS with Node's bundled Mozilla roots.
 RUN mkdir -p /etc/ssl/certs \

@@ -1,4 +1,6 @@
-FROM node:26.12.1-trixie-slim@sha256:36793bcbb160a6a16cede1e62b93f84e26b78a972a8a4c0b879c1c12f22761ec AS migration
+# Base images are supplied by Compose from docker/base-images.yml.
+ARG NODE_SLIM_IMAGE
+FROM ${NODE_SLIM_IMAGE} AS migration
 ARG DEBIAN_MIRROR=https://deb.debian.org
 # Slim omits CA certificates; bootstrap HTTPS with Node's bundled Mozilla roots.
 RUN mkdir -p /etc/ssl/certs \

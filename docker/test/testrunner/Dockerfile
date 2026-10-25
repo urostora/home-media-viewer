@@ -1,4 +1,7 @@
-FROM node:26.12.1-trixie@sha256:a98e6fda54fdbb22d4238054cca9a2a113bcd1191c09193a535aae22f400aa8e AS dependencies
+# Base images are supplied by Compose from docker/base-images.yml.
+ARG NODE_IMAGE
+ARG NODE_SLIM_IMAGE
+FROM ${NODE_IMAGE} AS dependencies
 WORKDIR /home/node/app
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 COPY ./home-media-viewer/package.json ./home-media-viewer/package-lock.json ./
@@ -6,7 +9,7 @@ RUN --mount=type=cache,id=hmv-npm,target=/root/.npm,sharing=locked npm ci --no-a
 COPY ./home-media-viewer/prisma/schema.prisma ./prisma/schema.prisma
 RUN ./node_modules/.bin/prisma generate
 
-FROM node:26.12.1-trixie-slim@sha256:36793bcbb160a6a16cede1e62b93f84e26b78a972a8a4c0b879c1c12f22761ec AS browser
+FROM ${NODE_SLIM_IMAGE} AS browser
 # Debian Chromium supports amd64 and arm64; Puppeteer uses it instead of downloading a browser.
 ARG DEBIAN_MIRROR=https://deb.debian.org
 # Slim omits CA certificates; bootstrap HTTPS with Node's bundled Mozilla roots.

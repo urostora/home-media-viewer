@@ -18,7 +18,9 @@ services:
     stop_grace_period: 60s
     command: ["--innodb-buffer-pool-size=${DB_BUFFER_POOL_SIZE:-384M}", "--max-connections=${DB_MAX_CONNECTIONS:-40}"]
     hostname: home-media-viewer-db
-    image: "mariadb:13.0.2-resolute@sha256:0e4bb0f339feba125d1154fbacd36c16ec8518f52e44e1f82ecec7d6771caf39"
+    extends:
+      file: ./docker/base-images.yml
+      service: mariadb
     environment:
       MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?Set MARIADB_ROOT_PASSWORD in the private production environment file}
       MARIADB_DATABASE: ${MARIADB_DATABASE:?Set MARIADB_DATABASE in the private production environment file}
@@ -103,6 +105,9 @@ services:
     stop_grace_period: 180s
     healthcheck: *app-health
     hostname: home-media-viewer-app
+    extends:
+      file: ./docker/base-images.yml
+      service: build
     build:
       dockerfile: ./docker/prod/app/Dockerfile
       context: .
@@ -140,6 +145,9 @@ services:
     restart: "no"
     image: ${HMV_MIGRATION_IMAGE:-urostora/home-media-viewer/migration:latest}
     hostname: home-media-viewer-migration
+    extends:
+      file: ./docker/base-images.yml
+      service: build
     build:
       dockerfile: ./docker/prod/migration/Dockerfile
       context: .

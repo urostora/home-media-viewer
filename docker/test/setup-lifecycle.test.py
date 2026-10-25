@@ -7,7 +7,6 @@ import subprocess
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
-NODE = 'node:26.12.1-trixie@sha256:a98e6fda54fdbb22d4238054cca9a2a113bcd1191c09193a535aae22f400aa8e'
 # Discard caller deployment settings; Compose interpolation uses only generated test settings.
 ENV = {key: value for key, value in os.environ.items() if key in (
     'PATH', 'HOME', 'DOCKER_HOST', 'DOCKER_CONTEXT', 'DOCKER_CONFIG',
@@ -60,7 +59,7 @@ def main():
         app = config['services']['app']
         for key in ('build', 'depends_on', 'healthcheck', 'ports'):
             app.pop(key, None)
-        app['image'] = NODE
+        app['image'] = dev['dependencies']['image']
         app['command'] = ['sleep', 'infinity']
         app['restart'] = 'no'
         config['services']['db']['restart'] = 'no'

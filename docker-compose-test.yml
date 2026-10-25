@@ -1,7 +1,9 @@
 services:
   db:
     hostname: home-media-viewer-test-db
-    image: "mariadb:13.0.2-resolute@sha256:0e4bb0f339feba125d1154fbacd36c16ec8518f52e44e1f82ecec7d6771caf39"
+    extends:
+      file: ./docker/base-images.yml
+      service: mariadb
     environment:
       MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
       MARIADB_DATABASE: ${MARIADB_DATABASE}
@@ -25,6 +27,9 @@ services:
     restart: "no"
     image: ${HMV_MIGRATION_IMAGE:-urostora/home-media-viewer/migration-test:latest}
     hostname: home-media-viewer-test-migration
+    extends:
+      file: ./docker/base-images.yml
+      service: build
     build:
       dockerfile: ./docker/prod/migration/Dockerfile
       context: .
@@ -49,6 +54,9 @@ services:
 
   testrunner:
     hostname: home-media-viewer-test-testrunner
+    extends:
+      file: ./docker/base-images.yml
+      service: build
     build:
       dockerfile: ./docker/test/testrunner/Dockerfile
       context: .
@@ -113,6 +121,9 @@ services:
   app:
     image: ${HMV_APP_IMAGE:-urostora/home-media-viewer/app-test:latest}
     hostname: home-media-viewer-test-app
+    extends:
+      file: ./docker/base-images.yml
+      service: build
     build:
       dockerfile: ./docker/prod/app/Dockerfile
       context: .
