@@ -95,7 +95,7 @@ const UserRowItem = (props: UserRowItemProperties): JSX.Element => {
         ensureAlbumConnectionsAreLoaded();
     };
 
-    const onDisableClick = (e: React.SyntheticEvent<HTMLButtonElement>): void => {
+    const onDisableClick = (): void => {
         if (user === undefined) {
             return;
         }

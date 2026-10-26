@@ -83,7 +83,6 @@ const BrowseContentCard = (props: BrowseContentCardProps): JSX.Element => {
             }
 
             const durationMeta = content.storedFile.metas.find(m => m.metaKey === MetaType.Duration);
-            // eslint-disable-next-line @typescript-eslint/prefer-optional-chain
             if (durationMeta !== undefined && durationMeta?.floatValue !== null) {
                 metadataTextList.push(durationInSecToString(durationMeta.floatValue));
             }
@@ -95,7 +94,6 @@ const BrowseContentCard = (props: BrowseContentCardProps): JSX.Element => {
             }
 
             const locationMeta = content.storedFile.metas.find(m => m.metaKey === MetaType.GpsCoordinates);
-            // eslint-disable-next-line @typescript-eslint/prefer-optional-chain
             if (locationMeta !== undefined && typeof locationMeta.latitude === 'number' && typeof locationMeta.longitude === 'number') {
                 coordinates = { latitude: locationMeta.latitude, longitude: locationMeta.longitude };
             }

@@ -93,7 +93,7 @@ const ContentFilter = (props: ContentFilterPropsType): JSX.Element => {
         setDateTo(`${year + 1}-01-01`);
     };
 
-    const onSeasonSelected = (fromMonth: number, toMonth: number): void => {
+    const onSeasonSelected = (fromMonth: number): void => {
         const currentYear = dateFrom === undefined
             ? new Date().getFullYear()
             : Number.parseInt(dateFrom.substring(0, 4)) ?? new Date().getFullYear();

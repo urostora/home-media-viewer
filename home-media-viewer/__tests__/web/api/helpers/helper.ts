@@ -8,7 +8,6 @@ let loginCookie: string | undefined | null;
 
 export const getApiUrl = (path: string): string => `${APP_URL}/api/${path}`;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const fetchDataFromApi = async <T>(
   path: string,
   data: object | undefined = undefined,
@@ -25,7 +24,6 @@ export const fetchDataFromApi = async <T>(
   return await result.json();
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const fetchResultFromApi = async (
   path: string,
   data: object | undefined = undefined,

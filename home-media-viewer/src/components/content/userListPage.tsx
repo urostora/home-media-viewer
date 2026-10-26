@@ -34,7 +34,7 @@ const UserListPage = (): JSX.Element => {
         loadUsers();
     }, []);
 
-    const onUserChanged = (user: UserDataType): void => {
+    const onUserChanged = (): void => {
         loadUsers();
     }
 

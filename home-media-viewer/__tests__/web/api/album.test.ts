@@ -70,7 +70,7 @@ describe('web/api/album', () => {
       try {
         await fetchDataFromApi<GeneralResponseWithData<UserDataType>>(getExactAlbumPath(albumId), undefined, 'DELETE');
       } catch {
-        // eslint-disable-next-line no-empty
+        // Cleanup is best-effort; the fixture may already have been deleted.
       }
     }
   });

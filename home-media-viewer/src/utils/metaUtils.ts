@@ -160,7 +160,7 @@ export const getMetaStringValue = (metadata: FileMetadataType): string | null =>
   return value;
 };
 
-export const durationInSecToString = (duration: number = 0, hideZeroParts: boolean = false): string => {
+export const durationInSecToString = (duration: number = 0): string => {
   let ret = '';
 
   if (duration / (60 * 60) >= 1) {

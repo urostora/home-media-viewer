@@ -19,7 +19,7 @@ const handler = (req: NextApiRequest, res: NextApiResponse): void => {
         let size = 200;
         try {
           size = Number.parseInt(sizeString);
-        } catch (e) {
+        } catch {
           throw Error('Invalid thumbnail size');
         }
 

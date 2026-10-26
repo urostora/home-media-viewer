@@ -128,7 +128,7 @@ const BrowserContentList = (props: BrowserContentListProps): JSX.Element => {
         setContentSelected(content);
     };
 
-    const onContentChanged = (id: string): void => {
+    const onContentChanged = (): void => {
         reloadContent(path);
     };
 

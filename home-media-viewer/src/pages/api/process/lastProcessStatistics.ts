@@ -31,7 +31,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
           ...getApiResponseWithData<MetadataProcessStatistics | undefined>(statistics),
           indexing: await readIndexingState(),
         });
-      } catch (e) {
+      } catch {
         res.status(503).send('Indexing status unavailable');
       }
 

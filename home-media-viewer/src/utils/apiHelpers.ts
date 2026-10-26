@@ -15,7 +15,7 @@ export function getRequestBodyObject<T>(req: NextApiRequest, res?: NextApiRespon
     try {
       const parsedData = JSON.parse(req.body);
       ret = parsedData;
-    } catch (ex) {
+    } catch {
       throw new HmvError('Could not parse JSON body', { isPublic: true });
     }
   } else if (typeof req.body === 'object') {

@@ -49,7 +49,7 @@ describe('web/api/user', () => {
       try {
         await fetchDataFromApi<GeneralResponseWithData<UserDataType>>(getPath(userId), undefined, 'DELETE');
       } catch {
-        // eslint-disable-next-line no-empty
+        // Cleanup is best-effort; the fixture may already have been deleted.
       }
     }
   });

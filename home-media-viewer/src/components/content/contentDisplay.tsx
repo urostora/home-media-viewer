@@ -35,11 +35,9 @@ const ContentDisplay = (props: ContentDisplayProps): JSX.Element => {
     const getContentElement = (content: FileResultType): ReactElement => {
         if (isImageByExtension(content.extension)) {
             const thumbnailLink = getImageUrl(content.id);
-            // eslint-disable-next-line @next/next/no-img-element
             return (<img src={thumbnailLink} alt={content.path} />);
         } else if (isVideoByExtension(content.extension)) {
             const contentLink = getContentUrl(content.id);
-            // eslint-disable-next-line @next/next/no-img-element
             return (<video controls><source src={contentLink} /></video>);
         }
 
@@ -57,7 +55,7 @@ const ContentDisplay = (props: ContentDisplayProps): JSX.Element => {
         }
     };
 
-    const onDownloadClickedHandler = (e: React.MouseEvent): void => {
+    const onDownloadClickedHandler = (): void => {
         const contentUrl = getContentUrl(content.id);
 
         if (window === undefined) {

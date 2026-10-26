@@ -87,7 +87,7 @@ const LocationMetadataDisplay: React.FC<LocationMetadataDisplayProps> = (props: 
         setIsLocationChanged(true);
     };
 
-    const mapClickedHandler = ({ event, latLng, pixel }: {event: MouseEvent, latLng: [number, number], pixel: [number, number] }): void => {
+    const mapClickedHandler = ({ event, latLng }: {event: MouseEvent, latLng: [number, number], pixel: [number, number] }): void => {
         event.stopImmediatePropagation();
 
         if (!isAdmin) {

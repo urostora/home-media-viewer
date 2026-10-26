@@ -42,7 +42,6 @@ export const validateData = (data: object | null | undefined, schema: DataValida
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const arr: any[] = value;
       for (const arrayValue of arr) {
-        // eslint-disable-next-line valid-typeof
         if (typeof arrayValue !== type) {
           throw new HmvError(
             `field "${field}" has invalid value in array ${arrayValue}, type must be '${type}' instead of '${type}'`,
@@ -58,7 +57,6 @@ export const validateData = (data: object | null | undefined, schema: DataValida
         }
       }
     } else {
-      // eslint-disable-next-line valid-typeof
       if (typeof value !== type) {
         throw new HmvError(`field "${field}" has invalid value ${value}, type must be ${type}`, { isPublic: true });
       }

@@ -575,7 +575,6 @@ export const deleteMetadata = async (file: File): Promise<void> => {
     (r) => r.id,
   );
 
-  // eslint-disable-next-line @typescript-eslint/promise-function-async
   const deleteOperations = metaIds.map((metaId) => prisma.fileMeta.delete({ where: { id: metaId } }));
 
   await prisma.$transaction([
