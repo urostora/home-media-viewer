@@ -1,19 +1,21 @@
 # Repository Guidelines
 
-Use these files in order when working on the project:
+The application is a Next.js Pages Router + React + strict TypeScript project using Prisma and MariaDB. Its package is `home-media-viewer/`; Compose files, Dockerfiles, scripts, and `test/files/` media fixtures live at the repository root.
 
-- [agents/general-guidelines.md](agents/general-guidelines.md) for the core project rules
-- [agents/docker-execution-guidelines.md](agents/docker-execution-guidelines.md) for container and command requirements
-- [agents/nuxt-react-guidelines.md](agents/nuxt-react-guidelines.md) for Next.js and React patterns (legacy filename)
+## Read only the guides relevant to the task
 
-## Workflow
-1. Read the files above in order before making changes; inspect affected code, configuration, and nearby tests.
-2. Prefer the existing project patterns and utility code over introducing new abstractions.
-3. Keep changes small and targeted.
-4. Run build, test, and dependency commands through Docker and use the Compose service names for database access.
-5. Preserve existing worktree changes. Report changed files, validation results, and checks that could not run.
-6. After each task or subtask finishes, remove its temporary files, credentials, fixtures, containers, and isolated Docker resources. Preserve intentional deliverables, regression tests, and pre-existing/shared resources; record validation results before cleanup.
+- Planning, review, or documentation: start here and inspect the affected material; read domain guides only as needed.
+- Implementation: [development](.agents/development.md).
+- Larger development tasks with multiple dependent subtasks or likely interruptions: also read [large-task workflow](.agents/large-task-workflow.md) before implementation.
+- UI changes: also read [frontend](.agents/frontend.md).
+- Writing tests or choosing validation: [testing](.agents/testing.md).
+- Running application, dependency, build, lint, test, or Prisma commands: [Docker execution](.agents/docker-execution-guidelines.md).
 
-The application lives in `home-media-viewer/`; Compose files, Dockerfiles, scripts, and media fixtures live at the repository root. This is a **Next.js Pages Router + React + TypeScript** project, not a Nuxt application.
+## Repository rules
 
-For Prisma work, inspect `home-media-viewer/prisma/schema.prisma`, existing migrations, and the shared Prisma client before changing behavior. For media processing, inspect `src/utils/fileProcessor/` and `src/backgroundProcesses/` within the application directory.
+- Preserve existing worktree changes; keep edits targeted and follow nearby patterns.
+- Run application and tooling commands through Docker. File inspection, editing, and Git may run on the host.
+- Do not reset databases or delete shared volumes or generated media without explicit task authorization. Keep source media mounts read-only; do not print or commit secrets or personal media.
+- After each task or subtask, record validation results, then remove its temporary files, credentials, fixtures, containers, and isolated Docker resources. Preserve intentional deliverables, regression tests, and pre-existing/shared resources. Temporary artifacts may be retained when explicitly requested.
+- For larger tasks, retain `temp/tasks/YYYY-MM-DD-short-description/plan.md` and `cache.md` as intentional task records, including after completion; clean up other disposable resources normally.
+- Report changed files, validation results, and checks that could not run. The final response is sufficient unless persistent task documentation is requested.

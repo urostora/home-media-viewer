@@ -12,3 +12,6 @@ scripts/test/*.txt
 !.env*.example
 *.pem
 *.key
+
+# temporary resources
+temp/*
