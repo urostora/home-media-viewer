@@ -19,7 +19,7 @@ COPY ./home-media-viewer/__tests__ ./__tests__
 COPY ./home-media-viewer/eslint.config.mjs ./eslint.config.mjs
 COPY ./home-media-viewer/tsconfig.json ./home-media-viewer/jsconfig.json ./
 COPY ./home-media-viewer/next.config.js.prod ./next.config.js
-RUN --mount=type=cache,id=hmv-next26-${TARGETARCH},target=/home/node/app/.next/cache,sharing=locked export APP_SESSION_SECRET="$(node -e 'process.stdout.write(require("node:crypto").randomBytes(32).toString("hex"))')" && npm run lint && npm run build
+RUN --mount=type=cache,id=hmv-next26-es2018-${TARGETARCH},target=/home/node/app/.next/cache,sharing=locked export APP_SESSION_SECRET="$(node -e 'process.stdout.write(require("node:crypto").randomBytes(32).toString("hex"))')" && npm run lint && npm run build
 
 FROM ${NODE_SLIM_IMAGE} AS runtime-base
 ARG DEBIAN_MIRROR=https://deb.debian.org
@@ -30,6 +30,16 @@ RUN mkdir -p /etc/ssl/certs \
     && apt-get -o Acquire::https::CaInfo=/etc/ssl/certs/ca-certificates.crt -o Acquire::Retries=3 -o Acquire::https::Timeout=30 update --error-on=any && apt-get -o Acquire::https::CaInfo=/etc/ssl/certs/ca-certificates.crt -o Acquire::Retries=3 -o Acquire::https::Timeout=30 install -y --no-install-recommends ca-certificates openssl ffmpeg && rm -rf /var/lib/apt/lists/*
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000
 WORKDIR /home/node/app
+FROM runtime-base AS benchmark
+COPY --from=dependencies /home/node/app/node_modules ./node_modules
+COPY ./home-media-viewer/src ./src
+COPY ./home-media-viewer/prisma ./prisma
+COPY ./home-media-viewer/tsconfig.json ./tsconfig.json
+COPY ./scripts/benchmark /benchmark
+RUN mkdir -p /mnt/storage && chown node:node /mnt/storage
+USER node
+CMD ["node", "/benchmark/benchmark.cjs"]
+
 FROM runtime-base AS app
 COPY --from=builder --chown=node:node /home/node/app/.next/standalone ./
 COPY --from=builder --chown=node:node /home/node/app/.next/static ./.next/static

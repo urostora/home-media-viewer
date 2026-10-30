@@ -2,18 +2,17 @@ import * as ExifReader from 'exifreader';
 import fs from 'fs';
 import jimp from 'jimp';
 
-import { getFullPath, updateContentDate, updateThumbnailDate } from '../fileHelper';
+import { getFullPath } from '../fileHelper';
 
-import { addDateMeta, addFloatMeta, addIntMeta, addPositionMeta, addStringMeta } from '../metaHelper';
+import { MetadataCollector, type ExtractedMetadata } from './metadata';
 import { getDateObject } from '../utils';
-import { getFileThumbnailPath } from '../thumbnailHelper';
 
 import type { File } from '@prisma/client';
-import type { FileProcessor } from './processorFactory';
 import { MetaType } from '../metaUtils';
 import { thumbnailSizes } from '../frontend/thumbnailUtils';
 
-const imageFileProcessor: FileProcessor = async (file: File): Promise<boolean> => {
+export const extractImageMetadata = async (file: File): Promise<ExtractedMetadata> => {
+  const metadata = new MetadataCollector();
   const path = getFullPath(file);
 
   if (!fs.existsSync(path)) {
@@ -54,18 +53,18 @@ const imageFileProcessor: FileProcessor = async (file: File): Promise<boolean> =
   }
 
   if (contentDate != null) {
-    await updateContentDate(file, contentDate);
-    await addDateMeta(file, MetaType.DateTime, contentDate);
+    metadata.contentDate = contentDate;
+    metadata.addDate(MetaType.DateTime, contentDate);
   }
 
   if (typeof tags?.Orientation?.value === 'number') {
-    await addIntMeta(file, MetaType.Orientation, Math.round(tags.Orientation.value));
+    metadata.addInt(MetaType.Orientation, Math.round(tags.Orientation.value));
   }
   if (typeof tags?.Model?.description === 'string') {
-    await addStringMeta(file, MetaType.Model, tags.Model.description);
+    metadata.addString(MetaType.Model, tags.Model.description);
   }
   if (typeof tags?.Make?.description === 'string') {
-    await addStringMeta(file, MetaType.Make, tags.Make.description);
+    metadata.addString(MetaType.Make, tags.Make.description);
   }
 
   if (typeof tags?.ImageWidth?.value === 'number') {
@@ -75,7 +74,7 @@ const imageFileProcessor: FileProcessor = async (file: File): Promise<boolean> =
   }
 
   if (width != null) {
-    await addIntMeta(file, MetaType.ResolutionX, width);
+    metadata.addInt(MetaType.ResolutionX, width);
   }
 
   if (typeof tags?.ImageLength?.value === 'number') {
@@ -85,52 +84,41 @@ const imageFileProcessor: FileProcessor = async (file: File): Promise<boolean> =
   }
 
   if (height != null) {
-    await addIntMeta(file, MetaType.ResolutionY, height);
+    metadata.addInt(MetaType.ResolutionY, height);
   }
 
   // GPS related metas
   if (typeof tags?.GPSLatitude?.description === 'number' && typeof tags?.GPSLongitude?.description === 'number') {
-    await addPositionMeta(file, MetaType.GpsCoordinates, tags.GPSLatitude.description, tags.GPSLongitude.description);
+    metadata.addPosition(MetaType.GpsCoordinates, tags.GPSLatitude.description, tags.GPSLongitude.description);
   }
 
   if (Array.isArray(tags?.GPSAltitude?.value) && typeof tags?.GPSAltitude?.value[0] === 'number') {
-    await addFloatMeta(file, MetaType.GpsAltitude, tags.GPSAltitude.value[0]);
+    metadata.addFloat(MetaType.GpsAltitude, tags.GPSAltitude.value[0]);
   }
 
   if (typeof tags?.GPSDateStamp?.description === 'string' && typeof tags?.GPSTimeStamp?.description === 'string') {
     const gpsDate = getDateObject(`${tags.GPSDateStamp.description} ${tags.GPSTimeStamp.description}`);
 
     if (gpsDate != null) {
-      await addDateMeta(file, MetaType.GpsDate, gpsDate);
+      metadata.addDate(MetaType.GpsDate, gpsDate);
     }
   }
   if (typeof tags?.GPSAltitudeRef?.description === 'string') {
-    await addStringMeta(file, MetaType.GpsAltitudeRef, tags.GPSAltitudeRef.description);
+    metadata.addString(MetaType.GpsAltitudeRef, tags.GPSAltitudeRef.description);
   }
 
-  if (width !== null && height !== null) {
-    // create thumbnail
-    for (const size of thumbnailSizes) {
-      const thumbnailPath = getFileThumbnailPath(file, size);
-
-      const image = await jimp.read(path);
-      await image
-        .scaleToFit(size, size)
-        .quality(size < 400 ? 50 : 75)
-        .writeAsync(thumbnailPath);
-      console.log(`  Thumbnail size ${size} saved to path ${thumbnailPath}`);
-    }
-
-    await updateThumbnailDate(file);
-  }
-
-  return true;
+  return metadata;
 };
 
-const supportedExtensions: string[] = ['bmp', 'jpg', 'jpeg', 'gif', 'png', 'tiff'];
-
-export const fillProcessorList = (processors: Record<string, FileProcessor>): void => {
-  supportedExtensions.forEach((ext) => {
-    processors[ext] = imageFileProcessor;
-  });
+export const generateImageThumbnails = async (file: File, outputs: ReadonlyMap<number, string>): Promise<void> => {
+  const path = getFullPath(file);
+  for (const size of thumbnailSizes) {
+    const output = outputs.get(size);
+    if (output === undefined) throw new Error('Missing thumbnail output');
+    const image = await jimp.read(path);
+    await image
+      .scaleToFit(size, size)
+      .quality(size < 400 ? 50 : 75)
+      .writeAsync(output);
+  }
 };

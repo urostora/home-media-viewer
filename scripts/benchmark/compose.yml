@@ -1,0 +1,96 @@
+services:
+  db:
+    extends:
+      file: ../../docker/base-images.yml
+      service: mariadb
+    environment:
+      MARIADB_DATABASE: benchmark
+      MARIADB_USER: benchmark
+      MARIADB_PASSWORD: ${BENCH_PASSWORD:?}
+      MARIADB_ROOT_PASSWORD: ${BENCH_ROOT_PASSWORD:?}
+    volumes:
+      - database:/var/lib/mysql
+    healthcheck:
+      test: [CMD, healthcheck.sh, --connect, --innodb_initialized]
+      interval: 2s
+      timeout: 5s
+      retries: 60
+    cpus: 1
+    mem_limit: 1g
+  migration:
+    extends:
+      file: ../../docker/base-images.yml
+      service: build
+    image: ${BENCH_PROJECT:?}-migration:baseline
+    build:
+      context: ../..
+      dockerfile: docker/prod/migration/Dockerfile
+      target: migration
+    environment: &environment
+      DATABASE_URL: mysql://benchmark:${BENCH_PASSWORD:?}@db:3306/benchmark
+      NODE_ENV: production
+      APP_ALBUM_ROOT_PATH: /fixtures
+      APP_STORAGE_PATH: /mnt/storage
+      APP_THUMBNAIL_SUBDIRECTORY: thumbnail
+      APP_SESSION_SECRET: ${BENCH_SESSION:?}
+      PROCESS_TOKEN: ${BENCH_TOKEN:?}
+      ADMIN_EMAIL: benchmark@example.invalid
+      ADMIN_PASSWORD: ${BENCH_ADMIN_PASSWORD:?}
+      LONG_PROCESS_TIMEOUT_SEC: 600
+      DB_CONNECTION_LIMIT: 5
+      MEDIA_WORKERS: 2
+      IS_BACKGROUND_PROCESS_ENABLED: 0
+      SESSION_COOKIE_SECURE: 'false'
+  app:
+    extends:
+      file: ../../docker/base-images.yml
+      service: build
+    image: ${BENCH_PROJECT:?}-app:baseline
+    build:
+      context: ../..
+      dockerfile: docker/prod/app/Dockerfile
+      target: app
+    environment: *environment
+    volumes:
+      - ${BENCH_DIRECTORY:?}/fixtures:/fixtures:ro
+      - storage:/mnt/storage
+    cpus: 1
+    mem_limit: 1g
+  worker:
+    extends:
+      file: ../../docker/base-images.yml
+      service: build
+    image: ${BENCH_PROJECT:?}-worker:baseline
+    build:
+      context: ../..
+      dockerfile: docker/prod/app/Dockerfile
+      target: benchmark
+    environment: *environment
+    volumes:
+      - ${BENCH_DIRECTORY:?}/fixtures:/fixtures:ro
+      - storage:/mnt/storage
+      - ../../docker/test:/tests:ro
+    cpus: 2
+    mem_limit: 2g
+  background:
+    image: ${BENCH_PROJECT:?}-app:baseline
+    profiles: [validation]
+    environment:
+      <<: *environment
+      IS_BACKGROUND_PROCESS_ENABLED: 1
+    volumes:
+      - ${BENCH_DIRECTORY:?}/fixtures:/fixtures:ro
+      - storage:/mnt/storage
+    cpus: 2
+    mem_limit: 2g
+  fixtures:
+    image: ${BENCH_PROJECT:?}-worker:baseline
+    user: '0:0'
+    command: [node, /benchmark/fixtures.cjs, create]
+    environment: *environment
+    volumes:
+      - ${BENCH_DIRECTORY:?}/fixtures:/fixtures
+      - ../../test/files:/reference:ro
+volumes:
+  database:
+  storage:

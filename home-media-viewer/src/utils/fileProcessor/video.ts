@@ -2,13 +2,11 @@ import fs, { existsSync } from 'fs';
 import type { FFProbeResult } from 'ffprobe';
 import { mediaCommand } from '../mediaCommand';
 
-import { getFullPath, updateContentDate, updateThumbnailDate } from '../fileHelper';
-import { addDateMeta, addFloatMeta, addIntMeta, addPositionMeta, addStringMeta } from '../metaHelper';
+import { getFullPath } from '../fileHelper';
+import { MetadataCollector, type ExtractedMetadata } from './metadata';
 import { getDateObject } from '../utils';
-import { getFileThumbnailPath } from '../thumbnailHelper';
 
 import { type File } from '@prisma/client';
-import { type FileProcessor } from './processorFactory';
 import { MetaType } from '../metaUtils';
 import { thumbnailSizes } from '../frontend/thumbnailUtils';
 
@@ -16,7 +14,8 @@ import { thumbnailSizes } from '../frontend/thumbnailUtils';
 const ffprobePath = process.env.FFPROBE_PATH ?? '/usr/bin/ffprobe';
 const pathToFfmpeg = process.env.FFMPEG_PATH ?? '/usr/bin/ffmpeg';
 
-const videoFileProcessor: FileProcessor = async (file: File): Promise<boolean> => {
+export const extractVideoMetadata = async (file: File): Promise<ExtractedMetadata> => {
+  const metadata = new MetadataCollector();
   const path = getFullPath(file);
 
   if (!fs.existsSync(path)) {
@@ -66,41 +65,41 @@ const videoFileProcessor: FileProcessor = async (file: File): Promise<boolean> =
   }
 
   if (extractedDate != null) {
-    await updateContentDate(file, extractedDate);
-    await addDateMeta(file, MetaType.DateTime, extractedDate);
+    metadata.contentDate = extractedDate;
+    metadata.addDate(MetaType.DateTime, extractedDate);
   }
 
   if (typeof str?.tags?.language === 'string') {
-    await addStringMeta(file, MetaType.Language, str.tags.language);
+    metadata.addString(MetaType.Language, str.tags.language);
   }
   if (typeof str?.codec_name === 'string') {
-    await addStringMeta(file, MetaType.Codec, str.codec_name);
+    metadata.addString(MetaType.Codec, str.codec_name);
   }
   if (typeof str?.codec_long_name === 'string') {
-    await addStringMeta(file, MetaType.CodecFullName, str.codec_long_name);
+    metadata.addString(MetaType.CodecFullName, str.codec_long_name);
   }
   if (typeof str?.width === 'number') {
-    await addIntMeta(file, MetaType.ResolutionX, Math.round(str.width));
+    metadata.addInt(MetaType.ResolutionX, Math.round(str.width));
   }
   if (typeof str?.height === 'number') {
-    await addIntMeta(file, MetaType.ResolutionY, Math.round(str.height));
+    metadata.addInt(MetaType.ResolutionY, Math.round(str.height));
   }
 
   if (typeof str?.duration === 'number') {
-    await addFloatMeta(file, MetaType.Duration, str.duration);
+    metadata.addFloat(MetaType.Duration, str.duration);
   } else if (typeof str?.duration === 'string' && str?.duration.length > 0) {
     const durationNumber = Number.parseFloat(str?.duration);
     if (!Number.isNaN(durationNumber)) {
-      await addFloatMeta(file, MetaType.Duration, durationNumber);
+      metadata.addFloat(MetaType.Duration, durationNumber);
     }
   }
   if (typeof str?.bit_rate === 'number') {
-    await addIntMeta(file, MetaType.Bitrate, Math.round(str.bit_rate));
+    metadata.addInt(MetaType.Bitrate, Math.round(str.bit_rate));
   }
 
   // const fpsValue = getFpsValue(str?.r_frame_rate);
   // if (fpsValue != null) {
-  //   await addIntMeta(file, MetaType.Fps, Math.round(fpsValue));
+  //   metadata.addInt(MetaType.Fps, Math.round(fpsValue));
   // }
 
   const customVideoResults = await loadCustomVideoData(path, ffprobePath);
@@ -108,52 +107,45 @@ const videoFileProcessor: FileProcessor = async (file: File): Promise<boolean> =
   if (customVideoResults != null) {
     // alternative creation date value
     if (typeof customVideoResults?.creationTime === 'object' && typeof str?.tags?.creation_time !== 'string') {
-      await updateContentDate(file, customVideoResults.creationTime);
-      await addDateMeta(file, MetaType.DateTime, customVideoResults.creationTime);
+      metadata.contentDate = customVideoResults.creationTime;
+      metadata.addDate(MetaType.DateTime, customVideoResults.creationTime);
     }
 
     if (typeof customVideoResults?.model === 'string') {
-      await addStringMeta(file, MetaType.Model, customVideoResults.model);
+      metadata.addString(MetaType.Model, customVideoResults.model);
     }
 
     if (typeof customVideoResults?.manufacturer === 'string') {
-      await addStringMeta(file, MetaType.Make, customVideoResults.manufacturer);
+      metadata.addString(MetaType.Make, customVideoResults.manufacturer);
     }
 
     if (typeof customVideoResults?.location === 'object') {
-      await addPositionMeta(
-        file,
-        MetaType.GpsCoordinates,
-        customVideoResults.location.lat,
-        customVideoResults.location.lon,
-      );
+      metadata.addPosition(MetaType.GpsCoordinates, customVideoResults.location.lat, customVideoResults.location.lon);
     }
 
     if (typeof customVideoResults?.encoder === 'string') {
-      await addStringMeta(file, MetaType.Encoder, customVideoResults.encoder);
+      metadata.addString(MetaType.Encoder, customVideoResults.encoder);
     }
 
     if (typeof customVideoResults.fps === 'number') {
-      await addFloatMeta(file, MetaType.Fps, customVideoResults.fps);
+      metadata.addFloat(MetaType.Fps, customVideoResults.fps);
     }
   } else {
     const fpsValue = getFpsValue(str?.r_frame_rate);
     if (fpsValue != null) {
-      await addIntMeta(file, MetaType.Fps, Math.round(fpsValue));
+      metadata.addInt(MetaType.Fps, Math.round(fpsValue));
     }
   }
 
-  // create thumbnail
+  return metadata;
+};
+
+export const generateVideoThumbnails = async (file: File, outputs: ReadonlyMap<number, string>): Promise<void> => {
   for (const size of thumbnailSizes) {
-    const thumbnailFilePath = getFileThumbnailPath(file, size);
-    await createThumbnailImage(path, thumbnailFilePath, size);
-
-    console.log(`Thumbnail size ${size} saved to path ${thumbnailFilePath}`);
+    const output = outputs.get(size);
+    if (output === undefined) throw new Error('Missing thumbnail output');
+    await createThumbnailImage(getFullPath(file), output, size);
   }
-
-  await updateThumbnailDate(file);
-
-  return true;
 };
 
 /**
@@ -277,12 +269,4 @@ const createThumbnailImage = async (videoFilePath: string, thumbnailPath: string
   ];
 
   await mediaCommand(executablePath, args);
-};
-
-const supportedExtensions: string[] = ['mp4', 'mkv', 'avi', 'mpg', 'mpeg', 'mov'];
-
-export const fillProcessorList = (processors: Record<string, FileProcessor>): void => {
-  supportedExtensions.forEach((ext) => {
-    processors[ext] = videoFileProcessor;
-  });
 };

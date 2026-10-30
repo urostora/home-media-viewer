@@ -5,6 +5,8 @@ import { deleteMetadata, loadMetadata } from '@/utils/fileHelper';
 import { apiOnlyWithAdminUsers } from '@/utils/auth/apiHoc';
 
 import prisma from '@/utils/prisma/prismaImporter';
+import { respondToProcessing } from '@/utils/processes/processingResponse';
+import { IndexingBusyError } from '@/utils/processes/indexingState';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
   const { method } = req;
@@ -31,11 +33,14 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
           throw new Error(`File not exists with id ${idToUpdate}`);
         }
 
-        const ok = await loadMetadata(file);
-
-        res.status(200).json(getApiResponse({ ok, id: idToUpdate }));
+        if (file.isDirectory) {
+          const ok = await loadMetadata(file);
+          res.status(ok ? 200 : 500).json(getApiResponse({ ok, id: idToUpdate }));
+        } else {
+          await respondToProcessing(res, { fileId: idToUpdate, stages: ['metadata', 'thumbnails'], mode: 'refresh' });
+        }
       } catch (e) {
-        res.status(400).end(`${e}`);
+        res.status(e instanceof IndexingBusyError ? 409 : 400).json({ ok: false, error: 'Metadata request failed' });
       }
       break;
     case 'DELETE':
@@ -62,11 +67,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
         await deleteMetadata(file);
         res.status(200).json(getApiResponse({ id: idToUpdate }));
       } catch (e) {
-        res.status(400).end(`${e}`);
+        res.status(e instanceof IndexingBusyError ? 409 : 400).json({ ok: false, error: 'Metadata request failed' });
       }
       break;
     default:
-      res.setHeader('Allow', ['POST']);
+      res.setHeader('Allow', ['POST', 'DELETE']);
       res.status(405).end(`Method ${method} Not Allowed`);
   }
 };

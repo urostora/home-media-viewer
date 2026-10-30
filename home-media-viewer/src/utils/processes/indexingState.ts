@@ -2,8 +2,13 @@ import { mkdir, readFile, rename, rmdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { storageRoot } from '../storagePaths';
+import { HmvError } from '../apiHelpers';
 
-export class IndexingBusyError extends Error {}
+export class IndexingBusyError extends HmvError {
+  constructor(message = 'Indexing is locked') {
+    super(message, { isPublic: true, httpStatus: 409 });
+  }
+}
 
 export interface IndexingState {
   startedAt?: string;

@@ -20,7 +20,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
   }
 
   const id = query.id;
-  const userId = req.session?.user?.admin === true ? undefined : req?.session?.user?.id ?? '';
+  const userId = req.session?.user?.admin === true ? undefined : (req?.session?.user?.id ?? '');
 
   const file = await getFileById(id, userId);
 
@@ -48,6 +48,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
       if (req.session.user?.admin !== true) {
         // forbidden
         res.status(403).send('Only administrators allowed');
+        return;
       }
 
       try {

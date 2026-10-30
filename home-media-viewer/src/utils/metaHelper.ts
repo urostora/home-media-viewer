@@ -11,6 +11,7 @@ export const addIntMeta = async (file: File, metaKey: string, value: number): Pr
       },
     },
     update: {
+      origin: 'Manual',
       type: 'Int',
       intValue: Math.round(value),
       floatValue: null,
@@ -20,6 +21,7 @@ export const addIntMeta = async (file: File, metaKey: string, value: number): Pr
       longitude: null,
     },
     create: {
+      origin: 'Manual',
       fileId: file.id,
       metaKey,
       type: 'Int',
@@ -42,6 +44,7 @@ export const addStringMeta = async (file: File, metaKey: string, value: string):
       },
     },
     update: {
+      origin: 'Manual',
       type: 'String',
       intValue: null,
       floatValue: null,
@@ -51,6 +54,7 @@ export const addStringMeta = async (file: File, metaKey: string, value: string):
       longitude: null,
     },
     create: {
+      origin: 'Manual',
       fileId: file.id,
       metaKey,
       type: 'String',
@@ -73,6 +77,7 @@ export const addFloatMeta = async (file: File, metaKey: string, value: number): 
       },
     },
     update: {
+      origin: 'Manual',
       type: 'Float',
       intValue: null,
       floatValue: value,
@@ -82,6 +87,7 @@ export const addFloatMeta = async (file: File, metaKey: string, value: number): 
       longitude: null,
     },
     create: {
+      origin: 'Manual',
       fileId: file.id,
       metaKey,
       type: 'Float',
@@ -104,6 +110,7 @@ export const addDateMeta = async (file: File, metaKey: string, value: Date): Pro
       },
     },
     update: {
+      origin: 'Manual',
       type: 'DateTime',
       intValue: null,
       floatValue: null,
@@ -113,6 +120,7 @@ export const addDateMeta = async (file: File, metaKey: string, value: Date): Pro
       longitude: null,
     },
     create: {
+      origin: 'Manual',
       fileId: file.id,
       metaKey,
       type: 'DateTime',
@@ -140,6 +148,7 @@ export const addPositionMeta = async (
       },
     },
     update: {
+      origin: 'Manual',
       type: 'Location',
       intValue: null,
       floatValue: null,
@@ -149,6 +158,7 @@ export const addPositionMeta = async (
       longitude,
     },
     create: {
+      origin: 'Manual',
       fileId: file.id,
       metaKey,
       type: 'Location',

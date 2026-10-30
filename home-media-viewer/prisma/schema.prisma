@@ -56,28 +56,32 @@ model Album {
 }
 
 model File {
-  id                      String                   @id @default(uuid())
-  status                  Status                   @default(Active)
-  path                    String                   @db.Text
-  name                    String
-  extension               String
-  isDirectory             Boolean                  @default(false)
-  createdAt               DateTime                 @default(now())
-  modifiedAt              DateTime                 @default(now())
-  contentDate             DateTime?
-  size                    Int?
-  hash                    String?
-  metadataStatus          MetadataProcessingStatus @default(New)
-  metadataProcessedAt     DateTime?
-  metadataProcessingError String?                  @db.Text
-  thumbnailStatus         MetadataProcessingStatus @default(New)
-  thumbnailProcessedAt    DateTime?
-  albums                  Album[]                  @relation("AlbumFiles")
-  metas                   FileMeta[]
-  parentFileId            String?
-  parentFile              File?                    @relation("DirectoryContent", fields: [parentFileId], references: [id])
-  files                   File[]                   @relation("DirectoryContent")
-  albumsUseAsThumbnail    Album[]                  @relation("AlbumThumbnails")
+  id                       String                   @id @default(uuid())
+  status                   Status                   @default(Active)
+  path                     String                   @db.Text
+  name                     String
+  extension                String
+  isDirectory              Boolean                  @default(false)
+  createdAt                DateTime                 @default(now())
+  modifiedAt               DateTime                 @default(now())
+  contentDate              DateTime?
+  size                     Int?
+  hash                     String?
+  metadataStatus           MetadataProcessingStatus @default(New)
+  metadataProcessedAt      DateTime?
+  metadataProcessingError  String?                  @db.Text
+  thumbnailStatus          MetadataProcessingStatus @default(New)
+  thumbnailProcessedAt     DateTime?
+  thumbnailProcessingError String?                  @db.Text
+  sourceVersion            String?                  @db.VarChar(64)
+  metadataSourceVersion    String?                  @db.VarChar(64)
+  thumbnailSourceVersion   String?                  @db.VarChar(64)
+  albums                   Album[]                  @relation("AlbumFiles")
+  metas                    FileMeta[]
+  parentFileId             String?
+  parentFile               File?                    @relation("DirectoryContent", fields: [parentFileId], references: [id])
+  files                    File[]                   @relation("DirectoryContent")
+  albumsUseAsThumbnail     Album[]                  @relation("AlbumThumbnails")
 
   @@index([extension])
   @@index([name, extension])
@@ -93,15 +97,22 @@ enum FileMetaType {
   Location
 }
 
+enum MetadataOrigin {
+  Legacy
+  Extracted
+  Manual
+}
+
 model FileMeta {
-  id          String       @id @default(uuid())
+  id          String         @id @default(uuid())
   fileId      String
-  file        File         @relation(fields: [fileId], references: [id])
+  file        File           @relation(fields: [fileId], references: [id])
   metaKey     String
   type        FileMetaType
+  origin      MetadataOrigin @default(Legacy)
   intValue    Int?
   floatValue  Float?
-  stringValue String?      @db.Text
+  stringValue String?        @db.Text
   dateValue   DateTime?
   latitude    Float?
   longitude   Float?

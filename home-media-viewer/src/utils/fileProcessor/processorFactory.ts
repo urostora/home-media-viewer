@@ -1,26 +1,25 @@
-import { type File } from '@prisma/client';
-
-import { noneFileProcessor } from './none';
-import { directoryFileProcessor } from './directory';
-import { fillProcessorList as fillImageProcessors } from './image';
-import { fillProcessorList as fillVideoProcessors } from './video';
-import { fileProcessorHoc } from './fileProcessorHoc';
+import type { File } from '@prisma/client';
+import type { ExtractedMetadata } from './metadata';
+import { extractImageMetadata, generateImageThumbnails } from './image';
+import { extractVideoMetadata, generateVideoThumbnails } from './video';
 
 export type FileProcessor = (file: File) => Promise<boolean>;
+export type MetadataExtractor = (file: File) => Promise<ExtractedMetadata>;
+export type ThumbnailGenerator = (file: File, outputs: ReadonlyMap<number, string>) => Promise<void>;
 
-const defaultFileProcessor: FileProcessor = noneFileProcessor;
-const processors: Record<string, FileProcessor> = {};
+const images = new Set(['bmp', 'jpg', 'jpeg', 'gif', 'png', 'tiff']);
+const videos = new Set(['mp4', 'mkv', 'avi', 'mpg', 'mpeg', 'mov']);
 
-// fill processors
-fillImageProcessors(processors);
-fillVideoProcessors(processors);
+export const getMetadataExtractor = (file: File): MetadataExtractor | undefined => {
+  if (file.isDirectory) return undefined;
+  if (images.has(file.extension.toLowerCase())) return extractImageMetadata;
+  if (videos.has(file.extension.toLowerCase())) return extractVideoMetadata;
+  return undefined;
+};
 
-export const getFileProcessor = (file: File): FileProcessor => {
-  if (file.isDirectory) {
-    return directoryFileProcessor;
-  }
-
-  const processorFound = processors[file.extension.toLowerCase()] ?? null;
-
-  return fileProcessorHoc(processorFound ?? defaultFileProcessor);
+export const getThumbnailGenerator = (file: File): ThumbnailGenerator | undefined => {
+  if (file.isDirectory) return undefined;
+  if (images.has(file.extension.toLowerCase())) return generateImageThumbnails;
+  if (videos.has(file.extension.toLowerCase())) return generateVideoThumbnails;
+  return undefined;
 };

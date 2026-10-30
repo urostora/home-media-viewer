@@ -6,10 +6,11 @@ Run Compose commands from the repository root. Use `db` for database connections
 
 These commands use the default development project and its configured environment. They may modify shared dependencies or start existing services; use them when working in that environment, not as disposable validation setup.
 
+The default configuration lets run the containers with developer settings. If the command to run has no specific requirements, run it in the already running app container: `docker compose exec app [command]`. If it's not running, start it: `docker compose up -d`.
+
 ```sh
 docker compose run --rm dependencies npm ci
 docker compose run --rm dependencies npx prisma generate
-docker compose up -d app
 docker compose run --rm dependencies npm run lint
 docker compose run --rm dependencies npm run typecheck
 docker compose run --rm dependencies npm run build

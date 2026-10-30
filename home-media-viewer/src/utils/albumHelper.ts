@@ -11,7 +11,7 @@ import type {
 } from '@/types/api/albumTypes';
 import { $Enums, type Album, AlbumSourceType, type Prisma } from '@prisma/client';
 
-import { ALBUM_PATH, loadMetadata, syncFilesInAlbumAndFile } from './fileHelper';
+import { ALBUM_PATH, syncFilesInAlbumAndFile } from './fileHelper';
 
 import prisma from '@/utils/prisma/prismaImporter';
 import { getFileThumbnailInBase64 } from './thumbnailHelper';
@@ -19,7 +19,8 @@ import { type DataValidatorSchema, statusValues, metadataProcessingStatusValues 
 import type { EntityListResult } from '@/types/api/generalTypes';
 import { getSimpleValueOrInFilter } from './api/searchParameterHelper';
 import { HmvError } from './apiHelpers';
-import { isShuttingDownHandler } from './isShuttingDown';
+import { withProcessingLock } from './processes/processingLock';
+import updateMetadataProcess from './processes/updateMetadataProcess';
 
 const ALBUM_SOURCE_TYPE_VALUES = ['File', 'Ftp'];
 
@@ -86,6 +87,7 @@ export const getAlbum = async (id: string, onlyActive: boolean = true): Promise<
   // get file processing informations
   const fileStatus = await prisma.file.groupBy({
     where: {
+      isDirectory: false,
       albums: {
         some: {
           id: album.id,
@@ -145,7 +147,7 @@ export const getAlbums = async (params: AlbumSearchType): Promise<EntityListResu
     users: usersFilter,
   };
 
-  const take = params.take === 0 ? undefined : params.take ?? 10;
+  const take = params.take === 0 ? undefined : (params.take ?? 10);
   const skip = params.skip ?? 0;
 
   const results = await prisma.$transaction([
@@ -193,14 +195,14 @@ export const getAlbums = async (params: AlbumSearchType): Promise<EntityListResu
               ...a.thumbnailFile,
               contentDate: a.thumbnailFile.contentDate?.toISOString(),
               thumbnailImage:
-                params.returnThumbnails === true ? getFileThumbnailInBase64(a.thumbnailFile) ?? undefined : undefined,
+                params.returnThumbnails === true ? (getFileThumbnailInBase64(a.thumbnailFile) ?? undefined) : undefined,
             }
           : a.files.length > 0
             ? {
                 ...a.files[0],
                 contentDate: a.files[0].contentDate?.toISOString(),
                 thumbnailImage:
-                  params.returnThumbnails === true ? getFileThumbnailInBase64(a.files[0]) ?? undefined : undefined,
+                  params.returnThumbnails === true ? (getFileThumbnailInBase64(a.files[0]) ?? undefined) : undefined,
               }
             : undefined,
       files: undefined,
@@ -334,7 +336,7 @@ export const getChildAlbumsInPath = async (path: string): Promise<Album[]> => {
   });
 };
 
-export const addAlbum = async (data: AlbumAddType): Promise<Album> => {
+const addAlbumUnlocked = async (data: AlbumAddType): Promise<Album> => {
   if (typeof data?.path !== 'string' || data.path.length === 0) {
     throw new HmvError('Parameter "path" must be a non-empty string', { isPublic: true });
   }
@@ -400,6 +402,9 @@ export const addAlbum = async (data: AlbumAddType): Promise<Album> => {
   return newAlbum;
 };
 
+export const addAlbum: typeof addAlbumUnlocked = async (...args) =>
+  await withProcessingLock(async () => await addAlbumUnlocked(...args));
+
 export const updateAlbum = async (id: string, data: AlbumUpdateType): Promise<Album | null> => {
   if (typeof id !== 'string' || id.length === 0) {
     throw new HmvError('Parameter "id" must be a non-empty string');
@@ -446,44 +451,22 @@ export const deleteAlbum = async (id: string): Promise<AlbumDataType | null> => 
   return await prisma.album.update({ where: { id }, data: { status: 'Deleted' } });
 };
 
-export const syncAlbumFiles = async (albumId: string): Promise<void> => {
-  const album = await prisma.album.findFirst({ where: { id: albumId, status: { in: ['Active', 'Disabled'] } } });
+export const syncAlbumFiles = async (albumId: string): Promise<void> =>
+  await withProcessingLock(async () => {
+    const album = await prisma.album.findFirst({ where: { id: albumId, status: { in: ['Active', 'Disabled'] } } });
 
-  if (album == null) {
-    throw Error(`Album not found with id ${albumId}`);
-  }
+    if (album == null) {
+      throw Error(`Album not found with id ${albumId}`);
+    }
 
-  await syncFilesInAlbumAndFile(album);
-};
+    await syncFilesInAlbumAndFile(album);
+  });
 
 export const processAlbumFilesMetadata = async (
   albumId: string,
   timeoutSec: number = Number.parseInt(process.env.LONG_PROCESS_TIMEOUT_SEC ?? '20'),
 ): Promise<void> => {
-  const startedOn = process.hrtime();
-  const album = await prisma.album.findFirst({ where: { id: albumId, status: { in: ['Active', 'Disabled'] } } });
-
-  if (album == null) {
-    throw Error(`Album not found with id ${albumId}`);
-  }
-
-  const filesUnprocessed = await prisma.file.findMany({
-    where: {
-      albums: { some: album },
-      metadataStatus: 'New',
-    },
-  });
-
-  // this may be a long process
-  for (const f of filesUnprocessed) {
-    console.log(`Create metadata to file ${f.path}`);
-    await loadMetadata(f);
-
-    const currentTime = process.hrtime(startedOn);
-    if (isShuttingDownHandler.isShuttingDown() || currentTime[0] > timeoutSec) {
-      break;
-    }
-  }
+  await updateMetadataProcess.run({ albumId, timeoutSec, stages: ['metadata', 'thumbnails'] });
 };
 
 export const addUserToAlbum = async (album: string, user: string): Promise<void> => {

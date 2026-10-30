@@ -1,7 +1,10 @@
 import fs from 'fs';
 import path from 'path';
 
-import { getFileProcessor } from '@/utils/fileProcessor/processorFactory';
+import { processFileStage } from './processes/fileStages';
+import { withProcessingLock } from './processes/processingLock';
+import { sourceVersion } from './processes/sourceIdentity';
+import { directoryFileProcessor } from './fileProcessor/directory';
 import { getDateObject, getDateTimeFilter } from '@/utils/utils';
 import { getFileThumbnailInBase64 } from '@/utils/thumbnailHelper';
 import { getSimpleValueOrInFilter } from './api/searchParameterHelper';
@@ -12,7 +15,7 @@ import { MetaType } from './metaUtils';
 import { getSquareAroundCoordinate } from './geoUtils';
 
 import type { FileMetaUpdateType, FileResultType, FileSearchType, FileUpdateType } from '@/types/api/fileTypes';
-import type { $Enums, Album, File, MetadataProcessingStatus, Prisma, FileMeta } from '@prisma/client';
+import type { $Enums, Album, File, Prisma, FileMeta } from '@prisma/client';
 import type { EntityListResult } from '@/types/api/generalTypes';
 import type { BrowseResult, BrowseResultFile } from '@/types/api/browseTypes';
 import { statusValues, type DataValidatorSchema } from './dataValidator';
@@ -27,7 +30,7 @@ export const fileMetadataUpdateDataSchema: DataValidatorSchema = [
   { field: 'type', valuesAllowed: ['Int', 'String', 'Float', 'Date', 'Location'] },
 ];
 
-export const syncFilesInAlbumAndFile = async (album: Album, parentFile?: File): Promise<void> => {
+const syncFilesInAlbumAndFileUnlocked = async (album: Album, parentFile?: File): Promise<void> => {
   let directoryPath = album.basePath;
   let outerParentFile: File | undefined;
 
@@ -107,7 +110,7 @@ export const syncFilesInAlbumAndFile = async (album: Album, parentFile?: File): 
     }
 
     // check if file was modified
-    if (f.isDirectory || f.metadataStatus === 'New') {
+    if (f.isDirectory) {
       continue;
     }
 
@@ -123,10 +126,17 @@ export const syncFilesInAlbumAndFile = async (album: Album, parentFile?: File): 
       continue;
     }
 
-    if (f.size !== fileStats.size) {
+    if (
+      f.sourceVersion !== null
+        ? f.sourceVersion !== sourceVersion(fileStats)
+        : f.size !== fileStats.size || f.modifiedAt.getTime() !== fileStats.mtime.getTime()
+    ) {
       // file content changed
-      console.log(`[${fullName}] changed - Size changed from ${f.size} to ${fileStats.size}]`);
+      // Both derived stages must be invalidated when the indexed source identity changes.
       filesToUpdate.push(f);
+    } else if (f.sourceVersion === null) {
+      // Establish identity lazily without enqueuing an unchanged historical library.
+      await prisma.file.update({ where: { id: f.id }, data: { sourceVersion: sourceVersion(fileStats) } });
     }
   }
 
@@ -205,7 +215,11 @@ export const syncFilesInAlbumAndFile = async (album: Album, parentFile?: File): 
   }
 
   for (const fileToUpdate of filesToUpdate) {
-    await prisma.file.update({ where: { id: fileToUpdate.id }, data: { metadataStatus: 'New' } });
+    const current = fs.statSync(getFullPath(fileToUpdate));
+    await prisma.file.update({
+      where: { id: fileToUpdate.id },
+      data: { metadataStatus: 'New', thumbnailStatus: 'New', sourceVersion: sourceVersion(current) },
+    });
   }
 
   for (const newDirectory of newDirectories) {
@@ -213,6 +227,9 @@ export const syncFilesInAlbumAndFile = async (album: Album, parentFile?: File): 
     await syncFilesInAlbumAndFile(album, newDirectory);
   }
 };
+
+export const syncFilesInAlbumAndFile: typeof syncFilesInAlbumAndFileUnlocked = async (...args) =>
+  await withProcessingLock(async () => await syncFilesInAlbumAndFileUnlocked(...args));
 
 export const getFileById = async (
   id: string,
@@ -255,7 +272,10 @@ export const addFile = async (filePath: string, albums: Album[], parentFile?: Fi
   if (existingFile !== null) {
     // if it was deleted, reactivate file and reload metadata
     if (existingFile.status === 'Deleted') {
-      await prisma.file.update({ where: { id: existingFile.id }, data: { status: 'Active', metadataStatus: 'New' } });
+      await prisma.file.update({
+        where: { id: existingFile.id },
+        data: { status: 'Active', metadataStatus: 'New', thumbnailStatus: 'New', sourceVersion: sourceVersion(stats) },
+      });
     }
 
     if (parentFile !== undefined && existingFile.parentFileId !== parentFile.id) {
@@ -268,6 +288,7 @@ export const addFile = async (filePath: string, albums: Album[], parentFile?: Fi
   }
 
   const fileData = {
+    sourceVersion: isDirectory ? null : sourceVersion(stats),
     path: relativePath,
     extension: isDirectory ? '' : getPureExtension(ext),
     name,
@@ -425,7 +446,7 @@ export const getFiles = async (params: FileSearchType): Promise<EntityListResult
           };
   }
 
-  const take = params?.take === 0 ? undefined : params.take ?? undefined;
+  const take = params?.take === 0 ? undefined : (params.take ?? undefined);
   const skip = params.skip ?? 0;
 
   const filter: Prisma.FileWhereInput = {
@@ -525,66 +546,31 @@ export const loadMetadataById = async (fileId: string): Promise<void> => {
   await loadMetadata(file);
 };
 
-export const loadMetadata = async (file: File): Promise<boolean> => {
-  const metadataProcessor = getFileProcessor(file);
+// Compatibility helper: full media refresh, or discovery for a directory.
+export const loadMetadata = async (file: File): Promise<boolean> =>
+  await withProcessingLock(async () => {
+    if (file.isDirectory) return await directoryFileProcessor(file);
+    const metadata = await processFileStage(file, 'metadata');
+    const thumbnails = await processFileStage(file, 'thumbnails');
+    return ![metadata, thumbnails].some((result) => result === 'failed' || result === 'deferred');
+  });
 
-  let ok: boolean = true;
-  let error: string = '';
-  if (typeof metadataProcessor === 'function') {
-    try {
-      if (!file.isDirectory) {
-        console.log(`    Processing metadata for file ${file.path}`);
-      }
+export const deleteMetadata = async (file: File): Promise<void> =>
+  await withProcessingLock(async () => {
+    const metaIds = (await prisma.fileMeta.findMany({ where: { fileId: file.id }, select: { id: true } })).map(
+      (r) => r.id,
+    );
 
-      ok = await metadataProcessor(file);
+    const deleteOperations = metaIds.map((metaId) => prisma.fileMeta.delete({ where: { id: metaId } }));
 
-      if (!file.isDirectory) {
-        console.log('      Metadata processed');
-      }
-    } catch (e) {
-      ok = false;
-      error = `${e}`;
-      console.log('Metadata processor error', e);
-    }
-
-    const metadataStatus: MetadataProcessingStatus = ok ? 'Processed' : 'Error';
-
-    await prisma.file.update({
-      where: { id: file.id },
-      data: {
-        metadataProcessedAt: new Date(),
-        metadataStatus,
-        metadataProcessingError: error,
-      },
-    });
-  } else {
-    await prisma.file.update({
-      where: { id: file.id },
-      data: {
-        metadataProcessedAt: new Date(),
-        metadataStatus: 'NotSupported',
-      },
-    });
-  }
-
-  return ok;
-};
-
-export const deleteMetadata = async (file: File): Promise<void> => {
-  const metaIds = (await prisma.fileMeta.findMany({ where: { fileId: file.id }, select: { id: true } })).map(
-    (r) => r.id,
-  );
-
-  const deleteOperations = metaIds.map((metaId) => prisma.fileMeta.delete({ where: { id: metaId } }));
-
-  await prisma.$transaction([
-    ...deleteOperations,
-    prisma.file.update({
-      where: { id: file.id },
-      data: { metadataStatus: 'New', metadataProcessedAt: null, metadataProcessingError: '' },
-    }),
-  ]);
-};
+    await prisma.$transaction([
+      ...deleteOperations,
+      prisma.file.update({
+        where: { id: file.id },
+        data: { metadataStatus: 'New', metadataProcessedAt: null, metadataProcessingError: '' },
+      }),
+    ]);
+  });
 
 export const getFullPath = (file: File): string => {
   return `${ALBUM_PATH}/${file.path}`;
@@ -730,51 +716,52 @@ export const getBrowseResult = async (directoryPath: string): Promise<BrowseResu
   return results;
 };
 
-export const updateFileMetaEntry = async (file: File, data: FileMetaUpdateType): Promise<void> => {
-  switch (data.type) {
-    case 'String':
-      if (typeof data.value === 'string') {
-        await addStringMeta(file, data.key, data.value);
-      } else {
-        throw new HmvError('Value must be a string', { isPublic: true });
-      }
-      break;
-    case 'Int':
-      if (typeof data.value === 'number') {
-        await addIntMeta(file, data.key, data.value);
-      } else {
-        throw new HmvError('Value must be a number', { isPublic: true });
-      }
-      break;
-    case 'Float':
-      if (typeof data.value === 'number') {
-        await addFloatMeta(file, data.key, data.value);
-      } else {
-        throw new HmvError('Value must be a number', { isPublic: true });
-      }
-      break;
-    case 'Date':
-      if (typeof data.value === 'string' && getDateObject(data.value) !== null) {
-        const date = getDateObject(data.value);
-        if (date !== null) {
-          await addDateMeta(file, data.key, date);
+export const updateFileMetaEntry = async (file: File, data: FileMetaUpdateType): Promise<void> =>
+  await withProcessingLock(async () => {
+    switch (data.type) {
+      case 'String':
+        if (typeof data.value === 'string') {
+          await addStringMeta(file, data.key, data.value);
+        } else {
+          throw new HmvError('Value must be a string', { isPublic: true });
         }
-      } else {
-        throw new HmvError('Value must be a date string', { isPublic: true });
-      }
-      break;
-    case 'Location':
-      if (
-        typeof data.value === 'object' &&
-        typeof data.value.latitude === 'number' &&
-        typeof data.value.longitude === 'number'
-      ) {
-        await addPositionMeta(file, data.key, data.value.latitude, data.value.longitude);
-      } else {
-        throw new HmvError('Value has invalid latitude or longitude value', { isPublic: true });
-      }
-      break;
-    default:
-      throw new HmvError(`Invalid data type specified`, { isPublic: true });
-  }
-};
+        break;
+      case 'Int':
+        if (typeof data.value === 'number') {
+          await addIntMeta(file, data.key, data.value);
+        } else {
+          throw new HmvError('Value must be a number', { isPublic: true });
+        }
+        break;
+      case 'Float':
+        if (typeof data.value === 'number') {
+          await addFloatMeta(file, data.key, data.value);
+        } else {
+          throw new HmvError('Value must be a number', { isPublic: true });
+        }
+        break;
+      case 'Date':
+        if (typeof data.value === 'string' && getDateObject(data.value) !== null) {
+          const date = getDateObject(data.value);
+          if (date !== null) {
+            await addDateMeta(file, data.key, date);
+          }
+        } else {
+          throw new HmvError('Value must be a date string', { isPublic: true });
+        }
+        break;
+      case 'Location':
+        if (
+          typeof data.value === 'object' &&
+          typeof data.value.latitude === 'number' &&
+          typeof data.value.longitude === 'number'
+        ) {
+          await addPositionMeta(file, data.key, data.value.latitude, data.value.longitude);
+        } else {
+          throw new HmvError('Value has invalid latitude or longitude value', { isPublic: true });
+        }
+        break;
+      default:
+        throw new HmvError(`Invalid data type specified`, { isPublic: true });
+    }
+  });

@@ -1,12 +1,12 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 
-import { processAlbumFilesMetadata } from '@/utils/albumHelper';
-import { getApiResponse, getEntityTypeRequestBodyObject } from '@/utils/apiHelpers';
+import { getEntityTypeRequestBodyObject } from '@/utils/apiHelpers';
 import { apiOnlyWithAdminUsers } from '@/utils/auth/apiHoc';
 
 import type { EntityType } from '@/types/api/generalTypes';
 
 import prisma from '@/utils/prisma/prismaImporter';
+import { respondToProcessing } from '@/utils/processes/processingResponse';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
   const { method } = req;
@@ -33,9 +33,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
           throw new Error(`Album not exists with id ${idToUpdate}`);
         }
 
-        await processAlbumFilesMetadata(album.id);
-
-        res.status(200).json(getApiResponse({ ok: true, id: idToUpdate }));
+        await respondToProcessing(res, { albumId: album.id, stages: ['metadata', 'thumbnails'] });
       } catch (e) {
         res.status(400).end(`${e}`);
       }

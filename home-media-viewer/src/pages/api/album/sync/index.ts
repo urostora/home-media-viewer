@@ -3,6 +3,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { getApiResponse, getRequestBodyObject } from '@/utils/apiHelpers';
 import { apiOnlyWithAdminUsers } from '@/utils/auth/apiHoc';
 import updateMetadataProcess from '@/utils/processes/updateMetadataProcess';
+import { IndexingBusyError } from '@/utils/processes/indexingState';
 
 import { type EntityType } from '@/types/api/generalTypes';
 
@@ -24,7 +25,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
         await updateMetadataProcess.update(undefined, undefined, postData.id);
         res.status(200).json(getApiResponse());
       } catch (e) {
-        res.status(400).end(`${e}`);
+        res.status(e instanceof IndexingBusyError ? 409 : 400).json({ ok: false, error: 'Album processing failed' });
       }
       break;
     default:
