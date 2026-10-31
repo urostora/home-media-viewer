@@ -320,9 +320,9 @@ async function main() {
       const measured=JSON.parse(result.stdout.trim().split('\n').at(-1));
       assert.equal(measured.failure,null);
       assert.equal(measured.metrics.jobs.media.attempted,602);
-      assert.equal(measured.metrics.ffmpeg,mode==='metadata'?0:9);
-      assert.equal(measured.metrics.ffprobe,mode==='metadata'?6:0);
-      assert.equal(measured.metrics.imageDecodes,mode==='metadata'?0:297);
+      assert.equal(measured.metrics.ffmpeg,mode==='metadata'?0:3);
+      assert.equal(measured.metrics.ffprobe,mode==='metadata'?3:0);
+      assert.equal(measured.metrics.imageDecodes,mode==='metadata'?0:99);
       stageSmoke.push(measured);
     }
   });

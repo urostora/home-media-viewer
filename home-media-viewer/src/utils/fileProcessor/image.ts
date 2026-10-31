@@ -1,6 +1,7 @@
 import * as ExifReader from 'exifreader';
 import fs from 'fs';
 import jimp from 'jimp';
+import { isShuttingDownHandler } from '../isShuttingDown';
 
 import { getFullPath } from '../fileHelper';
 
@@ -112,11 +113,16 @@ export const extractImageMetadata = async (file: File): Promise<ExtractedMetadat
 
 export const generateImageThumbnails = async (file: File, outputs: ReadonlyMap<number, string>): Promise<void> => {
   const path = getFullPath(file);
+  const image = await jimp.read(path);
   for (const size of thumbnailSizes) {
+    if (isShuttingDownHandler.isShuttingDown()) throw new Error('Shutting down');
     const output = outputs.get(size);
     if (output === undefined) throw new Error('Missing thumbnail output');
-    const image = await jimp.read(path);
-    await image
+    // Each variant starts from the original, oriented bitmap. Keep only one clone at a time.
+    const variant = image.clone();
+    // Jimp clones pixels but drops JPEG EXIF/comment fields used by its encoder.
+    variant.bitmap = { ...image.bitmap, ...variant.bitmap };
+    await variant
       .scaleToFit(size, size)
       .quality(size < 400 ? 50 : 75)
       .writeAsync(output);

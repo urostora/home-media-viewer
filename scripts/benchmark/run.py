@@ -15,6 +15,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', required=True, type=Path)
     parser.add_argument('--repeats', type=int, default=3)
+    parser.add_argument('--measure-stages', action='store_true', help='Include repeated independent metadata/thumbnail measurements')
     parser.add_argument('--validate-stages', action='store_true', help='Run isolated migration/API/CLI/stage acceptance checks instead of benchmarks')
     args = parser.parse_args()
     if args.repeats < 1:
@@ -133,6 +134,8 @@ def main():
 
         if args.validate_stages:
             print('Running migration, independent-stage, failure, locking, API and CLI acceptance checks', flush=True)
+            processors = record_json(run('worker', 'node', '/tests/media-processors.cjs'))
+            (output / 'media-processors.json').write_text(json.dumps(processors, indent=2) + '\n')
             accepted = record_json(run('worker', 'node', '/tests/processing-stages.cjs'))
             (output / 'acceptance.json').write_text(json.dumps(accepted, indent=2) + '\n')
             discovery = record_json(run('worker', 'node', '/tests/discovery.cjs'))
@@ -161,6 +164,12 @@ def main():
             run('worker', 'node', '/benchmark/benchmark.cjs', 'prepare')
             measure('initial-discovery', 'discovery', iteration)
             measure('unchanged-discovery', 'discovery', iteration)
+        if args.measure_stages:
+            for iteration in range(args.repeats):
+                run('worker', 'node', '/benchmark/benchmark.cjs', 'prepare')
+                measure('stage-discovery', 'discovery', iteration)
+                measure('stage-metadata', 'metadata', iteration)
+                measure('stage-thumbnails', 'thumbnails', iteration)
         metadata['completed'] = True
     except BaseException:
         # Preserve task-service diagnostics before removing the isolated environment.

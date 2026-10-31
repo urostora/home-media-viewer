@@ -27,7 +27,17 @@ export const extractVideoMetadata = async (file: File): Promise<ExtractedMetadat
   }
 
   const videoData = JSON.parse(
-    await mediaCommand(ffprobePath, ['-v', 'quiet', '-print_format', 'json', '-show_streams', path]),
+    await mediaCommand(ffprobePath, [
+      '-v',
+      'error',
+      '-threads',
+      '1',
+      '-print_format',
+      'json',
+      '-show_streams',
+      '-show_format',
+      path,
+    ]),
   ) as FFProbeResult;
 
   if (typeof videoData !== 'object') {
@@ -97,73 +107,55 @@ export const extractVideoMetadata = async (file: File): Promise<ExtractedMetadat
     metadata.addInt(MetaType.Bitrate, Math.round(str.bit_rate));
   }
 
-  // const fpsValue = getFpsValue(str?.r_frame_rate);
-  // if (fpsValue != null) {
-  //   metadata.addInt(MetaType.Fps, Math.round(fpsValue));
-  // }
-
-  const customVideoResults = await loadCustomVideoData(path, ffprobePath);
-
-  if (customVideoResults != null) {
-    // alternative creation date value
-    if (typeof customVideoResults?.creationTime === 'object' && typeof str?.tags?.creation_time !== 'string') {
-      metadata.contentDate = customVideoResults.creationTime;
-      metadata.addDate(MetaType.DateTime, customVideoResults.creationTime);
-    }
-
-    if (typeof customVideoResults?.model === 'string') {
-      metadata.addString(MetaType.Model, customVideoResults.model);
-    }
-
-    if (typeof customVideoResults?.manufacturer === 'string') {
-      metadata.addString(MetaType.Make, customVideoResults.manufacturer);
-    }
-
-    if (typeof customVideoResults?.location === 'object') {
-      metadata.addPosition(MetaType.GpsCoordinates, customVideoResults.location.lat, customVideoResults.location.lon);
-    }
-
-    if (typeof customVideoResults?.encoder === 'string') {
-      metadata.addString(MetaType.Encoder, customVideoResults.encoder);
-    }
-
-    if (typeof customVideoResults.fps === 'number') {
-      metadata.addFloat(MetaType.Fps, customVideoResults.fps);
-    }
-  } else {
-    const fpsValue = getFpsValue(str?.r_frame_rate);
-    if (fpsValue != null) {
-      metadata.addInt(MetaType.Fps, Math.round(fpsValue));
-    }
+  const customVideoResults = loadCustomVideoData(videoData);
+  // Stream creation time retains precedence over container tags and filename dates.
+  if (customVideoResults.creationTime !== undefined && typeof str?.tags?.creation_time !== 'string') {
+    metadata.contentDate = customVideoResults.creationTime;
+    metadata.addDate(MetaType.DateTime, customVideoResults.creationTime);
   }
+  if (customVideoResults.model !== undefined) metadata.addString(MetaType.Model, customVideoResults.model);
+  if (customVideoResults.manufacturer !== undefined) metadata.addString(MetaType.Make, customVideoResults.manufacturer);
+  if (customVideoResults.location !== undefined) {
+    metadata.addPosition(MetaType.GpsCoordinates, customVideoResults.location.lat, customVideoResults.location.lon);
+  }
+  if (customVideoResults.encoder !== undefined) metadata.addString(MetaType.Encoder, customVideoResults.encoder);
+  if (customVideoResults.fps !== undefined) metadata.addFloat(MetaType.Fps, customVideoResults.fps);
 
   return metadata;
 };
 
 export const generateVideoThumbnails = async (file: File, outputs: ReadonlyMap<number, string>): Promise<void> => {
-  for (const size of thumbnailSizes) {
+  if (!existsSync(pathToFfmpeg)) throw new Error('FFmpeg executable not available');
+  const branches = thumbnailSizes.map((_, index) => `[frame${index}]`);
+  const filters = [
+    `[0:v:0]split=${thumbnailSizes.length}${branches.join('')}`,
+    ...thumbnailSizes.map((size, index) => `${branches[index]}scale=${size}:-1[out${index}]`),
+  ].join(';');
+  const args = [
+    '-y',
+    '-threads',
+    '1',
+    '-i',
+    getFullPath(file),
+    '-filter_complex_threads',
+    '1',
+    '-filter_complex',
+    filters,
+  ];
+  for (const [index, size] of thumbnailSizes.entries()) {
     const output = outputs.get(size);
     if (output === undefined) throw new Error('Missing thumbnail output');
-    await createThumbnailImage(getFullPath(file), output, size);
+    // Preserve first-frame selection, width scaling, automatic orientation and MJPEG defaults.
+    args.push('-map', `[out${index}]`, '-frames:v', '1', '-threads', '1', output);
   }
+  await mediaCommand(pathToFfmpeg, args);
 };
 
-/**
- *
- * @param fps string like '60/1'
- */
 const getFpsValue = (fps: string | undefined): number | null => {
-  if (typeof fps !== 'string') {
-    return null;
-  }
-
-  const res = /(?<fps>\d+)\/\d+/.exec(fps);
-
-  if (res?.groups == null) {
-    return null;
-  }
-
-  return Number.parseInt(res.groups.fps);
+  if (typeof fps !== 'string') return null;
+  const [numerator, denominator] = fps.split('/').map(Number);
+  const value = numerator / denominator;
+  return Number.isFinite(value) && value > 0 ? value : null;
 };
 
 interface CustomVideoResult {
@@ -178,95 +170,34 @@ interface CustomVideoResult {
   fps?: number;
 }
 
-const getKeyValueFromOutputResult = (input: string, key: string): string | null => {
-  const rex = new RegExp(`${key}\\s*\\:\\s*(?<result>[^\\n]+)`, 'i');
-  const m = rex.exec(input);
-  if (m?.groups?.result !== undefined) {
-    return m.groups.result.trim();
-  }
-
-  return null;
-};
-
-const loadCustomVideoData = async (path: string, customFfprobePath?: string): Promise<CustomVideoResult> => {
+// ffprobe's text report lists container tags before stream tags. Retain that precedence,
+// including namespaced QuickTime keys, without parsing presentation text or probing again.
+const loadCustomVideoData = (data: FFProbeResult): CustomVideoResult => {
   const ret: CustomVideoResult = {};
-  const executablePath = customFfprobePath ?? ffprobePath;
-
-  const output = await mediaCommand(executablePath, ['-hide_banner', path]);
-
-  [output].forEach((str) => {
-    if (ret?.manufacturer == null) {
-      const res = getKeyValueFromOutputResult(str, 'manufacturer');
-      if (res != null) {
-        ret.manufacturer = res;
-      }
+  const format = (data as FFProbeResult & { format?: { tags?: Record<string, string> } }).format;
+  const tagSets = [format?.tags, ...data.streams.map((stream) => stream.tags)];
+  const tag = (key: string): string | undefined => {
+    for (const tags of tagSets) {
+      const entry = Object.entries(tags ?? {}).find(([name]) => {
+        const normalized = name.toLowerCase();
+        return normalized === key || normalized.endsWith(`.${key}`);
+      });
+      if (typeof entry?.[1] === 'string') return entry[1];
     }
-
-    if (ret?.model == null) {
-      const res = getKeyValueFromOutputResult(str, 'model');
-      if (res != null) {
-        ret.model = res;
-      }
-    }
-
-    if (ret?.creationTime == null) {
-      const res = getKeyValueFromOutputResult(str, 'creation_time');
-      if (res != null) {
-        ret.creationTime = getDateObject(res) ?? undefined;
-      }
-    }
-
-    if (ret?.encoder == null) {
-      const res = getKeyValueFromOutputResult(str, 'encoder');
-      if (res != null) {
-        ret.encoder = res;
-      }
-    }
-
-    if (ret?.fps == null) {
-      const result = /(?<fps>\d+(?:\.\d+))\s?fps/.exec(str);
-      if (result !== null && typeof result?.groups?.fps === 'string') {
-        ret.fps = Number.parseFloat(result.groups.fps);
-      }
-    }
-
-    if (ret?.location == null) {
-      // get location
-      const m = str.match(/location\s*:\s*(?<lat>[+-][\d.]+)(?<lon>[+-][\d.]+)/i);
-      if (m?.groups?.lat !== undefined && m?.groups?.lon !== undefined) {
-        ret.location = {
-          lat: Number.parseFloat(m.groups.lat),
-          lon: Number.parseFloat(m.groups.lon),
-        };
-      }
-    }
-  });
-
-  return ret;
-};
-
-const createThumbnailImage = async (videoFilePath: string, thumbnailPath: string, size: number): Promise<void> => {
-  const executablePath = pathToFfmpeg;
-  if (typeof executablePath !== 'string' || !existsSync(executablePath)) {
-    throw new Error('FFmpeg executable not available');
+    return undefined;
+  };
+  ret.manufacturer = tag('manufacturer');
+  ret.model = tag('model');
+  ret.encoder = tag('encoder');
+  const creation = tag('creation_time');
+  if (creation !== undefined) ret.creationTime = getDateObject(creation) ?? undefined;
+  const location = tag('location')?.match(/^(?<lat>[+-][\d.]+)(?<lon>[+-][\d.]+)/);
+  if (location?.groups !== undefined) {
+    const lat = Number(location.groups.lat);
+    const lon = Number(location.groups.lon);
+    if (Number.isFinite(lat) && Number.isFinite(lon)) ret.location = { lat, lon };
   }
-
-  const args = [
-    '-y',
-    '-threads',
-    '1',
-    '-i',
-    videoFilePath,
-    '-threads',
-    '1',
-    '-filter_threads',
-    '1',
-    '-frames:v',
-    '1',
-    '-vf',
-    `scale=${Math.round(size)}:-1`,
-    thumbnailPath,
-  ];
-
-  await mediaCommand(executablePath, args);
+  const stream = data.streams.find((stream) => stream.codec_type === 'video');
+  ret.fps = getFpsValue(stream?.avg_frame_rate) ?? getFpsValue(stream?.r_frame_rate) ?? undefined;
+  return ret;
 };

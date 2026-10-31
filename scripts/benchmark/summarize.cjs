@@ -29,6 +29,15 @@ for (const record of records) {
     assert.equal(record.runnerStatistics.processedFileCount, record.metrics.jobs.media.attempted);
     assert.equal(record.runnerStatistics.processedDirectoryCount, record.metrics.jobs.directories.attempted);
   }
+  if (record.mode === 'metadata') {
+    assert.equal(record.metrics.ffmpeg + record.metrics.imageDecodes, 0);
+    assert.equal(record.metrics.thumbnailPublishes, 0);
+    assert.deepEqual(record.after.thumbnail, record.before.thumbnail);
+  }
+  if (record.mode === 'thumbnails') {
+    assert.equal(record.metrics.ffprobe, 0);
+    assert.deepEqual(record.after.metadata, record.before.metadata);
+  }
   if (record.mode === 'discovery') {
     assert.equal(record.metrics.jobs.media.attempted, 0);
     assert.equal(record.metrics.imageDecodes + record.metrics.ffmpeg + record.metrics.ffprobe, 0);
