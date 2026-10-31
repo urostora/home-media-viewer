@@ -151,6 +151,8 @@ def main():
             (output / 'query-plans.json').write_text(json.dumps(plans, indent=2) + '\n')
             runs = record_json(run('worker', 'node', '/tests/run-observability.cjs'))
             (output / 'run-observability.json').write_text(json.dumps(runs, indent=2) + '\n')
+            times = record_json(run('worker', 'node', '/tests/video-thumbnail-time.cjs'))
+            (output / 'video-thumbnail-time.json').write_text(json.dumps(times, indent=2) + '\n')
             metadata['completed'] = True
             return
 

@@ -26,6 +26,7 @@ interface MediaQueueOptions {
   cursorKey?: string;
   delayMs?: number;
   progress?: MediaProgress;
+  videoThumbnailTimeSec?: number;
 }
 
 export const processMediaQueue = async ({
@@ -37,6 +38,7 @@ export const processMediaQueue = async ({
   cursorKey,
   delayMs = 0,
   progress,
+  videoThumbnailTimeSec,
 }: MediaQueueOptions): Promise<{
   stages: Partial<Record<MediaStage, StageStatistics>>;
   processedFiles: number;
@@ -150,7 +152,7 @@ export const processMediaQueue = async ({
           const began = Date.now();
           let result: Awaited<ReturnType<typeof processFileStage>>;
           try {
-            result = await processFileStage(file, stage);
+            result = await processFileStage(file, stage, videoThumbnailTimeSec);
           } catch {
             result = 'failed';
           }

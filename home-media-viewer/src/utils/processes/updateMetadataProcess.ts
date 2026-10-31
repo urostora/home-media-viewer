@@ -181,6 +181,7 @@ const run = async (input: ProcessingOptions = {}): Promise<MetadataProcessStatis
             scope,
             stages: selectedMediaStages,
             mode: options.mode,
+            videoThumbnailTimeSec: options.videoThumbnailTimeSec,
             workers,
             stopped,
             ...(options.fileId === undefined

@@ -42,6 +42,7 @@ export interface ProcessingRun {
   mode: 'pending' | 'refresh';
   timeoutSec: number;
   workers: number;
+  videoThumbnailTimeSec?: number;
   startedAt: string;
   checkpointAt: string;
   finishedAt: string | null;
@@ -110,6 +111,7 @@ export const createRunJournal = async (
         ? { kind: 'album', id: options.albumId }
         : { kind: 'library' },
     mode: options.mode,
+    ...(options.videoThumbnailTimeSec === undefined ? {} : { videoThumbnailTimeSec: options.videoThumbnailTimeSec }),
     timeoutSec,
     workers,
     startedAt: now,

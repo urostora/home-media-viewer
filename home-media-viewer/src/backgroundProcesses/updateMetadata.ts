@@ -1,5 +1,6 @@
 import { getWorkerCount, getProcessTimeout } from '@/utils/processes/processConfig';
 import updateMetadataProcess from '@/utils/processes/updateMetadataProcess';
+import { ProcessingOptionsError } from '@/types/processingTypes';
 import { parseProcessingCli } from '@/utils/processes/processingCli';
 import prisma from '@/utils/prisma/prismaImporter';
 
@@ -14,8 +15,10 @@ const main = async (): Promise<void> => {
   if (result.outcome === 'partial') process.exitCode = 2;
 };
 void main()
-  .catch(() => {
-    console.error('Processing failed; check stage status and options');
+  .catch((error: unknown) => {
+    console.error(
+      error instanceof ProcessingOptionsError ? error.message : 'Processing failed; check stage status and options',
+    );
     process.exitCode = 1;
   })
   .finally(async () => {

@@ -1,5 +1,5 @@
 import type { File, Prisma } from '@prisma/client';
-import type { MediaStage } from '@/types/processingTypes';
+import { VideoThumbnailTimeError, type MediaStage } from '@/types/processingTypes';
 import prisma from '../prisma/prismaImporter';
 import { getMetadataExtractor, getThumbnailGenerator } from '../fileProcessor/processorFactory';
 import { readSource, SourceChangedError } from './sourceIdentity';
@@ -10,7 +10,11 @@ import { publishMetadata } from './publishMetadata';
 
 export type StageResult = 'succeeded' | 'failed' | 'notSupported' | 'deferred';
 
-export const processFileStage = async (file: File, stage: MediaStage): Promise<StageResult> =>
+export const processFileStage = async (
+  file: File,
+  stage: MediaStage,
+  videoThumbnailTimeSec?: number,
+): Promise<StageResult> =>
   await withProcessingLock(async () => {
     if (file.isDirectory) throw new Error('Media stages cannot process directories');
     if (isShuttingDownHandler.isShuttingDown()) return 'deferred';
@@ -43,14 +47,19 @@ export const processFileStage = async (file: File, stage: MediaStage): Promise<S
         });
         return 'notSupported';
       }
-      await publishThumbnails(file, source.version, generate, async () => {
-        await update({
-          thumbnailStatus: 'Processed',
-          thumbnailProcessedAt: new Date(),
-          thumbnailProcessingError: null,
-          thumbnailSourceVersion: source.version,
-        });
-      });
+      await publishThumbnails(
+        file,
+        source.version,
+        (target, outputs) => generate(target, outputs, videoThumbnailTimeSec),
+        async () => {
+          await update({
+            thumbnailStatus: 'Processed',
+            thumbnailProcessedAt: new Date(),
+            thumbnailProcessingError: null,
+            thumbnailSourceVersion: source.version,
+          });
+        },
+      );
       return 'succeeded';
     } catch (error) {
       const deferred = error instanceof SourceChangedError || isShuttingDownHandler.isShuttingDown();
@@ -67,7 +76,9 @@ export const processFileStage = async (file: File, stage: MediaStage): Promise<S
       }
       const message = deferred
         ? 'Source changed or processing interrupted; retry required'
-        : `${metadata ? 'Metadata' : 'Thumbnail'} processing failed`;
+        : error instanceof VideoThumbnailTimeError
+          ? error.message
+          : `${metadata ? 'Metadata' : 'Thumbnail'} processing failed`;
       await update(
         metadata
           ? { metadataStatus: deferred ? 'New' : 'Error', metadataProcessingError: message }

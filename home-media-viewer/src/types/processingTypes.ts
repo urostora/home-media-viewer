@@ -1,5 +1,12 @@
 export class ProcessingOptionsError extends Error {}
 
+export class VideoThumbnailTimeError extends Error {}
+
+export const validateVideoThumbnailTime = (value: unknown): void => {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0)
+    throw new VideoThumbnailTimeError('Video thumbnail time must be a finite nonnegative number of seconds');
+};
+
 export const processingStages = ['discovery', 'metadata', 'thumbnails'] as const;
 export type ProcessingStage = (typeof processingStages)[number];
 export type MediaStage = Exclude<ProcessingStage, 'discovery'>;
@@ -11,6 +18,7 @@ export interface ProcessingOptions {
   fileId?: string;
   timeoutSec?: number;
   workers?: number;
+  videoThumbnailTimeSec?: number;
 }
 
 export interface StageStatistics {
@@ -35,7 +43,7 @@ export const validateProcessingOptions = (
   if (value === null || typeof value !== 'object' || Array.isArray(value))
     throw new ProcessingOptionsError('Processing options must be an object');
   const data = value as Record<string, unknown>;
-  const allowed = ['stages', 'mode', 'albumId', 'fileId', 'timeoutSec', 'workers'];
+  const allowed = ['stages', 'mode', 'albumId', 'fileId', 'timeoutSec', 'workers', 'videoThumbnailTimeSec'];
   if (Object.keys(data).some((key) => !allowed.includes(key)))
     throw new ProcessingOptionsError('Unknown processing option');
   const stages = data.stages === undefined ? [...processingStages] : data.stages;
@@ -46,6 +54,15 @@ export const validateProcessingOptions = (
     stages.some((stage) => !processingStages.includes(stage))
   )
     throw new ProcessingOptionsError('Invalid processing stages');
+  if (data.videoThumbnailTimeSec !== undefined) {
+    try {
+      validateVideoThumbnailTime(data.videoThumbnailTimeSec);
+    } catch (error) {
+      throw new ProcessingOptionsError((error as Error).message);
+    }
+    if (!stages.includes('thumbnails'))
+      throw new ProcessingOptionsError('Video thumbnail time requires the thumbnails stage');
+  }
   const mode = data.mode === undefined ? 'pending' : data.mode;
   if (mode !== 'pending' && mode !== 'refresh') throw new ProcessingOptionsError('Invalid processing mode');
   for (const field of ['albumId', 'fileId']) {

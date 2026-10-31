@@ -1,4 +1,6 @@
 import fs, { existsSync } from 'fs';
+import { stat } from 'node:fs/promises';
+import { validateVideoThumbnailTime, VideoThumbnailTimeError } from '@/types/processingTypes';
 import type { FFProbeResult } from 'ffprobe';
 import { mediaCommand } from '../mediaCommand';
 
@@ -124,8 +126,42 @@ export const extractVideoMetadata = async (file: File): Promise<ExtractedMetadat
   return metadata;
 };
 
-export const generateVideoThumbnails = async (file: File, outputs: ReadonlyMap<number, string>): Promise<void> => {
+// Custom thumbnails need only timing data, never metadata extraction or publication.
+const validateFrameTime = async (file: File, time: number): Promise<void> => {
+  validateVideoThumbnailTime(time);
+  if (!existsSync(ffprobePath)) throw new Error('FFprobe executable not available');
+  const data = JSON.parse(
+    await mediaCommand(ffprobePath, [
+      '-v',
+      'error',
+      '-threads',
+      '1',
+      '-select_streams',
+      'v:0',
+      '-show_entries',
+      'stream=duration:format=duration',
+      '-of',
+      'json',
+      getFullPath(file),
+    ]),
+  ) as { streams?: { duration?: string | number }[]; format?: { duration?: string | number } };
+  if (!Array.isArray(data?.streams) || data.streams.length === 0)
+    throw new VideoThumbnailTimeError('Cannot select a thumbnail time: no video stream');
+  const streamDuration = Number(data.streams[0].duration);
+  const duration =
+    Number.isFinite(streamDuration) && streamDuration > 0 ? streamDuration : Number(data.format?.duration);
+  if (!Number.isFinite(duration) || duration <= 0)
+    throw new VideoThumbnailTimeError('Cannot select a thumbnail time: video duration is unavailable');
+  if (time >= duration) throw new VideoThumbnailTimeError('Video thumbnail time must be less than the video duration');
+};
+
+export const generateVideoThumbnails = async (
+  file: File,
+  outputs: ReadonlyMap<number, string>,
+  videoThumbnailTimeSec?: number,
+): Promise<void> => {
   if (!existsSync(pathToFfmpeg)) throw new Error('FFmpeg executable not available');
+  if (videoThumbnailTimeSec !== undefined) await validateFrameTime(file, videoThumbnailTimeSec);
   const branches = thumbnailSizes.map((_, index) => `[frame${index}]`);
   const filters = [
     `[0:v:0]split=${thumbnailSizes.length}${branches.join('')}`,
@@ -135,6 +171,8 @@ export const generateVideoThumbnails = async (file: File, outputs: ReadonlyMap<n
     '-y',
     '-threads',
     '1',
+    // Accurate input seeking decodes/discards once. FFmpeg accepts decimal microseconds, not exponent notation.
+    ...(videoThumbnailTimeSec === undefined ? [] : ['-ss', videoThumbnailTimeSec.toFixed(6)]),
     '-i',
     getFullPath(file),
     '-filter_complex_threads',
@@ -145,10 +183,22 @@ export const generateVideoThumbnails = async (file: File, outputs: ReadonlyMap<n
   for (const [index, size] of thumbnailSizes.entries()) {
     const output = outputs.get(size);
     if (output === undefined) throw new Error('Missing thumbnail output');
-    // Preserve first-frame selection, width scaling, automatic orientation and MJPEG defaults.
+    // Every branch uses the same selected frame, width scaling, automatic orientation and MJPEG defaults.
     args.push('-map', `[out${index}]`, '-frames:v', '1', '-threads', '1', output);
   }
   await mediaCommand(pathToFfmpeg, args);
+  if (videoThumbnailTimeSec !== undefined) {
+    for (const output of outputs.values()) {
+      try {
+        if ((await stat(output)).size === 0)
+          throw new VideoThumbnailTimeError('No video frame at the requested thumbnail time');
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT')
+          throw new VideoThumbnailTimeError('No video frame at the requested thumbnail time');
+        throw error;
+      }
+    }
+  }
 };
 
 const getFpsValue = (fps: string | undefined): number | null => {

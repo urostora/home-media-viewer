@@ -5,7 +5,11 @@ import { extractVideoMetadata, generateVideoThumbnails } from './video';
 
 export type FileProcessor = (file: File) => Promise<boolean>;
 export type MetadataExtractor = (file: File) => Promise<ExtractedMetadata>;
-export type ThumbnailGenerator = (file: File, outputs: ReadonlyMap<number, string>) => Promise<void>;
+export type ThumbnailGenerator = (
+  file: File,
+  outputs: ReadonlyMap<number, string>,
+  videoThumbnailTimeSec?: number,
+) => Promise<void>;
 
 const images = new Set(['bmp', 'jpg', 'jpeg', 'gif', 'png', 'tiff']);
 const videos = new Set(['mp4', 'mkv', 'avi', 'mpg', 'mpeg', 'mov']);
