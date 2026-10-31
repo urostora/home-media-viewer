@@ -3,7 +3,7 @@ const { mkdtemp, rm, mkdir, readFile, writeFile } = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
 const { spawn } = require('node:child_process');
-const app = path.resolve(__dirname, '../../home-media-viewer');
+const app = process.env.HMV_TEST_APP ?? path.resolve(__dirname, '../../home-media-viewer');
 require(`${app}/node_modules/ts-node/register/transpile-only`);
 require(`${app}/node_modules/tsconfig-paths/register`);
 const load = (file) => require(`${app}/src/${file}`);

@@ -150,7 +150,7 @@ async function main() {
   measuring = true;
   try {
     runnerStatistics = await runner.run({
-      ...(mode === 'full' ? {} : { stages: [mode] }), timeoutSec: 600, workers: 2,
+      ...(mode === 'full' ? {} : { stages: [mode] }), timeoutSec: Number(process.env.BENCH_TIMEOUT_SEC ?? 600), workers: 2,
     });
     if (runnerStatistics.stages.discovery) {
       const counts = runnerStatistics.stages.discovery;

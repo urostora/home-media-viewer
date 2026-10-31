@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 import { isProcessAuthorized } from '@/utils/processAuth';
+import { readProcessingRun } from '@/utils/processes/runJournal';
 import { readIndexingState } from '@/utils/processes/indexingState';
 
 import { getApiResponseWithData } from '@/utils/apiHelpers';
@@ -24,12 +25,27 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
       }
 
       try {
-        const statistics: MetadataProcessStatistics | undefined = lastStatistics.getLastStatistics();
+        const runId = req.query.runId;
+        if (
+          runId !== undefined &&
+          (typeof runId !== 'string' || !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(runId))
+        ) {
+          res.status(400).json({ ok: false, error: 'Invalid runId' });
+          return;
+        }
+        const run = await readProcessingRun(runId);
+        if (runId !== undefined && run === null) {
+          res.status(404).json({ ok: false, error: 'Run not retained' });
+          return;
+        }
+        const statistics: MetadataProcessStatistics | undefined =
+          run?.statistics ?? (run === null ? lastStatistics.getLastStatistics() : undefined);
 
         res.setHeader('Cache-Control', 'no-store');
         res.status(200).json({
           ...getApiResponseWithData<MetadataProcessStatistics | undefined>(statistics),
           indexing: await readIndexingState(),
+          run,
         });
       } catch {
         res.status(503).send('Indexing status unavailable');

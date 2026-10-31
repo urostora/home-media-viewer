@@ -3,6 +3,7 @@ import type { File, Prisma } from '@prisma/client';
 import { emptyStageStatistics, type MediaStage, type StageStatistics } from '@/types/processingTypes';
 import prisma from '../prisma/prismaImporter';
 import { isShuttingDownHandler } from '../isShuttingDown';
+import type { MediaProgress } from './runProgress';
 import { processFileStage } from './fileStages';
 
 export const mediaPageSize = 64;
@@ -24,6 +25,7 @@ interface MediaQueueOptions {
   stopped: () => boolean;
   cursorKey?: string;
   delayMs?: number;
+  progress?: MediaProgress;
 }
 
 export const processMediaQueue = async ({
@@ -34,6 +36,7 @@ export const processMediaQueue = async ({
   stopped,
   cursorKey,
   delayMs = 0,
+  progress,
 }: MediaQueueOptions): Promise<{
   stages: Partial<Record<MediaStage, StageStatistics>>;
   processedFiles: number;
@@ -46,6 +49,13 @@ export const processMediaQueue = async ({
   const selector: Prisma.FileWhereInput = {
     AND: [eligible, ...(mode === 'pending' ? [{ OR: stages.map(status) }] : [])],
   };
+  if (progress !== undefined) {
+    const total = mode === 'refresh' ? await prisma.file.count({ where: eligible }) : undefined;
+    for (const stage of stages) {
+      const pending = await prisma.file.count({ where: { AND: [eligible, status(stage)] } });
+      await progress.initial(stage, total ?? pending, pending);
+    }
+  }
   const saved = cursorKey === undefined ? null : await prisma.mediaQueueCursor.findUnique({ where: { id: cursorKey } });
   const start = saved?.lastFileId ?? null;
   let after = start ?? undefined;
@@ -131,15 +141,21 @@ export const processMediaQueue = async ({
           // the dispatch deadline, or repeated short refreshes could starve
           // thumbnails behind a slow metadata stage. Shutdown still interrupts.
           if (blocked || isShuttingDownHandler.isShuttingDown()) break;
-          if (!attempted) processedFiles++;
+          const first = !attempted;
+          if (first) processedFiles++;
           attempted = true;
           const counts = statistics[stage];
           counts.attempted++;
+          await progress?.started(stage, first);
+          const began = Date.now();
+          let result: Awaited<ReturnType<typeof processFileStage>>;
           try {
-            counts[await processFileStage(file, stage)]++;
+            result = await processFileStage(file, stage);
           } catch {
-            counts.failed++;
+            result = 'failed';
           }
+          counts[result]++;
+          await progress?.finished(stage, result, Math.max(0, Date.now() - began));
         }
         if (delayMs > 0 && !stopped()) await new Promise((resolve) => setTimeout(resolve, delayMs));
       }
@@ -163,6 +179,15 @@ export const processMediaQueue = async ({
         statistics[stage].deferred = await prisma.file.count({ where: { AND: [eligible, status(stage)] } });
       }),
     );
+  }
+  if (progress !== undefined) {
+    for (const stage of stages) {
+      const pending =
+        mode === 'pending'
+          ? statistics[stage].deferred
+          : await prisma.file.count({ where: { AND: [eligible, status(stage)] } });
+      await progress.complete(stage, statistics[stage], pending);
+    }
   }
   return { stages: statistics, processedFiles };
 };

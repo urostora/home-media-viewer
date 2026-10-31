@@ -15,7 +15,8 @@ export interface IndexingState {
   finishedAt?: string;
   lastSuccessAt?: string;
   failures: number;
-  outcome: 'running' | 'success' | 'failed' | 'interrupted';
+  outcome: 'running' | 'success' | 'partial' | 'failed' | 'interrupted';
+  runId?: string;
 }
 
 export const readIndexingState = async (): Promise<IndexingState | null> => {
@@ -29,7 +30,10 @@ export const readIndexingState = async (): Promise<IndexingState | null> => {
 
 // Atomic mkdir coordinates all processes sharing the generated-storage volume.
 // A crash deliberately leaves the lock in place: operators must stop all workers before removing it.
-export const withIndexingLock = async <T>(run: () => Promise<T>): Promise<T> => {
+export const withIndexingLock = async <T>(
+  run: () => Promise<T>,
+  completion?: () => { outcome: IndexingState['outcome']; runId?: string } | undefined,
+): Promise<T> => {
   const directory = path.join(storageRoot(), 'operations');
   await mkdir(directory, { recursive: true });
   const lock = path.join(directory, 'indexing.lock');
@@ -51,12 +55,15 @@ export const withIndexingLock = async <T>(run: () => Promise<T>): Promise<T> => 
       startedAt: new Date().toISOString(),
       failures: previous?.failures ?? 0,
       outcome: 'running',
+      finishedAt: undefined,
+      runId: undefined,
     };
     await save(state);
     try {
       const result = await run();
       state.finishedAt = new Date().toISOString();
-      state.outcome = result === undefined ? 'interrupted' : 'success';
+      state.outcome = completion?.()?.outcome ?? (result === undefined ? 'interrupted' : 'success');
+      state.runId = completion?.()?.runId;
       if (state.outcome === 'success') state.lastSuccessAt = state.finishedAt;
       await save(state);
       console.log(JSON.stringify({ event: 'indexing_finished', ...state }));
@@ -64,6 +71,7 @@ export const withIndexingLock = async <T>(run: () => Promise<T>): Promise<T> => 
     } catch (error) {
       state.finishedAt = new Date().toISOString();
       state.outcome = 'failed';
+      state.runId = completion?.()?.runId;
       state.failures++;
       await save(state);
       console.error(JSON.stringify({ event: 'indexing_failed', ...state }));

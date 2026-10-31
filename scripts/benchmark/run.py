@@ -15,9 +15,12 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', required=True, type=Path)
     parser.add_argument('--repeats', type=int, default=3)
+    parser.add_argument('--budget-seconds', type=float, default=600, help='Dispatch budget per measured run (1–600 seconds)')
     parser.add_argument('--measure-stages', action='store_true', help='Include repeated independent metadata/thumbnail measurements')
     parser.add_argument('--validate-stages', action='store_true', help='Run isolated migration/API/CLI/stage acceptance checks instead of benchmarks')
     args = parser.parse_args()
+    if not 1 <= args.budget_seconds <= 600:
+        parser.error('--budget-seconds must be between 1 and 600')
     if args.repeats < 1:
         parser.error('--repeats must be positive')
     output = args.output.resolve()
@@ -28,7 +31,7 @@ def main():
     (temporary / 'fixtures').mkdir()
     env_file = temporary / 'benchmark.env'
     values = {
-        'BENCH_PROJECT': project, 'BENCH_DIRECTORY': str(temporary),
+        'BENCH_PROJECT': project, 'BENCH_DIRECTORY': str(temporary), 'BENCH_TIMEOUT_SEC': str(args.budget_seconds),
         **{key: secrets.token_hex(24) for key in [
             'BENCH_PASSWORD', 'BENCH_ROOT_PASSWORD', 'BENCH_SESSION', 'BENCH_TOKEN', 'BENCH_ADMIN_PASSWORD']},
     }
@@ -64,7 +67,7 @@ def main():
 
     results = []
     metadata = {'project': project, 'startedAtUtc': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
-                'repeats': args.repeats, 'validationMode': args.validate_stages}
+                'repeats': args.repeats, 'validationMode': args.validate_stages, 'dispatchBudgetSec': args.budget_seconds}
     try:
         metadata['revision'] = command(['git', 'rev-parse', 'HEAD'], capture=True).strip()
         print('Building isolated production app, migration and benchmark images', flush=True)
@@ -146,6 +149,8 @@ def main():
             (output / 'database-writes.json').write_text(json.dumps(writes, indent=2) + '\n')
             plans = record_json(run('worker', 'node', '/tests/query-plans.cjs'))
             (output / 'query-plans.json').write_text(json.dumps(plans, indent=2) + '\n')
+            runs = record_json(run('worker', 'node', '/tests/run-observability.cjs'))
+            (output / 'run-observability.json').write_text(json.dumps(runs, indent=2) + '\n')
             metadata['completed'] = True
             return
 

@@ -4,6 +4,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import type { Album, Prisma } from '@prisma/client';
 import prisma from '../prisma/prismaImporter';
 import { sourceVersion } from './sourceIdentity';
+import type { DiscoveryProgress } from './runProgress';
 import { writeDiscoveryBatch, type DiscoveryWrites } from './discoveryWrites';
 import { emptyStageStatistics, type StageStatistics } from '@/types/processingTypes';
 
@@ -35,6 +36,7 @@ export const discover = async (
   albums: Album[],
   stopped: () => boolean,
   directoryPath?: string,
+  progress?: DiscoveryProgress,
 ): Promise<{ statistics: StageStatistics; directories: number }> => {
   const statistics = emptyStageStatistics();
   const allAlbums = await prisma.album.findMany({ where: { status: { in: ['Active', 'Disabled'] } } });
@@ -65,6 +67,8 @@ export const discover = async (
     OR: roots.flatMap((directory) => [{ path: directory }, { path: { startsWith: `${directory}/` } }]),
   };
 
+  if (progress !== undefined)
+    await progress(statistics, directories, 'initial', await prisma.discoveryDirectory.count({ where: eligible }));
   while (!stopped() && roots.length > 0) {
     const nextTask = await prisma.discoveryDirectory.findFirst({
       where: { ...eligible, id: { notIn: [...finished] } },
@@ -74,6 +78,7 @@ export const discover = async (
     let task = nextTask;
     attempted.add(task.id);
     statistics.attempted = attempted.size;
+    await progress?.(statistics, directories, 'started');
     // Rotate before I/O so a failing or interrupted directory cannot monopolize runs.
     await prisma.discoveryDirectory.updateMany({
       where: { id: task.id },
@@ -303,7 +308,9 @@ export const discover = async (
         data: { entryCursor: null, cleanupCursor: null, scanVersion: null },
       });
     }
+    await progress?.(statistics, directories, 'progress');
   }
   statistics.deferred = await prisma.discoveryDirectory.count({ where: { ...eligible, id: { notIn: [...finished] } } });
+  await progress?.(statistics, directories, 'complete');
   return { statistics, directories };
 };
