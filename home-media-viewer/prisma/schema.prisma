@@ -97,6 +97,24 @@ enum FileMetaType {
   Location
 }
 
+// Independent discovery progress; never use media statuses as scan cursors.
+model DiscoveryDirectory {
+  id            String   @id @db.VarChar(64)
+  path          String   @db.Text
+  entryCursor   String?  @db.Text
+  cleanupCursor String?  @db.VarChar(191)
+  scanVersion   String?  @db.VarChar(64)
+  lastServedAt  DateTime @default(now())
+
+  @@index([lastServedAt, id])
+}
+
+// Fair dispatch position only; File stage statuses remain the durable backlog.
+model MediaQueueCursor {
+  id         String  @id @db.VarChar(64)
+  lastFileId String? @db.VarChar(191)
+}
+
 enum MetadataOrigin {
   Legacy
   Extracted

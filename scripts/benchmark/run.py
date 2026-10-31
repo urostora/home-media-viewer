@@ -86,10 +86,13 @@ def main():
         print('Starting fresh database, applying migrations and seeding administrator', flush=True)
         command(compose + ['up', '-d', '--wait', 'db'])
         if args.validate_stages:
-            # Populate a historical row before applying the additive stage migration.
+            # Populate a historical row before applying either additive processing migration.
             run('migration', 'node', '-e', """
               const fs=require('node:fs'), cp=require('node:child_process');
-              fs.rmSync('prisma/migrations/20261028190000_independent_processing_stages', {recursive:true});
+              for (const name of fs.readdirSync('prisma/migrations')) {
+                if (name >= '20261028190000_' && fs.statSync('prisma/migrations/' + name).isDirectory())
+                  fs.rmSync('prisma/migrations/' + name, {recursive:true});
+              }
               const applied=cp.spawnSync('npx',['--no-install','prisma','migrate','deploy'],{stdio:'inherit'});
               if(applied.status!==0) process.exit(applied.status || 1);
               const {PrismaClient}=require('@prisma/client'); const p=new PrismaClient();
@@ -97,6 +100,19 @@ def main():
                 await p.$executeRawUnsafe("INSERT INTO File (id,path,name,extension,metadataStatus,thumbnailStatus,metadataProcessedAt,thumbnailProcessedAt) VALUES ('i3-legacy-file','legacy.jpg','legacy','jpg','Processed','Processed','2001-01-01','2001-01-02')");
                 await p.$executeRawUnsafe("INSERT INTO FileMeta (id,fileId,metaKey,type,stringValue) VALUES ('i3-legacy-meta','i3-legacy-file','legacy-key','String','keep historical value')");
               })().catch(error=>{console.error('Legacy seed failed',error.code);process.exitCode=1}).finally(()=>p.$disconnect());
+            """)
+            # Also exercise an upgrade from an already deployed discovery queue.
+            run('migration', 'node', '-e', """
+              const fs=require('node:fs'), cp=require('node:child_process');
+              for (const name of fs.readdirSync('prisma/migrations')) {
+                if (name >= '20261031100000_' && fs.statSync('prisma/migrations/' + name).isDirectory())
+                  fs.rmSync('prisma/migrations/' + name, {recursive:true});
+              }
+              const applied=cp.spawnSync('npx',['--no-install','prisma','migrate','deploy'],{stdio:'inherit'});
+              if(applied.status!==0) process.exit(applied.status || 1);
+              const {PrismaClient}=require('@prisma/client'); const p=new PrismaClient();
+              p.$executeRawUnsafe("INSERT INTO DiscoveryDirectory (id,path,entryCursor,cleanupCursor,lastServedAt) VALUES ('i4-existing-task','/unselected-historical-discovery','keep-entry','keep-id','2001-01-01')")
+                .catch(error=>{console.error('Discovery seed failed',error.code);process.exitCode=1}).finally(()=>p.$disconnect());
             """)
         run('migration')
         run('migration', 'npx', '--no-install', 'prisma', 'db', 'seed')
@@ -119,6 +135,10 @@ def main():
             print('Running migration, independent-stage, failure, locking, API and CLI acceptance checks', flush=True)
             accepted = record_json(run('worker', 'node', '/tests/processing-stages.cjs'))
             (output / 'acceptance.json').write_text(json.dumps(accepted, indent=2) + '\n')
+            discovery = record_json(run('worker', 'node', '/tests/discovery.cjs'))
+            (output / 'discovery.json').write_text(json.dumps(discovery, indent=2) + '\n')
+            queue = record_json(run('worker', 'node', '--expose-gc', '/tests/media-queue.cjs'))
+            (output / 'media-queue.json').write_text(json.dumps(queue, indent=2) + '\n')
             metadata['completed'] = True
             return
 

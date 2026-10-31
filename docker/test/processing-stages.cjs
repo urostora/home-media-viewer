@@ -67,6 +67,11 @@ async function main() {
     assert.equal(legacy.sourceVersion,null);
     const meta = await prisma.fileMeta.findFirstOrThrow({where:{fileId:legacy.id}});
     assert.equal(meta.origin,'Legacy'); assert.equal(meta.stringValue,'keep historical value');
+    const queued = await prisma.discoveryDirectory.findUniqueOrThrow({where:{id:'i4-existing-task'}});
+    assert.equal(queued.entryCursor,'keep-entry'); assert.equal(queued.cleanupCursor,'keep-id');
+    assert.equal(queued.lastServedAt.toISOString(),'2001-01-01T00:00:00.000Z');
+    assert.equal(queued.scanVersion,null);
+    assert.equal(await prisma.mediaQueueCursor.count(),0);
   });
   await check('strict stage/scope/mode and CLI validation', async () => {
     for (const invalid of [null,[],{stages:null},{mode:null},{stages:[]},{stages:['unknown']},{stages:['metadata','metadata']},

@@ -58,10 +58,7 @@ appRequire('ts-node').register({ transpileOnly: true, project: '/home/node/app/t
 appRequire('tsconfig-paths/register');
 const prisma = appRequire('./src/utils/prisma/prismaImporter').default;
 const runner = appRequire('./src/utils/processes/updateMetadataProcess').default;
-const { syncAlbumFiles } = appRequire('./src/utils/albumHelper');
-const fileHelper = appRequire('./src/utils/fileHelper');
 const fileStages = appRequire('./src/utils/processes/fileStages');
-const directoryProcessor = appRequire('./src/utils/fileProcessor/directory');
 const mediaResults = new Map();
 const originalProcessStage = fileStages.processFileStage;
 fileStages.processFileStage = async (file, stage) => {
@@ -72,18 +69,6 @@ fileStages.processFileStage = async (file, stage) => {
   }
   return result;
 };
-const originalDirectoryProcessor = directoryProcessor.directoryFileProcessor;
-directoryProcessor.directoryFileProcessor = async (file) => {
-  if (!measuring) return originalDirectoryProcessor(file);
-  metrics.jobs.directories.attempted++;
-  try {
-    const ok = await originalDirectoryProcessor(file);
-    metrics.jobs.directories[ok ? 'succeeded' : 'failed']++;
-    return ok;
-  } catch (error) { metrics.jobs.directories.failed++; throw error; }
-};
-const { loadMetadata } = fileHelper;
-const { withProcessingLock } = appRequire('./src/utils/processes/processingLock');
 const live = appRequire('./src/pages/api/health/live').default;
 const ready = appRequire('./src/pages/api/health/ready').default;
 // Avoid exposing fixture paths and media metadata in benchmark logs.
@@ -122,6 +107,8 @@ async function main() {
   const mode = process.argv[2];
   if (mode === 'prepare') {
     // Only task-owned records in the isolated database are removed; the seeded admin remains.
+    await prisma.discoveryDirectory.deleteMany();
+    await prisma.mediaQueueCursor.deleteMany();
     await prisma.fileMeta.deleteMany();
     await prisma.album.deleteMany();
     await prisma.file.updateMany({ data: { parentFileId: null } });
@@ -162,16 +149,13 @@ async function main() {
   let failure = null;
   measuring = true;
   try {
-    if (mode === 'full') runnerStatistics = await runner.update(600, 2);
-    else if (mode !== 'discovery') runnerStatistics = await runner.run({ stages: [mode], timeoutSec: 600, workers: 2 });
-    else await withProcessingLock(async () => {
-      const albums = await prisma.album.findMany({ orderBy: { basePath: 'asc' } });
-      for (const album of albums) await syncAlbumFiles(album.id);
-      // Existing directories need explicit reconciliation too; de-duplicate overlapping albums.
-      const directories = await prisma.file.findMany({ where: { isDirectory: true, status: 'Active' } });
-      for (const directory of directories) if (!await loadMetadata(directory)) throw new Error('Discovery failed');
-      return true;
+    runnerStatistics = await runner.run({
+      ...(mode === 'full' ? {} : { stages: [mode] }), timeoutSec: 600, workers: 2,
     });
+    if (runnerStatistics.stages.discovery) {
+      const counts = runnerStatistics.stages.discovery;
+      metrics.jobs.directories = { attempted: counts.attempted, succeeded: counts.succeeded, failed: counts.failed };
+    }
   } catch { failure = 'Indexing failed; inspect aggregate statuses'; }
   const elapsedMs = performance.now() - start;
   for (const outcomes of mediaResults.values()) {
