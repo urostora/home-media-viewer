@@ -41,7 +41,7 @@ appRequire.cache[appRequire.resolve('@prisma/client')].exports = {
       this.$use(async (params, next) => {
         const result = await next(params);
         if (measuring && params.model === 'File') {
-          if (params.action === 'update' && params.args.data.thumbnailProcessedAt) metrics.thumbnailPublishes++;
+          if (['update', 'updateMany'].includes(params.action) && params.args.data.thumbnailProcessedAt) metrics.thumbnailPublishes++;
           if (params.action === 'findMany' && Array.isArray(result)) {
             for (const file of result) if (!file.isDirectory && file.metadataStatus === 'New' && file.createdAt) {
               metrics.maxObservedPendingCreatedAgeMs = Math.max(metrics.maxObservedPendingCreatedAgeMs ?? 0,

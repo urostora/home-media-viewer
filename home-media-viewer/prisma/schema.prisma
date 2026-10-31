@@ -87,6 +87,8 @@ model File {
   @@index([name, extension])
   @@index([path(length: 120)])
   @@index([contentDate])
+  @@index([status, isDirectory, metadataStatus, id])
+  @@index([status, isDirectory, thumbnailStatus, id])
 }
 
 enum FileMetaType {

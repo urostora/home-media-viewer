@@ -1,23 +1,16 @@
 import { readdir, stat, lstat, realpath } from 'node:fs/promises';
 import path from 'node:path';
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import type { Album, Prisma } from '@prisma/client';
 import prisma from '../prisma/prismaImporter';
 import { sourceVersion } from './sourceIdentity';
+import { writeDiscoveryBatch, type DiscoveryWrites } from './discoveryWrites';
 import { emptyStageStatistics, type StageStatistics } from '@/types/processingTypes';
 
 const root = process.env.APP_ALBUM_ROOT_PATH ?? '/mnt/albums';
 const batchSize = 64;
 const relative = (value: string): string => path.relative(root, value);
 const directoryId = (value: string): string => createHash('sha256').update(value).digest('hex');
-
-const enqueue = async (directory: string): Promise<void> => {
-  await prisma.discoveryDirectory.upsert({
-    where: { id: directoryId(directory) },
-    create: { id: directoryId(directory), path: directory },
-    update: {},
-  });
-};
 
 const removeSubtree = async (filePath: string): Promise<void> => {
   await prisma.file.updateMany({
@@ -82,7 +75,7 @@ export const discover = async (
     attempted.add(task.id);
     statistics.attempted = attempted.size;
     // Rotate before I/O so a failing or interrupted directory cannot monopolize runs.
-    await prisma.discoveryDirectory.update({
+    await prisma.discoveryDirectory.updateMany({
       where: { id: task.id },
       data: { lastServedAt: new Date((clock = Math.max(clock + 1, Date.now()))) },
     });
@@ -109,10 +102,11 @@ export const discover = async (
       // particular, a restart must not reconcile a newly changed directory from
       // an older entry cursor (new names could sort before that cursor).
       if (task.scanVersion !== snapshot.version) {
-        task = await prisma.discoveryDirectory.update({
+        await prisma.discoveryDirectory.updateMany({
           where: { id: task.id },
           data: { scanVersion: snapshot.version, entryCursor: null, cleanupCursor: null },
         });
+        task = { ...task, scanVersion: snapshot.version, entryCursor: null, cleanupCursor: null };
       }
       let parent = await prisma.file.findFirst({ where: { path: relative(task.path) } });
       let containing = albumCache.get(task.path);
@@ -185,6 +179,7 @@ export const discover = async (
           );
           const failure = values.find((value) => value.status === 'rejected');
           if (failure?.status === 'rejected') throw failure.reason;
+          const writes: DiscoveryWrites = { created: [], updated: [], memberships: [], directories: [] };
           for (const result of values) {
             if (result.status !== 'fulfilled') continue;
             const { name, value } = result.value;
@@ -206,7 +201,7 @@ export const discover = async (
               const restored = old?.status === 'Deleted';
               const typeChanged = old !== undefined && old.isDirectory !== isDirectory;
               const parsed = path.parse(name);
-              const data: Prisma.FileUpdateInput = {
+              const data: Prisma.FileUpdateManyMutationInput = {
                 ...(typeChanged
                   ? {
                       name: isDirectory ? name : parsed.name,
@@ -214,10 +209,7 @@ export const discover = async (
                       ...(isDirectory ? { size: null } : {}),
                     }
                   : {}),
-                ...(connect.length === 0 ? {} : { albums: { connect } }),
-                ...(old?.parentFileId === (parent?.id ?? null)
-                  ? {}
-                  : { parentFile: parent === null ? { disconnect: true } : { connect: { id: parent.id } } }),
+                ...(old?.parentFileId === (parent?.id ?? null) ? {} : { parentFileId: parent?.id ?? null }),
                 ...(changed || restored || typeChanged
                   ? { metadataStatus: 'New', thumbnailStatus: 'New', sourceVersion: version, isDirectory }
                   : old?.sourceVersion === null && version !== null
@@ -227,30 +219,32 @@ export const discover = async (
               };
               if (typeChanged && old.isDirectory) await removeSubtree(filePath);
               if (old === undefined) {
-                await prisma.file.create({
-                  data: {
-                    path: filePath,
-                    name: isDirectory ? name : parsed.name,
-                    extension: isDirectory ? '' : parsed.ext.slice(1),
-                    isDirectory,
-                    size: isDirectory ? null : value.size,
-                    createdAt: value.ctime,
-                    modifiedAt: value.mtime,
-                    sourceVersion: version,
-                    parentFileId: parent?.id,
-                    albums: { connect: containing.map(({ id }) => ({ id })) },
-                  },
+                const id = randomUUID();
+                writes.created.push({
+                  id,
+                  path: filePath,
+                  name: isDirectory ? name : parsed.name,
+                  extension: isDirectory ? '' : parsed.ext.slice(1),
+                  isDirectory,
+                  size: isDirectory ? null : value.size,
+                  createdAt: value.ctime,
+                  modifiedAt: value.mtime,
+                  sourceVersion: version,
+                  parentFileId: parent?.id,
                 });
-              } else if (Object.keys(data).length > 0) {
-                await prisma.file.update({ where: { id: old.id }, data });
+                writes.memberships.push(...containing.map((album) => ({ albumId: album.id, fileId: id })));
+              } else {
+                if (Object.keys(data).length > 0) writes.updated.push({ id: old.id, data });
+                writes.memberships.push(...connect.map((album) => ({ albumId: album.id, fileId: old.id })));
               }
-              if (isDirectory) await enqueue(absolute);
+              if (isDirectory) writes.directories.push(absolute);
             }
             cursor = name;
           }
+          await writeDiscoveryBatch(writes);
         }
         const complete = names.length === 0 || cursor === snapshot.names[snapshot.names.length - 1];
-        await prisma.discoveryDirectory.update({
+        await prisma.discoveryDirectory.updateMany({
           where: { id: task.id },
           data: { entryCursor: cursor, cleanupCursor: complete ? '' : null },
         });
@@ -288,7 +282,7 @@ export const discover = async (
           await prisma.file.updateMany({ where: { id: { in: removed } }, data: { status: 'Deleted' } });
         const complete =
           files.length < batchSize && (files.length === 0 || cleanupCursor === files[files.length - 1].id);
-        await prisma.discoveryDirectory.update({
+        await prisma.discoveryDirectory.updateMany({
           where: { id: task.id },
           data: {
             entryCursor: complete ? null : task.entryCursor,
@@ -304,7 +298,7 @@ export const discover = async (
     } catch {
       statistics.failed++;
       finished.add(task.id);
-      await prisma.discoveryDirectory.update({
+      await prisma.discoveryDirectory.updateMany({
         where: { id: task.id },
         data: { entryCursor: null, cleanupCursor: null, scanVersion: null },
       });

@@ -142,6 +142,10 @@ def main():
             (output / 'discovery.json').write_text(json.dumps(discovery, indent=2) + '\n')
             queue = record_json(run('worker', 'node', '--expose-gc', '/tests/media-queue.cjs'))
             (output / 'media-queue.json').write_text(json.dumps(queue, indent=2) + '\n')
+            writes = record_json(run('worker', 'node', '/tests/database-writes.cjs'))
+            (output / 'database-writes.json').write_text(json.dumps(writes, indent=2) + '\n')
+            plans = record_json(run('worker', 'node', '/tests/query-plans.cjs'))
+            (output / 'query-plans.json').write_text(json.dumps(plans, indent=2) + '\n')
             metadata['completed'] = True
             return
 

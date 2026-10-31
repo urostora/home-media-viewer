@@ -186,14 +186,14 @@ async function main() {
     factory.getThumbnailGenerator=()=>async (_file,outputs)=>{
       for(const [size,output] of outputs) await fs.writeFile(output,`different preview for ${size}`);
     };
-    const original = prisma.file.update.bind(prisma.file);
+    const original = prisma.file.updateMany.bind(prisma.file);
     let rejected=false;
-    prisma.file.update = async (args) => {
+    prisma.file.updateMany = async (args) => {
       if (!rejected && args.data.thumbnailStatus==='Processed') {rejected=true; throw new Error('fixture commit failure');}
       return original(args);
     };
     try { await assert.rejects(refresh(image.id,['thumbnails']),ProcessingFailedError); }
-    finally { prisma.file.update = original; factory.getThumbnailGenerator=originalGenerator; }
+    finally { prisma.file.updateMany = original; factory.getThumbnailGenerator=originalGenerator; }
     assert(rejected);
     assert.deepEqual(JSON.parse(await thumbnailsSnapshot(image.id)).hashes,before);
     assert.equal(await metadataSnapshot(image.id),metadataBefore);
