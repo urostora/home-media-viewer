@@ -1,5 +1,38 @@
 import type { FileMetaUpdateType, FileResultType, FileSearchType } from '@/types/api/fileTypes';
 import type { GeneralResponseWithData, GeneralEntityListResponse, GeneralResponse } from '@/types/api/generalTypes';
+import { validateVideoThumbnailTime, type StageStatistics } from '@/types/processingTypes';
+
+export const apiFileUpdateVideoThumbnail = async (id: string, time: number): Promise<FileResultType> => {
+  validateVideoThumbnailTime(time);
+  const response = await fetch('/api/process/run', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fileId: id, stages: ['thumbnails'], mode: 'refresh', videoThumbnailTimeSec: time }),
+  });
+  const text = await response.text();
+  let result: GeneralResponseWithData<{ stages?: { thumbnails?: StageStatistics } }> | undefined;
+  try {
+    result = JSON.parse(text) as typeof result;
+  } catch {
+    throw new Error(response.ok ? 'Invalid thumbnail update response' : text || 'Could not update thumbnail');
+  }
+  if (!response.ok || result?.ok !== true) {
+    throw new Error(result?.error ?? 'Could not update thumbnail');
+  }
+  const counts = result.data?.stages?.thumbnails;
+  if (
+    counts?.attempted !== 1 ||
+    counts.succeeded !== 1 ||
+    counts.failed !== 0 ||
+    counts.deferred !== 0 ||
+    counts.notSupported !== 0
+  ) {
+    throw new Error('Thumbnail was not updated. Please retry.');
+  }
+  const file = await apiGetFile(id);
+  if (file === null) throw new Error('Thumbnail updated, but the file could not be reloaded');
+  return file;
+};
 
 export const apiGetFile = async (id: string): Promise<FileResultType | null> => {
   const fetchResult = await fetch(`/api/file/${id}`);

@@ -28,6 +28,21 @@ const ContentList = (props: ContentListPropsType): JSX.Element => {
 
     const [ displayedContent, setDisplayedContent ] = useState<FileResultType>();
     const [ infoContent, setInfoContent ] = useState<FileResultType>();
+    const [ thumbnailUpdates, setThumbnailUpdates ] = useState<Record<string, FileResultType>>({});
+
+    const onThumbnailUpdated = (file: FileResultType): void => {
+        setThumbnailUpdates(current => ({ ...current, [file.id]: file }));
+    };
+
+    const withUpdatedThumbnail = (file: FileResultType): FileResultType => {
+        const update = thumbnailUpdates[file.id];
+        return update === undefined ? file : {
+            ...file,
+            thumbnail: update.thumbnail,
+            thumbnailStatus: update.thumbnailStatus,
+            thumbnailProcessedAt: update.thumbnailProcessedAt,
+        };
+    };
 
     // pagination states
     const [ isScrolledToTheEnd, setIsScrolledToTheEnd ] = useState<boolean>(false);
@@ -112,7 +127,7 @@ const ContentList = (props: ContentListPropsType): JSX.Element => {
             return null;
         }
 
-        const position = data.indexOf(currentContent);
+        const position = data.findIndex(item => item.id === currentContent.id);
         return position === -1 ? null : position;
     };
 
@@ -174,6 +189,7 @@ const ContentList = (props: ContentListPropsType): JSX.Element => {
     const displayedContentElement = displayedContent !== undefined
         ? <ContentDisplay
             content={displayedContent}
+            onThumbnailUpdated={onThumbnailUpdated}
             closeHandler={onDisplayedContentClosed}
             previousHandler={onPreviousContentClickedHandler}
             nextHandler={onNextContentClickedHandler}
@@ -182,7 +198,7 @@ const ContentList = (props: ContentListPropsType): JSX.Element => {
 
     const infoContentElement = infoContent !== undefined
         ? (<MetadataDisplay
-                file={infoContent}
+                file={withUpdatedThumbnail(infoContent)}
                 key="infoContent"
                 onClose={onInfoContentClosed}
                 onFileChanged={onFileChanged}
@@ -196,13 +212,22 @@ const ContentList = (props: ContentListPropsType): JSX.Element => {
                 return <ContentThumbnail
                     key={data.id}
                     data-id={data.id}
-                    content={data}
+                    content={withUpdatedThumbnail(data)}
                     contentSelected={onContentSelectedHandler}
                     contentInfoSelected={onContentInfoSelectedHandler}
                     displayDetails={displayDetails}
                 />;
             } else if ('thumbnailFile' in data) {
-                return <AlbumThumbnail key={data.id} content={data} contentSelected={onContentSelectedHandler} />;
+                const update = data.thumbnailFile === undefined ? undefined : thumbnailUpdates[data.thumbnailFile.id];
+                const album = update === undefined ? data : {
+                    ...data,
+                    thumbnailFile: {
+                        ...data.thumbnailFile!,
+                        thumbnailImage: update.thumbnail ?? undefined,
+                        thumbnailProcessedAt: update.thumbnailProcessedAt,
+                    },
+                };
+                return <AlbumThumbnail key={data.id} content={album} contentSelected={onContentSelectedHandler} />;
             }
 
             return (null);

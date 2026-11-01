@@ -7,6 +7,7 @@ import AlbumDetails from './albumDetails';
 import ScrollToTop from './scrollToTop';
 import { apiBrowse } from '@/utils/frontend/dataSource/browse';
 
+import type { FileResultType } from '@/types/api/fileTypes';
 import type { BrowseResult, BrowseResultFile } from '@/types/api/browseTypes';
 
 import hmvStyle from '@/styles/hmv.module.scss';
@@ -64,7 +65,7 @@ const BrowserContentList = (props: BrowserContentListProps): JSX.Element => {
             return null;
         }
 
-        const position = content.content.indexOf(currentContent);
+        const position = content.content.findIndex(item => item.path === currentContent.path);
         return position === -1 ? null : position;
     };
 
@@ -132,11 +133,19 @@ const BrowserContentList = (props: BrowserContentListProps): JSX.Element => {
         reloadContent(path);
     };
 
+    const onThumbnailUpdated = (file: FileResultType): void => {
+        setContent(current => current === null ? null : {
+            ...current,
+            content: current.content.map(item => item.storedFile?.id === file.id ? { ...item, storedFile: file } : item),
+        });
+    };
+
     const displayContent = contentSelected?.storedFile === null
         ? null
         : <ContentDisplay
             key={contentSelected?.path}
             content={contentSelected?.storedFile}
+            onThumbnailUpdated={onThumbnailUpdated}
             closeHandler={onContentClosedHandler}
             previousHandler={onPreviousContentClickedHandler}
             nextHandler={onNextContentClickedHandler}

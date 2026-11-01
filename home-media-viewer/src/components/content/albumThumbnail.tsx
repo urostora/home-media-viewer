@@ -1,3 +1,4 @@
+import { getThumbnailUrl } from '@/utils/frontend/contentUtils';
 import type { JSX } from 'react';
 import type { AlbumExtendedResultType } from "@/types/api/albumTypes";
 
@@ -21,7 +22,7 @@ const AlbumThumbnail = (props: AlbumThumbnailProps): JSX.Element => {
         ? null
         : (typeof content.thumbnailFile.thumbnailImage === 'string'
             ? <img className={hmvStyle.thumbnailImage} alt={content.name} src={`data:image/jpeg;base64,${content.thumbnailFile.thumbnailImage}`} />
-            : <img className={hmvStyle.thumbnailImage} alt={content.name} src={`/api/file/thumbnail/${content.thumbnailFile.id}/200`} />);
+            : <img className={hmvStyle.thumbnailImage} alt={content.name} src={getThumbnailUrl(content.thumbnailFile.id, 200, content.thumbnailFile.thumbnailProcessedAt)} />);
 
     return (
         <div className={`${hmvStyle.contentCardContainer} ${hmvStyle.albumCardContainer} ${hmvStyle.noDetails}`} onClick={onCardClicked} data-id={content.id} >

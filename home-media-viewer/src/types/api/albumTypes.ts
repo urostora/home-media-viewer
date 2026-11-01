@@ -27,6 +27,7 @@ export interface AlbumAddType {
 export interface AlbumFile {
   id: string;
   thumbnailImage?: string;
+  thumbnailProcessedAt?: Date | string | null;
   contentDate?: string;
 }
 

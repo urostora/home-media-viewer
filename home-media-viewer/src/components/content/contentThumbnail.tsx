@@ -1,3 +1,4 @@
+import { getThumbnailUrl } from '@/utils/frontend/contentUtils';
 import Image from "next/image";
 import { type JSX, type ReactElement } from "react";
 
@@ -90,7 +91,7 @@ const ContentThumbnail = (props: ContentThumbnailPropsType): JSX.Element => {
       ? '/directory.png'
       : (content.thumbnail === null
         ? (content.thumbnailStatus === 'Processed'
-          ? `/api/file/thumbnail/${content.id}/200`
+          ? getThumbnailUrl(content.id, 200, content.thumbnailProcessedAt)
           : null)
         : `data:image/jpeg;base64,${content.thumbnail}`);
 

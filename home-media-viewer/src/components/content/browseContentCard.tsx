@@ -1,3 +1,4 @@
+import { getThumbnailUrl } from '@/utils/frontend/contentUtils';
 import type { JSX } from 'react';
 import Image from "next/image";
 
@@ -36,7 +37,7 @@ const BrowseContentCard = (props: BrowseContentCardProps): JSX.Element => {
             : (typeof thumbnailContent === 'string'
                 ? `url(data:image/jpeg;base64,${thumbnailContent})`
                 : (content?.storedFile?.thumbnailStatus === 'Processed'
-                    ? `url('/api/file/thumbnail/${content.storedFile.id}/200')`
+                    ? `url('${getThumbnailUrl(content.storedFile.id, 200, content.storedFile.thumbnailProcessedAt)}')`
                     : 'inherit')),
     }
     const hasThumbnailStyle =

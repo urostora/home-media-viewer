@@ -142,6 +142,10 @@ export default function FileList(): JSX.Element {
         void fetchData(filter);
     };
 
+    const onThumbnailUpdated = (file: FileResultType): void => {
+        setData(current => current?.map(item => item.id === file.id ? file : item) ?? null);
+    };
+
     const onCardSelected = (content: FileResultType): void => {
         setContentSelected(content);
     }
@@ -155,7 +159,7 @@ export default function FileList(): JSX.Element {
             return <></>;
         }
 
-        return <ContentDisplay content={content} closeHandler={onContentDisplayClosed} />;
+        return <ContentDisplay content={content} onThumbnailUpdated={onThumbnailUpdated} closeHandler={onContentDisplayClosed} />;
     }
 
     let contentList = null;

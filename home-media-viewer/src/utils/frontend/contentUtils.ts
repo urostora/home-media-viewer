@@ -1,5 +1,11 @@
-export const getThumbnailUrl = (fileId: string, thumbnailSize: number = 200): string => {
-  return `/api/file/thumbnail/${fileId}/${thumbnailSize}`;
+export const getThumbnailUrl = (
+  fileId: string,
+  thumbnailSize: number = 200,
+  version?: Date | string | null,
+): string => {
+  const suffix =
+    version == null ? '' : `?v=${encodeURIComponent(version instanceof Date ? version.toISOString() : version)}`;
+  return `/api/file/thumbnail/${fileId}/${thumbnailSize}${suffix}`;
 };
 
 export const getContentUrl = (fileId: string): string => {

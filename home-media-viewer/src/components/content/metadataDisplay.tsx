@@ -1,3 +1,4 @@
+import { getThumbnailUrl } from '@/utils/frontend/contentUtils';
 import React from "react";
 import Image from "next/image";
 
@@ -39,7 +40,7 @@ const MetadataDisplay: React.FC<MetadataDisplayProps> = (props: MetadataDisplayP
         ? null
         : (<div key="thumbnail" className={style.thumbnailContainer}>
                 <div className={style.imageWrapper}>
-                    <Image alt={file.name} src={`/api/file/thumbnail/${file.id}/200`} width={200} height={200} />
+                    <Image alt={file.name} src={getThumbnailUrl(file.id, 200, file.thumbnailProcessedAt)} width={200} height={200} />
                 </div>
             </div>);
 
