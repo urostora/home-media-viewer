@@ -4,8 +4,8 @@
 const assert = require('node:assert/strict');
 const { createServer } = require('node:http');
 const { createRequire } = require('node:module');
-const { randomBytes } = require('node:crypto');
-const { mkdtemp, writeFile, rm } = require('node:fs/promises');
+const { randomBytes, randomUUID } = require('node:crypto');
+const { mkdtemp, writeFile, rm, symlink, readdir } = require('node:fs/promises');
 const path = require('node:path');
 const os = require('node:os');
 
@@ -63,7 +63,10 @@ const check = (actual, expected, label) => {
   await writeFile(path.join(process.env.APP_ALBUM_ROOT_PATH, file.path), original);
   await writeFile(path.join(process.env.APP_ALBUM_ROOT_PATH, privateFile.path), original);
   const { getFileIdThumbnailPath } = appRequire('./src/utils/thumbnailHelper.ts');
-  await writeFile(getFileIdThumbnailPath(file.id, 200), 'T3 synthetic thumbnail bytes');
+  for (const size of [200, 600, 1280]) {
+    await writeFile(getFileIdThumbnailPath(file.id, size), `T4 synthetic thumbnail ${size}`);
+    await writeFile(getFileIdThumbnailPath(privateFile.id, size), `T4 private thumbnail ${size}`);
+  }
 
   // Every browser-protected API route in the reviewed application is represented.
   const protectedRoutes = [
@@ -99,7 +102,12 @@ const check = (actual, expected, label) => {
   ]) routes.set(url, { module: appRequire(`./src/pages/api/${source}.ts`), query: { id: source.startsWith('album/') ? privateAlbum.id : privateFile.id } });
   const { apiResolver } = appRequire('next/dist/server/api-utils/node/api-resolver');
   server = createServer((req, res) => {
-    const route = routes.get(new URL(req.url, 'http://localhost').pathname);
+    const pathname = new URL(req.url, 'http://localhost').pathname;
+    let route = routes.get(pathname);
+    if (!route && pathname.startsWith('/api/file/thumbnail/')) route = {
+      module: appRequire('./src/pages/api/file/thumbnail/[...params].ts'),
+      query: { params: pathname.slice('/api/file/thumbnail/'.length).split('/').map(decodeURIComponent) },
+    };
     if (!route) { res.writeHead(404).end(); return; }
     apiResolver(req, res, route.query, route.module, {}, true, false).catch(() => {
       res.statusCode = 500;
@@ -131,7 +139,63 @@ const check = (actual, expected, label) => {
   check((await call('/api/process/run', adminCookie)).status, 405, 'Administrator reaches process method gate');
   check((await call('/api/process/run', readerCookie, 'POST', {})).status, 403, 'Reader cannot process');
   check((await call(`/api/file/content/${privateFile.id}`, adminCookie)).status, 200, 'Active administrator can read unrelated media');
-  check((await call(`/api/file/content/${privateFile.id}`, readerCookie)).status, 400, 'Reader cannot read unrelated media');
+  check((await call(`/api/file/content/${privateFile.id}`, readerCookie)).status, 404, 'Reader cannot read unrelated media');
+
+  // T4: resource checks are identical for originals and thumbnail requests.
+  const fileUrl = `/api/file/content/${file.id}`;
+  const thumbUrl = `/api/file/thumbnail/${file.id}/200`;
+  for (const size of [200, 600, 1280]) {
+    check(await (await call(`/api/file/thumbnail/${file.id}/${size}`, readerCookie)).text(), `T4 synthetic thumbnail ${size}`, 'Member receives supported thumbnail bytes');
+    check((await call(`/api/file/thumbnail/${privateFile.id}/${size}`, readerCookie)).status, 404, 'Unrelated reader cannot retrieve thumbnail');
+    check(await (await call(`/api/file/thumbnail/${privateFile.id}/${size}`, adminCookie)).text(), `T4 private thumbnail ${size}`, 'Administrator can retrieve thumbnail');
+  }
+  check((await call(`/api/file/thumbnail/${file.id.toUpperCase()}/200`, readerCookie)).status, 200, 'Canonical ID path is used after UUID lookup');
+  await prisma.album.update({ where: { id: album.id }, data: { users: { disconnect: { id: reader.id } } } });
+  for (const url of [fileUrl, thumbUrl]) check((await call(url, readerCookie)).status, 404, 'Membership removal denies both representations');
+  await prisma.album.update({ where: { id: album.id }, data: { users: { connect: { id: reader.id } } } });
+  await prisma.file.update({ where: { id: file.id }, data: { status: 'Deleted' } });
+  for (const cookie of [readerCookie, adminCookie]) {
+    for (const url of [fileUrl, thumbUrl]) check((await call(url, cookie)).status, 404, 'Deleted files are denied even with existing thumbnail bytes');
+  }
+  await prisma.file.update({ where: { id: file.id }, data: { status: 'Active' } });
+  await prisma.album.update({ where: { id: album.id }, data: { status: 'Deleted' } });
+  for (const url of [fileUrl, thumbUrl]) check((await call(url, readerCookie)).status, 404, 'Deleted member album does not authorize access');
+  const otherAlbum = await prisma.album.create({ data: {
+    name: 'T4 overlapping permitted album', sourceType: 'File', connectionString: '', basePath: '/synthetic-other',
+    users: { connect: { id: reader.id } }, files: { connect: { id: file.id } },
+  } });
+  for (const url of [fileUrl, thumbUrl]) check((await call(url, readerCookie)).status, 200, 'Another permitted visible album still authorizes an overlapping file');
+  await prisma.album.update({ where: { id: otherAlbum.id }, data: { users: { disconnect: { id: reader.id } } } });
+  await prisma.album.update({ where: { id: album.id }, data: { status: 'Disabled' } });
+  await prisma.file.update({ where: { id: file.id }, data: { status: 'Disabled' } });
+  for (const url of [fileUrl, thumbUrl]) check((await call(url, readerCookie)).status, 200, 'Disabled resource behavior is preserved pending T9');
+  await prisma.album.update({ where: { id: album.id }, data: { status: 'Active' } });
+  await prisma.file.update({ where: { id: file.id }, data: { status: 'Active' } });
+
+  const noThumbnail = await prisma.file.create({ data: {
+    name: 'no-thumbnail', extension: 'jpg', path: 'no-thumbnail.jpg', albums: { connect: { id: album.id } },
+  } });
+  const orphanId = randomUUID();
+  await writeFile(getFileIdThumbnailPath(orphanId, 200), 'T4 orphan thumbnail must not be served');
+  const symlinkFile = await prisma.file.create({ data: {
+    name: 'escaped-thumbnail', extension: 'jpg', path: 'escaped-thumbnail.jpg', albums: { connect: { id: album.id } },
+  } });
+  const outside = path.join(temporary, 'outside.jpg');
+  await writeFile(outside, 'T4 outside bytes must not be served');
+  await symlink(outside, getFileIdThumbnailPath(symlinkFile.id, 200));
+  const storageBefore = await readdir(process.env.APP_STORAGE_PATH, { recursive: true });
+  for (const missingId of [noThumbnail.id, orphanId, randomUUID(), symlinkFile.id]) {
+    check((await call(`/api/file/thumbnail/${missingId}/200`, readerCookie)).status, 404, 'Missing or escaped previews never expose bytes');
+  }
+  for (const size of ['201', '0', '-200', 'NaN', 'Infinity', '200x', '200.0', '0200', '+200', '2e2', '%20200']) {
+    check((await call(`/api/file/thumbnail/${file.id}/${size}`, readerCookie)).status, 400, 'Invalid sizes rejected');
+  }
+  for (const id of ['not-a-uuid', '%2e%2e%2foutside', file.id + '%2fextra', file.id + '%252fextra']) {
+    check((await call(`/api/file/thumbnail/${id}/200`, readerCookie)).status, 400, 'Malformed/encoded traversal ID rejected');
+  }
+  check((await call(`/api/file/thumbnail/${file.id}/200/extra`, readerCookie)).status, 400, 'Extra segments rejected');
+  assert.deepEqual(await readdir(process.env.APP_STORAGE_PATH, { recursive: true }), storageBefore, 'Denied/missing reads create no files or directories');
+  checks++;
 
   await prisma.user.update({ where: { id: administrator.id }, data: { isAdmin: false } });
   const countsBefore = await prisma.user.count();
@@ -143,7 +207,7 @@ const check = (actual, expected, label) => {
   check((await call(`/api/file/${file.id}`, adminCookie, 'PATCH', { status: 'Deleted' })).status, 403, 'Demoted administrator cannot change file status');
   check((await prisma.file.findUniqueOrThrow({ where: { id: file.id } })).status, 'Active', 'Denied file mutation has no write');
   check((await (await call('/api/me', adminCookie)).json()).data.isAdmin, false, 'Identity reflects demotion');
-  check((await call(`/api/file/content/${privateFile.id}`, adminCookie)).status, 400, 'Demoted administrator loses unrelated original access');
+  check((await call(`/api/file/content/${privateFile.id}`, adminCookie)).status, 404, 'Demoted administrator loses unrelated original access');
   check((await call(`/api/file/${privateFile.id}`, adminCookie)).status, 404, 'Demoted administrator loses unrelated file details');
   check((await call(`/api/album/${privateAlbum.id}`, adminCookie)).status, 404, 'Demoted administrator loses unrelated album details');
   const fileSearch = await (await call('/api/file/search', adminCookie, 'POST', {})).json();

@@ -4,7 +4,8 @@ import { handleFileResponseByPath } from '@/utils/responseHelper';
 import { getFullPath } from '@/utils/fileHelper';
 import { withAuthenticatedRoute } from '@/utils/auth/authenticatedRoute';
 
-import prisma from '@/utils/prisma/prismaImporter';
+import { isFileIdentifier, resolveReadableFile } from '@/utils/auth/readableFile';
+import { logApiFailure } from '@/utils/apiLogger';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
   const { method } = req;
@@ -15,25 +16,23 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
       try {
         const { id } = req.query;
 
-        if (typeof id !== 'string') {
-          throw Error('Insufficient parameters provided (missing fileId)');
+        if (!isFileIdentifier(id)) {
+          res.status(400).end('Invalid file identifier');
+          return;
         }
 
-        const albumsFilter =
-          req.authenticatedUser?.isAdmin === true
-            ? undefined
-            : { some: { users: { some: { id: req.authenticatedUser?.id ?? '' } } } };
-
-        const file = await prisma.file.findFirst({ where: { id, albums: albumsFilter } });
+        const file = await resolveReadableFile(id, req.authenticatedUser);
 
         if (file == null) {
-          throw Error('Invalid or not allowed file');
+          res.status(404).end('File not found');
+          return;
         }
 
         const filePath = getFullPath(file);
         handleFileResponseByPath(req, res, filePath);
       } catch (e) {
-        res.status(400).end(`${e}`);
+        logApiFailure('read file content', 500, e);
+        res.status(500).end('File content unavailable');
       }
 
       break;

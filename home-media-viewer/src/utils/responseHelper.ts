@@ -6,7 +6,8 @@ import mime from 'mime-types';
 
 export const handleFileResponseByPath = (req: NextApiRequest, res: NextApiResponse, path: string): void => {
   if (!existsSync(path)) {
-    res.status(404).write('File not found');
+    res.status(404).end('File not found');
+    return;
   }
 
   const stat = statSync(path);
