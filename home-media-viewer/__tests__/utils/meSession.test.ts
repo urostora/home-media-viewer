@@ -1,51 +1,50 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import handler from '@/pages/api/me';
-import prisma from '@/utils/prisma/prismaImporter';
-
-jest.mock('../../src/utils/sessionRoute', () => ({ withSessionRoute: (handler: unknown) => handler }));
-jest.mock('../../src/utils/prisma/prismaImporter', () => ({
-  __esModule: true,
-  default: {
-    user: {
-      findFirst: jest.fn(),
-    },
-  },
+import { resolveServerSession } from '@/utils/auth/serverSession';
+jest.mock('@/utils/sessionRoute', () => ({ withSessionRoute: (handler: unknown) => handler }));
+jest.mock('@/utils/auth/serverSession', () => ({
+  ...jest.requireActual('@/utils/auth/serverSession'),
+  resolveServerSession: jest.fn(),
 }));
-
 beforeEach(() => jest.resetAllMocks());
-
-it('rejects an absent session before querying users', async () => {
-  const json = jest.fn();
-  const status = jest.fn().mockReturnValue({ json });
-  const destroy = jest.fn();
-  const request = { session: { destroy } };
-  const response = { status, json };
-  await handler(request as unknown as NextApiRequest, response as unknown as NextApiResponse);
-  expect(status).toHaveBeenCalledWith(403);
-  expect(prisma.user.findFirst).not.toHaveBeenCalled();
-  expect(destroy).toHaveBeenCalled();
+it('rejects absent session', async () => {
+  jest.mocked(resolveServerSession).mockResolvedValue(null);
+  const req = { session: { destroy: jest.fn() } };
+  const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+  await handler(req as unknown as NextApiRequest, res as unknown as NextApiResponse);
+  expect(res.status).toHaveBeenCalledWith(403);
+  expect(req.session.destroy).toHaveBeenCalled();
 });
-
-it('uses one lookup for current identity and ignores a stale admin claim', async () => {
+it('uses current principal and actual expiry without renewing the absolute lifetime', async () => {
   const user = {
     id: '12345678-1234-1234-1234-123456789abc',
-    name: 'Current name',
-    email: 'current@example.invalid',
-    status: 'Active' as const,
+    name: 'Current',
+    email: 'reader@example.invalid',
     isAdmin: false,
-    password: 'not-selected',
+    status: 'Active' as const,
   };
-  jest.mocked(prisma.user.findFirst).mockResolvedValue(user);
-  const res = { send: jest.fn() };
-  await handler(
-    { session: { user: { id: user.id, admin: true } } } as NextApiRequest,
-    res as unknown as NextApiResponse,
-  );
-  expect(prisma.user.findFirst).toHaveBeenCalledTimes(1);
-  expect(res.send).toHaveBeenCalledWith(
-    expect.objectContaining({
-      data: expect.objectContaining({ name: user.name, email: user.email, isAdmin: false }),
-    }),
-  );
-  expect(JSON.stringify(res.send.mock.calls)).not.toContain('not-selected');
+  const now = Date.now();
+  const clock = jest.spyOn(Date, 'now').mockReturnValue(now);
+  try {
+    jest.mocked(resolveServerSession).mockResolvedValue({ user, expiresOn: now + 45000 });
+    const res = { send: jest.fn() };
+    await handler(
+      { session: { version: 1, token: 'a'.repeat(64) } } as unknown as NextApiRequest,
+      res as unknown as NextApiResponse,
+    );
+    expect(resolveServerSession).toHaveBeenCalledTimes(1);
+    expect(res.send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: {
+          name: user.name,
+          email: user.email,
+          isAdmin: false,
+          sessionExpiresOn: now + 45000,
+          sessionExpiresInSeconds: 45,
+        },
+      }),
+    );
+  } finally {
+    clock.mockRestore();
+  }
 });

@@ -2,26 +2,28 @@ import type { NextApiHandler } from 'next';
 import { withSessionRoute } from '@/utils/sessionRoute';
 import { getApiResponse } from '@/utils/apiHelpers';
 import { logApiFailure } from '@/utils/apiLogger';
-import { resolveCurrentUser } from './currentUser';
+import { resolveServerSession } from './serverSession';
 
 export const withAuthenticatedRoute = (handler: NextApiHandler): NextApiHandler =>
   withSessionRoute(async (req, res) => {
     delete req.authenticatedUser;
-    let user;
+    delete req.sessionExpiresOn;
+    let identity;
     try {
-      user = await resolveCurrentUser(req.session);
+      identity = await resolveServerSession(req.session);
     } catch (error) {
       logApiFailure('authenticate user', 503, error);
       res.status(503).json(getApiResponse({ ok: false, error: 'Authentication unavailable' }));
       return;
     }
 
-    if (user === null) {
+    if (identity === null) {
       req.session.destroy();
       res.status(403).json(getApiResponse({ ok: false, error: 'Forbidden' }));
       return;
     }
 
-    req.authenticatedUser = user;
+    req.authenticatedUser = identity.user;
+    req.sessionExpiresOn = identity.expiresOn;
     return handler(req, res);
   });

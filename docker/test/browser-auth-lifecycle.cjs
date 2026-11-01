@@ -9,11 +9,13 @@ const http = require('node:http');
 const { createServer } = require('node:https');
 const path = require('node:path');
 const os = require('node:os');
-const source = path.resolve(process.env.HMV_SOURCE_ROOT ?? '.', 'home-media-viewer');
+const source = path.resolve(
+  process.env.HMV_APP_ROOT ?? path.join(process.env.HMV_SOURCE_ROOT ?? '.', 'home-media-viewer'),
+);
 const appRequire = createRequire(path.join(source, 'package.json'));
 const database = new URL(process.env.DATABASE_URL ?? '');
 assert.equal(database.hostname, '127.0.0.1');
-assert.equal(database.pathname, '/hmv_auth_t5_fixture', 'Refusing non-task database');
+assert(['/hmv_auth_t5_fixture', '/hmv_auth_t6_fixture'].includes(database.pathname), 'Refusing non-task database');
 process.env.APP_SESSION_SECRET = randomBytes(32).toString('hex');
 process.env.SESSION_COOKIE_SECURE = 'true';
 process.env.NEXT_TELEMETRY_DISABLED = '1';
@@ -126,19 +128,21 @@ const check = (value, expected, label) => {
     },
   );
   await new Promise((resolve) => server.listen(3443, '127.0.0.1', resolve));
-  browser = await appRequire('puppeteer').launch({
-    headless: 'new',
-    executablePath: '/usr/bin/chromium',
-    ignoreHTTPSErrors: true,
-    args: [
-      '--no-sandbox',
-      '--disable-dev-shm-usage',
-      '--ignore-certificate-errors',
-      '--disable-background-timer-throttling',
-      '--disable-renderer-backgrounding',
-      '--disable-backgrounding-occluded-windows',
-    ],
-  });
+  browser = process.env.PUPPETEER_BROWSER_URL
+    ? await appRequire('puppeteer').connect({ browserURL: process.env.PUPPETEER_BROWSER_URL, ignoreHTTPSErrors: true })
+    : await appRequire('puppeteer').launch({
+        headless: 'new',
+        executablePath: '/usr/bin/chromium',
+        ignoreHTTPSErrors: true,
+        args: [
+          '--no-sandbox',
+          '--disable-dev-shm-usage',
+          '--ignore-certificate-errors',
+          '--disable-background-timer-throttling',
+          '--disable-renderer-backgrounding',
+          '--disable-backgrounding-occluded-windows',
+        ],
+      });
   const page = await browser.newPage();
   activePage = page;
   page.setDefaultTimeout(60000);

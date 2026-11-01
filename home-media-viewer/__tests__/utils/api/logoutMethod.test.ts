@@ -1,5 +1,6 @@
 import handler from '@/pages/api/logout';
 import type { NextApiRequest, NextApiResponse } from 'next';
+jest.mock('@/utils/auth/serverSession', () => ({ revokeSession: jest.fn() }));
 jest.mock('@/utils/sessionRoute', () => ({ withSessionRoute: (fn: unknown) => fn }));
 test.each(['GET', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS', undefined, 'POST'])(
   'logout method %s',

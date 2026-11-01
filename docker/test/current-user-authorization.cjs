@@ -9,12 +9,12 @@ const { mkdtemp, writeFile, rm, symlink, readdir } = require('node:fs/promises')
 const path = require('node:path');
 const os = require('node:os');
 
-const app = path.resolve(process.env.HMV_SOURCE_ROOT ?? '.', 'home-media-viewer');
+const app = path.resolve(process.env.HMV_APP_ROOT ?? path.join(process.env.HMV_SOURCE_ROOT ?? '.', 'home-media-viewer'));
 const appRequire = createRequire(path.join(app, 'package.json'));
 process.env.TS_NODE_PROJECT = path.join(app, 'tsconfig.json');
 const database = new URL(process.env.DATABASE_URL ?? '');
 assert.equal(database.hostname, '127.0.0.1', 'Use the isolated database network namespace');
-assert.equal(database.pathname, '/hmv_auth_t3_fixture', 'Refusing a non-task database');
+assert(['/hmv_auth_t3_fixture', '/hmv_auth_t6_fixture'].includes(database.pathname), 'Refusing a non-task database');
 process.env.APP_SESSION_SECRET = randomBytes(32).toString('hex');
 process.env.SESSION_COOKIE_SECURE = 'false';
 appRequire('ts-node').register({ project: path.join(app, 'tsconfig.json'), transpileOnly: true });

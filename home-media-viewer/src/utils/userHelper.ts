@@ -1,4 +1,5 @@
 import prisma from '@/utils/prisma/prismaImporter';
+import { lockSessionUser, revokeUserSessions } from './auth/serverSession';
 import { getHashedPassword } from './passwordHelper';
 import { HmvError } from './apiHelpers';
 import { getSimpleValueOrInFilter, getStringContainOrInFilter } from './api/searchParameterHelper';
@@ -210,20 +211,34 @@ export const updateUser = async (id: string, data: UserEditType): Promise<User> 
     updateData.isAdmin = isAdmin;
   }
 
-  return await prisma.user.update({
-    where: {
-      id,
-    },
-    data: updateData,
+  return prisma.$transaction(async (tx) => {
+    const current = await lockSessionUser(tx, id);
+    if (current === null) throw new HmvError('User not found', { isPublic: true });
+    const revoke =
+      typeof password === 'string' ||
+      (status !== null && status !== current.status) ||
+      (isAdmin !== null && isAdmin !== current.isAdmin);
+    const updated = await tx.user.update({
+      where: { id },
+      data: {
+        ...updateData,
+        ...(revoke ? { sessionVersion: { increment: 1 } } : {}),
+      },
+    });
+    if (revoke) await revokeUserSessions(tx, id);
+    return updated;
   });
 };
 
 export const deleteUser = async (id: string): Promise<User> => {
-  const user = await prisma.user.findFirst({ where: { id, status: { in: ['Active', 'Disabled'] } } });
-
-  if (user == null) {
-    throw new HmvError('User not found', { isPublic: true });
-  }
-
-  return await prisma.user.update({ where: { id }, data: { status: 'Deleted' } });
+  return prisma.$transaction(async (tx) => {
+    const user = await lockSessionUser(tx, id);
+    if (user === null || user.status === 'Deleted') throw new HmvError('User not found', { isPublic: true });
+    const updated = await tx.user.update({
+      where: { id },
+      data: { status: 'Deleted', sessionVersion: { increment: 1 } },
+    });
+    await revokeUserSessions(tx, id);
+    return updated;
+  });
 };

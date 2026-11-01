@@ -1,134 +1,88 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { withAuthenticatedRoute } from '@/utils/auth/authenticatedRoute';
 import { apiOnlyWithAdminUsers } from '@/utils/auth/apiHoc';
+import { resolveServerSession } from '@/utils/auth/serverSession';
 import { resolveCurrentUser } from '@/utils/auth/currentUser';
-import prisma from '@/utils/prisma/prismaImporter';
-
-jest.mock('../../src/utils/sessionRoute', () => ({ withSessionRoute: (handler: unknown) => handler }));
-jest.mock('../../src/utils/prisma/prismaImporter', () => ({
-  __esModule: true,
-  default: { user: { findFirst: jest.fn() } },
-}));
-
+jest.mock('@/utils/sessionRoute', () => ({ withSessionRoute: (handler: unknown) => handler }));
+jest.mock('@/utils/auth/serverSession', () => ({ resolveServerSession: jest.fn() }));
+const resolve = jest.mocked(resolveServerSession);
 const user = {
   id: '12345678-1234-1234-1234-123456789abc',
-  name: 'Synthetic reader',
+  name: 'Reader',
   email: 'reader@example.invalid',
   status: 'Active' as const,
   isAdmin: false,
-  password: 'not-selected',
 };
-const response = () => ({
-  status: jest.fn().mockReturnThis(),
-  json: jest.fn().mockReturnThis(),
-  send: jest.fn().mockReturnThis(),
-});
-const request = (sessionUser: unknown) => ({
-  session: { user: sessionUser, destroy: jest.fn() },
+const request = () => ({
+  session: { version: 1, token: 'a'.repeat(64), destroy: jest.fn() },
   authenticatedUser: { ...user, isAdmin: true },
+  sessionExpiresOn: 99,
 });
-
+const response = () => ({ status: jest.fn().mockReturnThis(), json: jest.fn(), send: jest.fn() });
 beforeEach(() => {
   jest.resetAllMocks();
-  jest.mocked(prisma.user.findFirst).mockResolvedValue(user);
-  jest.spyOn(console, 'warn').mockImplementation(() => undefined);
 });
 afterEach(() => jest.restoreAllMocks());
-
-it.each([undefined, null, false, 1, 'user', [], {}, { id: '' }, { id: ['id'] }, { id: 'not-a-uuid', admin: true }])(
-  'rejects malformed session identity without a query (%j)',
-  async (sessionUser) => {
-    const req = request(sessionUser);
-    const res = response();
-    const protectedHandler = jest.fn();
-    await withAuthenticatedRoute(protectedHandler)(req as unknown as NextApiRequest, res as unknown as NextApiResponse);
-    expect(prisma.user.findFirst).not.toHaveBeenCalled();
-    expect(res.status).toHaveBeenCalledWith(403);
-    expect(req.session.destroy).toHaveBeenCalledTimes(1);
-    expect(req.authenticatedUser).toBeUndefined();
-    expect(protectedHandler).not.toHaveBeenCalled();
-  },
-);
-
-it.each([null, { ...user, status: 'Disabled' as const }, { ...user, status: 'Deleted' as const }])(
-  'rejects a missing/inactive user with an old administrator cookie (%j)',
-  async (currentUser) => {
-    jest.mocked(prisma.user.findFirst).mockResolvedValue(currentUser);
-    const req = request({ id: user.id, admin: true });
-    const res = response();
-    const protectedHandler = jest.fn();
-    await apiOnlyWithAdminUsers(protectedHandler)(req as unknown as NextApiRequest, res as unknown as NextApiResponse);
-    expect(req.session.destroy).toHaveBeenCalledTimes(1);
-    expect(res.status).toHaveBeenCalledWith(403);
-    expect(protectedHandler).not.toHaveBeenCalled();
-  },
-);
-
 it.each([withAuthenticatedRoute, apiOnlyWithAdminUsers])(
-  'fails closed on lookup errors without disclosing details (%#)',
+  'denies invalid/revoked sessions and discards stale request authority (%#)',
   async (wrap) => {
-    jest.mocked(prisma.user.findFirst).mockRejectedValue(new Error('SYNTHETIC_SESSION_SECRET'));
-    const req = request({ id: user.id, admin: true });
+    resolve.mockResolvedValue(null);
+    const req = request();
     const res = response();
-    const protectedHandler = jest.fn();
-    await wrap(protectedHandler)(req as unknown as NextApiRequest, res as unknown as NextApiResponse);
-    expect(res.status).toHaveBeenCalledWith(503);
-    expect(protectedHandler).not.toHaveBeenCalled();
+    const handler = jest.fn();
+    await wrap(handler)(req as unknown as NextApiRequest, res as unknown as NextApiResponse);
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(req.session.destroy).toHaveBeenCalled();
     expect(req.authenticatedUser).toBeUndefined();
+    expect(req.sessionExpiresOn).toBeUndefined();
+    expect(handler).not.toHaveBeenCalled();
+  },
+);
+it.each([withAuthenticatedRoute, apiOnlyWithAdminUsers])(
+  'fails closed with safe 503 and preserves cookie on outage (%#)',
+  async (wrap) => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+    resolve.mockRejectedValue(new Error('SYNTHETIC_TOKEN_SECRET'));
+    const req = request();
+    const res = response();
+    const handler = jest.fn();
+    await wrap(handler)(req as unknown as NextApiRequest, res as unknown as NextApiResponse);
+    expect(res.status).toHaveBeenCalledWith(503);
     expect(req.session.destroy).not.toHaveBeenCalled();
-    expect(JSON.stringify([res.json.mock.calls, jest.mocked(console.warn).mock.calls])).not.toContain(
-      'SYNTHETIC_SESSION_SECRET',
-    );
+    expect(handler).not.toHaveBeenCalled();
+    expect(JSON.stringify([res.json.mock.calls, warn.mock.calls])).not.toContain('SYNTHETIC_TOKEN_SECRET');
   },
 );
-
-it('denies a demoted administrator before invoking the protected handler', async () => {
-  const protectedHandler = jest.fn();
+it.each([false, true])('enforces current administrator role %s', async (isAdmin) => {
+  resolve.mockResolvedValue({ user: { ...user, isAdmin }, expiresOn: 123 });
+  const req = request();
   const res = response();
-  await apiOnlyWithAdminUsers(protectedHandler)(
-    request({ id: user.id, admin: true }) as unknown as NextApiRequest,
-    res as unknown as NextApiResponse,
-  );
-  expect(res.status).toHaveBeenCalledWith(403);
-  expect(protectedHandler).not.toHaveBeenCalled();
+  const handler = jest.fn();
+  await apiOnlyWithAdminUsers(handler)(req as unknown as NextApiRequest, res as unknown as NextApiResponse);
+  expect(handler).toHaveBeenCalledTimes(isAdmin ? 1 : 0);
+  if (!isAdmin) expect(res.status).toHaveBeenCalledWith(403);
 });
-
-it.each([false, undefined, 'true'])(
-  'allows current administrator authority despite stale cookie role (%j)',
-  async (admin) => {
-    jest.mocked(prisma.user.findFirst).mockResolvedValue({ ...user, isAdmin: true });
-    const protectedHandler = jest.fn();
-    const req = request({ id: user.id, admin });
-    await apiOnlyWithAdminUsers(protectedHandler)(
-      req as unknown as NextApiRequest,
-      response() as unknown as NextApiResponse,
-    );
-    expect(protectedHandler).toHaveBeenCalledTimes(1);
-    expect(req.authenticatedUser?.isAdmin).toBe(true);
-    expect(prisma.user.findFirst).toHaveBeenCalledTimes(1);
-  },
-);
-
-it('allows an active reader and selects only the needed account fields', async () => {
-  const protectedHandler = jest.fn();
-  const req = request({ id: user.id, admin: true });
-  await withAuthenticatedRoute(protectedHandler)(
-    req as unknown as NextApiRequest,
-    response() as unknown as NextApiResponse,
-  );
-  expect(protectedHandler).toHaveBeenCalledTimes(1);
-  expect(req.authenticatedUser?.isAdmin).toBe(false);
-  expect(prisma.user.findFirst).toHaveBeenCalledWith({
-    where: { id: user.id },
-    select: { id: true, name: true, email: true, isAdmin: true, status: true },
-  });
+it('attaches current principal and actual expiry once per request', async () => {
+  resolve.mockResolvedValue({ user, expiresOn: 123 });
+  const req = request();
+  const handler = jest.fn();
+  await withAuthenticatedRoute(handler)(req as unknown as NextApiRequest, response() as unknown as NextApiResponse);
+  expect(req.authenticatedUser).toEqual(user);
+  expect(req.sessionExpiresOn).toBe(123);
+  expect(resolve).toHaveBeenCalledTimes(1);
+  expect(handler).toHaveBeenCalled();
 });
-
-it('does not reuse user authority between requests', async () => {
-  const session = { user: { id: user.id, admin: true } };
-  expect(await resolveCurrentUser(session)).toEqual(user);
-  jest.mocked(prisma.user.findFirst).mockResolvedValue({ ...user, status: 'Disabled' });
-  expect(await resolveCurrentUser(session)).toBeNull();
-  expect(prisma.user.findFirst).toHaveBeenCalledTimes(2);
-  expect(await resolveCurrentUser(undefined)).toBeNull();
+it('current-user helper never caches resolved authority', async () => {
+  resolve.mockResolvedValueOnce({ user, expiresOn: 123 }).mockResolvedValueOnce(null);
+  const cookie = { version: 1 as const, token: 'a'.repeat(64) };
+  expect(await resolveCurrentUser(cookie)).toEqual(user);
+  expect(await resolveCurrentUser(cookie)).toBeNull();
+});
+it('handler exceptions are not converted into authentication failures', async () => {
+  resolve.mockResolvedValue({ user, expiresOn: 123 });
+  await expect(
+    withAuthenticatedRoute(async () => {
+      throw new Error('handler');
+    })(request() as unknown as NextApiRequest, response() as unknown as NextApiResponse),
+  ).rejects.toThrow('handler');
 });

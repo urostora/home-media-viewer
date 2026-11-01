@@ -2,7 +2,10 @@ import type { IronSession } from 'iron-session';
 import type { CurrentUser } from '@/utils/auth/currentUser';
 
 export interface SessionData {
-  user: {
+  version?: 1;
+  token?: string;
+  // Legacy payloads are decoded only so they can be rejected at cutover.
+  user?: {
     id: string;
     admin?: boolean;
   };
@@ -13,5 +16,6 @@ declare module 'next' {
   interface NextApiRequest {
     session: IronSession<SessionData>;
     authenticatedUser?: CurrentUser;
+    sessionExpiresOn?: number;
   }
 }

@@ -1,4 +1,5 @@
 import type { SessionOptions } from 'iron-session';
+import { SESSION_ABSOLUTE_SECONDS } from './auth/sessionPolicy';
 
 export const getIronSessionOptions = (): SessionOptions => {
   const isProduction = process.env.NODE_ENV === 'production';
@@ -12,12 +13,13 @@ export const getIronSessionOptions = (): SessionOptions => {
   }
 
   return {
+    ttl: SESSION_ABSOLUTE_SECONDS,
     cookieName: 'home-media-viewer-user-cookie',
     password: secret,
     cookieOptions: {
       httpOnly: true,
       sameSite: 'lax',
-      maxAge: 14 * 24 * 60 * 60,
+      maxAge: SESSION_ABSOLUTE_SECONDS,
       secure: secureSetting === undefined ? isProduction : secureSetting === 'true',
     },
   };

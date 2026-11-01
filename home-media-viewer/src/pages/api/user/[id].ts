@@ -47,6 +47,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
         const {
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           password,
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          sessionVersion,
           ...returnUserData
         } = userData;
 

@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import createUser from '@/pages/api/user/index';
 import editUser from '@/pages/api/user/[id]';
 import login from '@/pages/api/login';
+import { issueSession } from '@/utils/auth/serverSession';
 import prisma from '@/utils/prisma/prismaImporter';
 import { getHashedPassword, verifyPassword } from '@/utils/passwordHelper';
 
@@ -12,7 +13,18 @@ jest.mock('../../../src/utils/auth/authenticatedRoute', () => ({
 jest.mock('../../../src/utils/passwordHelper', () => ({ getHashedPassword: jest.fn(), verifyPassword: jest.fn() }));
 jest.mock('../../../src/utils/prisma/prismaImporter', () => ({
   __esModule: true,
-  default: { user: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn() } },
+  default: {
+    $transaction: jest.fn(),
+    $queryRaw: jest.fn(),
+    authSession: { updateMany: jest.fn() },
+    user: { findFirst: jest.fn(), findUnique: jest.fn(), create: jest.fn(), update: jest.fn() },
+  },
+}));
+jest.mock('@/utils/auth/serverSession', () => ({
+  ...jest.requireActual('@/utils/auth/serverSession'),
+  issueSession: jest.fn(),
+  revokeSession: jest.fn(),
+  cleanupSessions: jest.fn(),
 }));
 jest.mock('../../../src/utils/sessionHelper', () => ({
   getIronSessionOptions: () => ({ cookieOptions: { maxAge: 1209600 } }),
@@ -28,6 +40,7 @@ const user = {
   name: 'Synthetic user',
   email: 'synthetic@example.invalid',
   password: hash,
+  sessionVersion: 0,
 };
 const body = { name: user.name, email: user.email, password };
 
@@ -58,6 +71,12 @@ beforeEach(() => {
   jest.mocked(prisma.user.findFirst).mockResolvedValue(user);
   jest.mocked(prisma.user.create).mockResolvedValue(user);
   jest.mocked(prisma.user.update).mockResolvedValue(user);
+  jest.mocked(prisma.user.findUnique).mockResolvedValue(user);
+  jest.mocked(prisma.$queryRaw).mockResolvedValue([{ id: user.id }]);
+  jest
+    .mocked(prisma.$transaction)
+    .mockImplementation(async (operation: unknown) => (operation as (tx: typeof prisma) => Promise<never>)(prisma));
+  jest.mocked(issueSession).mockResolvedValue({ token: 'b'.repeat(64), expiresOn: Date.now() + 1000, user });
 });
 afterEach(() => jest.restoreAllMocks());
 

@@ -24,7 +24,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
         const userAdded = await addUser(putData);
 
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { password, ...userData } = userAdded;
+        const { password, sessionVersion, ...userData } = userAdded;
 
         res.status(200).json(getApiResponseWithData<UserDataType>(userData));
       } catch (e) {

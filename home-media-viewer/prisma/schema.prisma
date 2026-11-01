@@ -25,13 +25,33 @@ enum MetadataProcessingStatus {
 }
 
 model User {
-  id       String  @id @default(uuid())
-  status   Status  @default(Active)
-  email    String  @unique
-  name     String
-  password String
-  albums   Album[]
-  isAdmin  Boolean @default(false)
+  id             String        @id @default(uuid())
+  status         Status        @default(Active)
+  email          String        @unique
+  name           String
+  password       String
+  albums         Album[]
+  isAdmin        Boolean       @default(false)
+  sessionVersion Int           @default(0)
+  sessions       AuthSession[]
+}
+
+model AuthSession {
+  id            String    @id @default(uuid())
+  tokenHash     String    @unique @db.Char(64)
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userVersion   Int
+  issuedAt      DateTime  @default(now())
+  expiresAt     DateTime
+  idleExpiresAt DateTime
+  lastSeenAt    DateTime
+  revokedAt     DateTime?
+
+  @@index([userId, revokedAt])
+  @@index([expiresAt])
+  @@index([idleExpiresAt])
+  @@index([revokedAt])
 }
 
 enum AlbumSourceType {
