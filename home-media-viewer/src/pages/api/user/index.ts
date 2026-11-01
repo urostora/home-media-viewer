@@ -14,13 +14,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
     case 'POST':
     case 'PUT': {
       // Update or create data in your database
-      const putData: UserAddType | null = getRequestBodyObject(req, res);
-      if (putData == null) {
-        return;
-      }
-
       // add user
       try {
+        const putData: UserAddType | null = getRequestBodyObject(req, res);
+        if (putData == null) return;
+
         validateData(putData, userAddDataSchema);
 
         const userAdded = await addUser(putData);
@@ -30,7 +28,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
 
         res.status(200).json(getApiResponseWithData<UserDataType>(userData));
       } catch (e) {
-        handleApiError(res, 'add user', e, putData);
+        handleApiError(res, 'add user', e);
       }
 
       break;

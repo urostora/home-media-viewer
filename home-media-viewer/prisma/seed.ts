@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 
 import { getHashedPassword } from '../src/utils/passwordHelper';
+import { logApiFailure } from '../src/utils/apiLogger';
 
 const prisma = new PrismaClient();
 
@@ -39,7 +40,7 @@ main()
     await prisma.$disconnect();
   })
   .catch(async (e) => {
-    console.error(e);
+    logApiFailure('bootstrap administrator', 500, e);
     await prisma.$disconnect();
     process.exit(1);
   });

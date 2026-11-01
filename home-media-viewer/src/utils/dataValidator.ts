@@ -43,26 +43,20 @@ export const validateData = (data: object | null | undefined, schema: DataValida
       const arr: any[] = value;
       for (const arrayValue of arr) {
         if (typeof arrayValue !== type) {
-          throw new HmvError(
-            `field "${field}" has invalid value in array ${arrayValue}, type must be '${type}' instead of '${type}'`,
-            { isPublic: true },
-          );
+          throw new HmvError(`field "${field}" has an invalid array item, type must be ${type}`, { isPublic: true });
         }
 
         if (Array.isArray(valuesAllowed) && !valuesAllowed.includes(arrayValue)) {
-          throw new HmvError(
-            `field "${field}" array value must be one of the following: [${valuesAllowed.join(', ')}]`,
-            { isPublic: true },
-          );
+          throw new HmvError(`field "${field}" has an unsupported array item`, { isPublic: true });
         }
       }
     } else {
       if (typeof value !== type) {
-        throw new HmvError(`field "${field}" has invalid value ${value}, type must be ${type}`, { isPublic: true });
+        throw new HmvError(`field "${field}" has an invalid value, type must be ${type}`, { isPublic: true });
       }
 
       if (Array.isArray(valuesAllowed) && !valuesAllowed.includes(value)) {
-        throw new HmvError(`field "${field}" value must be one of the following: [${valuesAllowed.join(', ')}]`, {
+        throw new HmvError(`field "${field}" has an unsupported value`, {
           isPublic: true,
         });
       }

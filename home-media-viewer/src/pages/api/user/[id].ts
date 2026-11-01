@@ -32,14 +32,13 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
     case 'PATCH':
     case 'PUT': {
       // modify user data
-      const patchData: UserEditType | null = getRequestBodyObject<UserEditType>(req, res);
-      if (patchData == null) {
-        res.status(400).write('Invalid data provided');
-        res.end();
-        return;
-      }
-
       try {
+        const patchData: UserEditType | null = getRequestBodyObject<UserEditType>(req, res);
+        if (patchData == null) {
+          res.status(400).end('Invalid data provided');
+          return;
+        }
+
         validateData(patchData, userEditDataSchema);
 
         const userData = await updateUser(id, patchData);
@@ -53,7 +52,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
 
         res.status(200).json(getApiResponseWithData<UserDataType>(returnUserData));
       } catch (e) {
-        handleApiError(res, 'update user', e, { id, ...patchData });
+        handleApiError(res, 'update user', e, { id });
       }
 
       break;

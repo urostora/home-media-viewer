@@ -8,6 +8,7 @@ import {
   type GeneralResponseWithData,
 } from '@/types/api/generalTypes';
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { logApiFailure } from './apiLogger';
 
 export function getRequestBodyObject<T>(req: NextApiRequest, res?: NextApiResponse): T {
   let ret: object | null = null;
@@ -142,36 +143,19 @@ export const handleApiError = (
   error: unknown = undefined,
   data: object | undefined | null = undefined,
 ): void => {
-  let logMessage = `Error in ${task}`;
   let publicError: string | null = null;
   let httpStatus: number = 400;
 
-  if (typeof error === 'string') {
-    logMessage += ` ${error}`;
-  } else if (typeof error === 'object' && error !== null) {
-    if (error instanceof HmvError) {
-      logMessage += ` ${error.message}`;
-      if (error.isPublic || typeof error.publicMessage === 'string') {
-        publicError = error.publicMessage ?? error.message;
-      }
-      if (error.httpStatus !== undefined) {
-        httpStatus = error.httpStatus;
-      }
-    } else if (error instanceof Error) {
-      logMessage += ` ${error}`;
-    } else if ('error' in error && typeof error?.error === 'string') {
-      logMessage += ` ${error.error}`;
-    } else if ('publicError' in error && typeof error?.publicError === 'string') {
-      logMessage += ` ${error.publicError}`;
-      publicError = error.publicError;
+  // Only explicitly public application errors may supply response text.
+  // Their messages must describe the failure without interpolating credentials.
+  if (error instanceof HmvError) {
+    if (error.isPublic || typeof error.publicMessage === 'string') {
+      publicError = error.publicMessage ?? error.message;
     }
+    httpStatus = error.httpStatus;
   }
 
-  if (typeof data === 'object') {
-    logMessage += ` (data: ${JSON.stringify(data)})`;
-  }
-
-  console.warn(logMessage);
+  logApiFailure(task, httpStatus, error, data);
 
   response.status(httpStatus).end(`Error in ${task}` + (publicError !== null ? `: ${publicError}` : ''));
 };

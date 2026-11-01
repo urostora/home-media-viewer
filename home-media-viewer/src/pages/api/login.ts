@@ -8,6 +8,7 @@ import { type LoginRequestType, type LoginResponseDataType } from '@/types/login
 import { type DataValidatorSchema, validateData } from '@/utils/dataValidator';
 
 import prisma from '@/utils/prisma/prismaImporter';
+import { logLoginSuccess } from '@/utils/apiLogger';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
@@ -25,7 +26,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
     if (user == null) {
       // unknown user
       req.session.destroy();
-      throw new HmvError(`Login failed - wrong password for ${loginData.email} [IP: ${req.socket.remoteAddress}]`, {
+      throw new HmvError('Login failed', {
         publicMessage: 'Invalid email or password',
       });
     }
@@ -33,7 +34,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
     if (!(await verifyPassword(loginData.password, user.password))) {
       // invalid password
       req.session.destroy();
-      throw new HmvError(`Login failed - wrong password for ${user.email} [IP: ${req.socket.remoteAddress}]`, {
+      throw new HmvError('Login failed', {
         publicMessage: 'Invalid email or password',
       });
     }
@@ -45,7 +46,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
       admin: user?.isAdmin ?? false,
     };
     await req.session.save();
-    console.log(`User ${user.name} logged in [IP: ${req.socket.remoteAddress}]`);
+    logLoginSuccess(user.id);
 
     res.send(
       getApiResponseWithData<LoginResponseDataType>({

@@ -76,7 +76,7 @@ export const checkUserData = async (data: UserEditType, currentId: string | null
     });
 
     if (existingUser != null) {
-      throw new HmvError(`User with name ${name} or email ${email} already exists`, { isPublic: true });
+      throw new HmvError('A user with this name or email already exists', { isPublic: true });
     }
   }
 };
@@ -90,7 +90,7 @@ export const searchUser = async (param: UserSearchType): Promise<EntityListResul
     isAdmin: param.isAdmin,
   };
 
-  const take = param.take === 0 ? undefined : param.take ?? 10;
+  const take = param.take === 0 ? undefined : (param.take ?? 10);
   const skip = param.skip ?? 0;
 
   const results = await prisma.$transaction([
@@ -222,7 +222,7 @@ export const deleteUser = async (id: string): Promise<User> => {
   const user = await prisma.user.findFirst({ where: { id, status: { in: ['Active', 'Disabled'] } } });
 
   if (user == null) {
-    throw new HmvError(`User not found with id ${id}`, { isPublic: true });
+    throw new HmvError('User not found', { isPublic: true });
   }
 
   return await prisma.user.update({ where: { id }, data: { status: 'Deleted' } });

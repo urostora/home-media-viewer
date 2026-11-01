@@ -64,6 +64,21 @@ For an existing installation:
 
 No deployed accounts, firewall/proxy configuration or existing volume grants are changed automatically. Before production use, complete actual credential rotation, historical grant review and the HTTPS check against your own proxy.
 
+## Credential-safe error logging and historical exposure
+
+API failures use the shared `src/utils/apiLogger.ts` allowlist: event, constant task label, HTTP status, error category, supported Prisma error code and explicitly selected UUID identifiers. Unknown fields and all nested context are omitted, including passwords/hashes, request headers, cookies, authorization tokens, connection strings and environment settings. Raw exception messages, stacks, causes and custom serialization are not logged: database errors may contain submitted values. Login success records its event and user UUID, without name/email or session contents; administrator bootstrap failures use the same safe logger. Do not pass request values as task labels or bypass the logger to diagnose credential flows. Extend diagnostic fields only after checking their data origin and adding disclosure tests.
+
+Only deliberately public `HmvError` messages are returned to API clients. Keep these messages free of submitted credentials; validation messages describe the field and rule without echoing values. Ordinary exception messages and plain objects with a `publicError` property are not exposed. Do not restore raw exception logging to obtain more detailed diagnostics; reproduce failures using synthetic inputs in an isolated environment.
+
+Older user create/update failures could log plaintext submitted passwords, including failures such as duplicate users. Deploying the logging fix does not erase retained logs or rotate credentials. The deployment owner should assess historical exposure privately:
+
+1. Identify affected deployment versions/time windows and log destinations (container logging, host collection, external aggregation, exports and backups). Restrict access to potentially affected records. Do not paste them into tickets, this repository, terminal recordings or task artifacts.
+2. In an approved private environment, inspect only the necessary records for failed user-create/update events and validation/database errors. Record the event window and affected account identifiers, never the submitted passwords. Include failed account creation: the password may have been reused elsewhere even though no account was created.
+3. For confirmed or reasonably suspected exposure, reset affected credentials through the supported account-management process, coordinate with account owners about reuse, and invalidate relevant sessions. Password changes alone currently do not revoke existing sealed sessions; until per-session revocation is implemented, coordinate global `APP_SESSION_SECRET` rotation across app/background when revocation is necessary. This signs everyone out. Rotate process/database secrets only if evidence indicates those values were also exposed.
+4. Have the owner of each logging/backup system apply its approved retention, deletion or access-restriction procedure, preserving required incident evidence privately. Do not broadly delete Docker logs, shared volumes or backups as an application cleanup step. Verify new synthetic failure events contain only safe fields and record completion without secret values.
+
+No historical log inspection, credential rotation or session invalidation is performed automatically by the code fix or its tests.
+
 ## Focused validation
 
 ```sh
