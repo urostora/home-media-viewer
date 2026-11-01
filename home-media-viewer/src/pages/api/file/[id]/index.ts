@@ -20,7 +20,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
   }
 
   const id = query.id;
-  const userId = req.session?.user?.admin === true ? undefined : req?.session?.user?.id ?? '';
+  const userId = req.session?.user?.admin === true ? undefined : (req?.session?.user?.id ?? '');
 
   const file = await getFileById(id, userId);
 
@@ -45,6 +45,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
       break;
     }
     case 'PATCH': {
+      if (req.session?.user?.admin !== true) {
+        res.status(403).send('Only administrators allowed');
+        return;
+      }
+
       const updateData: FileUpdateType = getRequestBodyObject(req, res);
       validateData(updateData, fileUpdateDataSchema);
 
@@ -54,9 +59,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
       break;
     }
     case 'DELETE': {
-      if (req.session.user?.admin !== true) {
+      if (req.session?.user?.admin !== true) {
         // forbidden
         res.status(403).send('Only administrators allowed');
+        return;
       }
 
       try {
