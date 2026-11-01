@@ -1,123 +1,143 @@
-import { type JSX, useState, useEffect, type ReactElement } from 'react'
-import Head from 'next/head'
+import { type JSX, useState, useEffect, useCallback, useRef, type ReactElement } from 'react';
+import Head from 'next/head';
 
-import LayoutLoggedIn from '@/components/layout/layoutLoggedIn'
-import { AuthContext, type AuthData } from '@/components/auth/authContext'
-import LayoutNotLoggedIn from '@/components/layout/layoutNotLoggedIn'
+import LayoutLoggedIn from '@/components/layout/layoutLoggedIn';
+import { AuthContext, type AuthData } from '@/components/auth/authContext';
+import LayoutNotLoggedIn from '@/components/layout/layoutNotLoggedIn';
+import { apiCurrentUser, apiLogout } from '@/utils/frontend/dataSource/auth';
+import { AUTH_RECHECK_EVENT } from '@/utils/frontend/dataSource/apiFetch';
 
-import styles from '@/styles/Home.module.css'
+import styles from '@/styles/Home.module.css';
 
-const cookieNames = {
-  sessionToken: 'home-media-viewer-user-cookie',
-  email: 'hmv-email',
-  name: 'hmv-name',
-  isadmin: 'hmv-isadmin',
-}
-
-const getCookie = (name: string): string | null => {
-    // Split cookie string and get all individual name=value pairs in an array
-    const cookieArr = document.cookie.split(";");
-    
-    // Loop through the array elements
-    for(let i = 0; i < cookieArr.length; i++) {
-        const cookiePair = cookieArr[i].split("=");
-        
-        /* Removing whitespace at the beginning of the cookie name
-        and compare it with the given string */
-        if(name === cookiePair[0].trim()) {
-            // Decode the cookie value and return
-            return decodeURIComponent(cookiePair[1]);
-        }
-    }
-    
-    // Return null if not found
-    return null;
-}
-
-const getAuthDataFromCookie = (): AuthData => {
-  if (typeof document !== 'object' || document?.cookie == null) {
-    return { isLoggedIn: false };
+const AUTH_CHANGE_KEY = 'hmv:auth-change';
+const clearAuthHints = (): void => {
+  // Older clients used the current directory as the default cookie path.
+  const paths = new Set(['/']);
+  const segments = window.location.pathname.split('/').filter(Boolean);
+  for (let length = 1; length <= segments.length; length++) {
+    const path = `/${segments.slice(0, length).join('/')}`;
+    paths.add(path);
+    paths.add(`${path}/`);
   }
-
-  const sessionToken = getCookie(cookieNames.sessionToken);
-  const email = getCookie(cookieNames.email);
-  const name = getCookie(cookieNames.name);
-  const isAdmin = getCookie(cookieNames.isadmin) === '1';
-
-  if (sessionToken == null || email == null || name == null) {
-    return { isLoggedIn: false };
+  for (const name of ['hmv-email', 'hmv-name', 'hmv-isadmin']) {
+    for (const path of paths) document.cookie = `${name}=; Max-Age=0; Path=${path}; SameSite=Lax`;
   }
-
-  const ret = {
-    isLoggedIn: true,
-    email,
-    name,
-    isAdmin,
+};
+const notifyOtherTabs = (): void => {
+  try {
+    // A notification only; tabs always ask the server for current identity.
+    localStorage.setItem(AUTH_CHANGE_KEY, `${Date.now()}:${Math.random()}`);
+  } catch {
+    // Storage may be disabled. Focus revalidation remains available.
   }
-
-  return ret;
-}
-
-const clearAuthData = (): void => {
-  document.cookie = `${cookieNames.sessionToken}=; max-age=0`;
-  document.cookie = `${cookieNames.email}=; max-age=0`;
-  document.cookie = `${cookieNames.name}=; max-age=0`;
-  document.cookie = `${cookieNames.isadmin}=; max-age=0`;
 };
 
 export default function Layout({ children }: { children: ReactElement }): JSX.Element {
-    const [ isAuthProcessed, setIsAuthProcessed ] = useState<boolean>(false);
-    const [ authData, setAuthData ] = useState<AuthData>({ isLoggedIn: false });
+  const [isAuthProcessed, setIsAuthProcessed] = useState(false);
+  const [authData, setAuthData] = useState<AuthData>({ isLoggedIn: false });
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const mounted = useRef(false);
+  const loggingOut = useRef(false);
+  const requestVersion = useRef(0);
+  const identityRequest = useRef<AbortController | null>(null);
 
-    const logout = (): void => {
-      clearAuthData();
-      setIsAuthProcessed(false);
-      setAuthData({ isLoggedIn: false });
-    };
+  const cancelIdentityRequest = useCallback((): void => {
+    requestVersion.current++;
+    identityRequest.current?.abort();
+    identityRequest.current = null;
+  }, []);
 
-    useEffect(() => {
+  const refreshAuth = useCallback(async (): Promise<void> => {
+    if (!mounted.current || loggingOut.current || identityRequest.current !== null) return;
+    const version = ++requestVersion.current;
+    const controller = new AbortController();
+    identityRequest.current = controller;
+    try {
+      const user = await apiCurrentUser(controller.signal);
+      if (!mounted.current || version !== requestVersion.current) return;
+      clearAuthHints();
+      setAuthData(user === null ? { isLoggedIn: false } : { ...user, isLoggedIn: true });
+      setAuthError(null);
       setIsAuthProcessed(true);
-
-      const currentAuthData = getAuthDataFromCookie();
-      if (currentAuthData.isLoggedIn) {
-        currentAuthData.logout = logout;
+    } catch {
+      if (mounted.current && version === requestVersion.current) {
+        setAuthError('Could not confirm your session. Please retry.');
       }
-
-      setAuthData(currentAuthData);
-    }, [ isAuthProcessed ]);
-
-    const userAuthenticated = (ad: AuthData): void => {
-        if (ad.isLoggedIn) {
-            ad.logout = logout;
-            setAuthData(ad);
-
-            const agePart = `; max-age=${ad.sessionExpiresInSeconds}`;
-
-            document.cookie = `${cookieNames.email}=${encodeURIComponent(ad?.email ?? '')}${agePart}`;
-            document.cookie = `${cookieNames.name}=${encodeURIComponent(ad?.name ?? '')}${agePart}`;
-            document.cookie = `${cookieNames.isadmin}=${encodeURIComponent(ad?.isAdmin === true ? '1' : '0')}${agePart}`;
-        } else {
-            clearAuthData();
-        }
-    };
-
-    let content = <></>;
-
-    if (!isAuthProcessed) {
-      content = <>Initiating...</>;
-    } else if (authData.isLoggedIn) {
-      content = (
-            <AuthContext.Provider value={authData}>
-              <LayoutLoggedIn>
-                {children}
-              </LayoutLoggedIn>
-            </AuthContext.Provider>
-          );
-    } else {
-      content = <LayoutNotLoggedIn onUserAuthenticated={userAuthenticated} />;
+    } finally {
+      if (identityRequest.current === controller) identityRequest.current = null;
     }
+  }, []);
 
-    return (
+  useEffect(() => {
+    mounted.current = true;
+    // This starts an external request; state updates happen only after it settles.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void refreshAuth();
+    const recheck = (): void => {
+      cancelIdentityRequest();
+      void refreshAuth();
+    };
+    const onStorage = (event: StorageEvent): void => {
+      if (event.key === AUTH_CHANGE_KEY || event.key === null) recheck();
+    };
+    window.addEventListener(AUTH_RECHECK_EVENT, recheck);
+    window.addEventListener('focus', recheck);
+    window.addEventListener('storage', onStorage);
+    return () => {
+      mounted.current = false;
+      cancelIdentityRequest();
+      window.removeEventListener(AUTH_RECHECK_EVENT, recheck);
+      window.removeEventListener('focus', recheck);
+      window.removeEventListener('storage', onStorage);
+    };
+  }, [refreshAuth, cancelIdentityRequest]);
+
+  const logout = (): void => {
+    if (loggingOut.current) return;
+    loggingOut.current = true;
+    cancelIdentityRequest();
+    setIsLoggingOut(true);
+    setAuthError(null);
+    void apiLogout()
+      .then(() => {
+        clearAuthHints();
+        notifyOtherTabs();
+        if (!mounted.current) return;
+        setAuthData({ isLoggedIn: false });
+        setIsAuthProcessed(true);
+      })
+      .catch(() => {
+        if (mounted.current) setAuthError('Logout could not be confirmed. Please retry.');
+      })
+      .finally(() => {
+        loggingOut.current = false;
+        if (mounted.current) setIsLoggingOut(false);
+      });
+  };
+
+  const userAuthenticated = (): void => {
+    // Login responses and legacy display hints do not become client authority.
+    cancelIdentityRequest();
+    setIsAuthProcessed(false);
+    notifyOtherTabs();
+    void refreshAuth();
+  };
+
+  let content;
+  if (!isAuthProcessed) {
+    content = authError === null ? <>Initiating...</> : null;
+  } else if (authData.isLoggedIn) {
+    content = (
+      <AuthContext.Provider value={{ ...authData, logout, isLoggingOut }}>
+        <LayoutLoggedIn>{children}</LayoutLoggedIn>
+      </AuthContext.Provider>
+    );
+  } else {
+    content = <LayoutNotLoggedIn onUserAuthenticated={userAuthenticated} />;
+  }
+
+  return (
     <>
       <Head>
         <title>Home Media Viewer</title>
@@ -126,7 +146,22 @@ export default function Layout({ children }: { children: ReactElement }): JSX.El
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main className={styles.main}>
-        { content }
+        {authError !== null && (
+          <div role="alert">
+            {authError}{' '}
+            <button
+              type="button"
+              disabled={isLoggingOut}
+              onClick={() => {
+                if (authError.startsWith('Logout')) logout();
+                else void refreshAuth();
+              }}
+            >
+              Retry
+            </button>
+          </div>
+        )}
+        {content}
       </main>
     </>
   );

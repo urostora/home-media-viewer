@@ -1,3 +1,4 @@
+import { apiFetch } from './apiFetch';
 import {
   type GeneralEntityListResponse,
   type GeneralResponse,
@@ -21,7 +22,7 @@ export const apiLoadUsers = async (args: UserSearchType): Promise<UserDataType[]
     }),
   };
 
-  const fetchResult = await fetch('/api/user/search', fetchArgs);
+  const fetchResult = await apiFetch('/api/user/search', fetchArgs);
 
   if (!fetchResult.ok) {
     const errorText = await fetchResult.text();
@@ -47,7 +48,7 @@ export const apiAddUser = async (data: UserAddType): Promise<UserDataType> => {
     body: JSON.stringify(data),
   };
 
-  const fetchResult = await fetch('/api/user', fetchArgs);
+  const fetchResult = await apiFetch('/api/user', fetchArgs);
 
   if (!fetchResult.ok) {
     const errorText = await fetchResult.text();
@@ -73,7 +74,7 @@ export const apiEditUser = async (id: string, data: UserEditType): Promise<UserD
     body: JSON.stringify(data),
   };
 
-  const fetchResult = await fetch(`/api/user/${id}`, fetchArgs);
+  const fetchResult = await apiFetch(`/api/user/${id}`, fetchArgs);
 
   if (!fetchResult.ok) {
     const errorText = await fetchResult.text();
@@ -98,7 +99,7 @@ export const apiDeletetUser = async (id: string): Promise<UserDataType> => {
     method: 'DELETE',
   };
 
-  const fetchResult = await fetch(`/api/user/${id}`, fetchArgs);
+  const fetchResult = await apiFetch(`/api/user/${id}`, fetchArgs);
 
   if (!fetchResult.ok) {
     const errorText = await fetchResult.text();
@@ -123,7 +124,7 @@ export const apiGetUserData = async (id: string): Promise<UserExtendedDataType> 
     method: 'GET',
   };
 
-  const fetchResult = await fetch(`/api/user/${id}`, fetchArgs);
+  const fetchResult = await apiFetch(`/api/user/${id}`, fetchArgs);
 
   if (!fetchResult.ok) {
     const errorText = await fetchResult.text();
@@ -152,7 +153,7 @@ export const apiUserAlbumConnection = async (userId: string, albumId: string, co
     }),
   };
 
-  const fetchResult = await fetch('/api/user/album', fetchArgs);
+  const fetchResult = await apiFetch('/api/user/album', fetchArgs);
 
   if (!fetchResult.ok) {
     const errorText = await fetchResult.text();

@@ -1,3 +1,4 @@
+import { apiFetch } from './apiFetch';
 import type {
   AlbumExtendedDataType,
   AlbumExtendedResultType,
@@ -16,7 +17,7 @@ export const apiLoadAlbums = async (args: AlbumSearchType): Promise<AlbumExtende
     }),
   };
 
-  const fetchResult = await fetch('/api/album/search', fetchArgs);
+  const fetchResult = await apiFetch('/api/album/search', fetchArgs);
   const resultData: GeneralEntityListResponse<AlbumExtendedResultType> = await fetchResult.json();
 
   if (!resultData.ok) {
@@ -36,7 +37,7 @@ export const apiAlbumAdd = async (path: string): Promise<void> => {
     body: JSON.stringify({ path }),
   };
 
-  const fetchResult = await fetch('/api/album', fetchArgs);
+  const fetchResult = await apiFetch('/api/album', fetchArgs);
   const resultData: GeneralResponse = await fetchResult.json();
 
   if (!resultData.ok) {
@@ -50,7 +51,7 @@ export const apiAlbumUpdate = async (id: string, data: AlbumUpdateType): Promise
     body: JSON.stringify(data),
   };
 
-  const fetchResult = await fetch(`/api/album/${id}`, fetchArgs);
+  const fetchResult = await apiFetch(`/api/album/${id}`, fetchArgs);
   const resultData: GeneralResponse = await fetchResult.json();
 
   if (!resultData.ok) {
@@ -63,7 +64,7 @@ export const apiAlbumDelete = async (id: string): Promise<void> => {
     method: 'DELETE',
   };
 
-  const fetchResult = await fetch(`/api/album/${id}`, fetchArgs);
+  const fetchResult = await apiFetch(`/api/album/${id}`, fetchArgs);
   const resultData: GeneralResponse = await fetchResult.json();
 
   if (!resultData.ok) {
@@ -72,7 +73,7 @@ export const apiAlbumDelete = async (id: string): Promise<void> => {
 };
 
 export const apiAlbumDetails = async (id: string): Promise<AlbumExtendedDataType | undefined> => {
-  const fetchResult = await fetch(`/api/album/${id}`);
+  const fetchResult = await apiFetch(`/api/album/${id}`);
   if (fetchResult.status !== 200) {
     throw Error(`Album fetch status is ${fetchResult.status} (${fetchResult.statusText})`);
   }

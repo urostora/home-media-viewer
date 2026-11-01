@@ -1,10 +1,11 @@
+import { apiFetch } from './apiFetch';
 import type { FileMetaUpdateType, FileResultType, FileSearchType } from '@/types/api/fileTypes';
 import type { GeneralResponseWithData, GeneralEntityListResponse, GeneralResponse } from '@/types/api/generalTypes';
 import { validateVideoThumbnailTime, type StageStatistics } from '@/types/processingTypes';
 
 export const apiFileUpdateVideoThumbnail = async (id: string, time: number): Promise<FileResultType> => {
   validateVideoThumbnailTime(time);
-  const response = await fetch('/api/process/run', {
+  const response = await apiFetch('/api/process/run', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ fileId: id, stages: ['thumbnails'], mode: 'refresh', videoThumbnailTimeSec: time }),
@@ -35,7 +36,7 @@ export const apiFileUpdateVideoThumbnail = async (id: string, time: number): Pro
 };
 
 export const apiGetFile = async (id: string): Promise<FileResultType | null> => {
-  const fetchResult = await fetch(`/api/file/${id}`);
+  const fetchResult = await apiFetch(`/api/file/${id}`);
 
   if (!fetchResult.ok) {
     const responseText = await fetchResult.text();
@@ -61,7 +62,7 @@ export const apiLoadFiles = async (args: FileSearchType): Promise<FileResultType
     }),
   };
 
-  const fetchResult = await fetch('/api/file/search', fetchArgs);
+  const fetchResult = await apiFetch('/api/file/search', fetchArgs);
   const resultData: GeneralEntityListResponse<FileResultType> = await fetchResult.json();
 
   if (!resultData.ok) {
@@ -83,7 +84,7 @@ export const apiFileDisable = async (id: string): Promise<void> => {
     }),
   };
 
-  const fetchResult = await fetch(`/api/file/${id}`, fetchArgs);
+  const fetchResult = await apiFetch(`/api/file/${id}`, fetchArgs);
   const resultData: GeneralEntityListResponse<FileResultType> = await fetchResult.json();
 
   if (!resultData.ok) {
@@ -99,7 +100,7 @@ export const apiFileActivate = async (id: string): Promise<void> => {
     }),
   };
 
-  const fetchResult = await fetch(`/api/file/${id}`, fetchArgs);
+  const fetchResult = await apiFetch(`/api/file/${id}`, fetchArgs);
   const resultData: GeneralEntityListResponse<FileResultType> = await fetchResult.json();
 
   if (!resultData.ok) {
@@ -112,7 +113,7 @@ export const apiFileDelete = async (id: string): Promise<void> => {
     method: 'DELETE',
   };
 
-  const fetchResult = await fetch(`/api/file/${id}`, fetchArgs);
+  const fetchResult = await apiFetch(`/api/file/${id}`, fetchArgs);
   const resultData: GeneralEntityListResponse<FileResultType> = await fetchResult.json();
 
   if (!resultData.ok) {
@@ -128,7 +129,7 @@ export const apiFileRefreshMetadata = async (id: string): Promise<void> => {
     }),
   };
 
-  const fetchResult = await fetch('/api/file/metadata', fetchArgs);
+  const fetchResult = await apiFetch('/api/file/metadata', fetchArgs);
   const resultData: GeneralEntityListResponse<FileResultType> = await fetchResult.json();
 
   if (!resultData.ok) {
@@ -142,7 +143,7 @@ export const apiFileUpdateMetadata = async (fileId: string, data: FileMetaUpdate
     body: JSON.stringify(data),
   };
 
-  const fetchResult = await fetch(`/api/file/${fileId}/metadata`, fetchArgs);
+  const fetchResult = await apiFetch(`/api/file/${fileId}/metadata`, fetchArgs);
   const resultData: GeneralResponse = await fetchResult.json();
 
   if (!resultData.ok) {

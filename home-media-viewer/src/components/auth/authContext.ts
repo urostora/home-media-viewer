@@ -8,6 +8,7 @@ export interface AuthData {
   sessionExpiresOn?: number;
   sessionExpiresInSeconds?: number;
   logout?: () => void;
+  isLoggingOut?: boolean;
 }
 
 export const AuthContext = createContext<AuthData>({ isLoggedIn: false });

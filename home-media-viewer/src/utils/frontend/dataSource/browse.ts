@@ -1,3 +1,4 @@
+import { apiFetch } from './apiFetch';
 import { type BrowseResult } from '@/types/api/browseTypes';
 import { type GeneralResponseWithData } from '@/types/api/generalTypes';
 
@@ -6,7 +7,7 @@ export const apiBrowse = async (relativePath: string = ''): Promise<BrowseResult
     method: 'get',
   };
 
-  const fetchResult = await fetch(`/api/browse/${encodeURI(relativePath)}`, fetchArgs);
+  const fetchResult = await apiFetch(`/api/browse/${encodeURI(relativePath)}`, fetchArgs);
 
   if (!fetchResult.ok) {
     const errorText = await fetchResult.text();
