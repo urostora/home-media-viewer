@@ -58,6 +58,32 @@ Source identity includes device, inode, size, modification time, and change time
 
 Thumbnail generation writes all sizes into a private directory, checks the source, then atomically renames each output. State becomes `Processed` only after all required sizes are published. Caught publication/database failures restore previous outputs. A process crash can leave private temporary files or partially published sizes; the stage stays `New` until retry. There is no atomic transaction spanning the filesystem and MariaDB. Generation reuses decoded images/video frames as described below. Custom video times use one limited timing probe and one accurate input seek before the shared split graph, so every size uses the same frame. This probe reads duration only and does not extract or persist media metadata. A missing/unknown duration, time at or beyond the end, or no decodable frame at the requested timestamp fails the thumbnail stage with a clear stored thumbnail error; the API reports a stage failure (500). Invalid numeric options return 400 before dispatch. Failed probing/generation preserves previous usable previews and metadata. Custom time is recorded in the run summary, not as a permanent per-file setting; later refreshes without it return to the default frame.
 
+## Rollout and deliberate repair
+
+Use the existing [release/update procedure](database-lifecycle.md) with the same Compose project, database and generated-storage volumes. Stop the scheduler and all web/background/manual writers, take a verified [backup](../scripts/backup/README.md), deploy migrations with the matching release migration image, and start the updated consumers only after migration succeeds. Keep source mounts read-only. Packaged images contain the generated Prisma client; source/tooling installations must regenerate it after schema updates. Do not reset the database or run old writers against the new processing contract during rollout.
+
+The processing changes add these migrations, in order:
+
+| Migration | Effect on existing content |
+| --- | --- |
+| `20261028190000_independent_processing_stages` | Adds independent source/error state and metadata ownership; existing metadata becomes protected `Legacy` |
+| `20261030120000_resumable_discovery` | Creates durable directory work; preserve the deployed migration checksum |
+| `20261031100000_discovery_scan_version` | Adds directory scan identity; retained queue cursors safely restart on their first selected scan |
+| `20261031120000_media_queue_cursor` | Creates lazy media continuation cursors |
+| `20261031140000_media_queue_indexes` | Adds measured stage-queue indexes; no content rewrite |
+
+No migration automatically reprocesses the library, deletes metadata/previews, or changes successful stage timestamps. Run history starts with the first new job; no historical counts are invented. Readiness must return 200 with no unfinished migration before scheduling resumes. For an existing installation, retain the existing administrator; seeding is a separate first-installation step.
+
+Begin with a small existing file or album through the admin API. Check the durable run outcome and independent file-stage states, view all preview sizes, then enable one scheduler. For explicit historical repair, use `mode: "refresh"` with only the affected stage. For example:
+
+```json
+{"stages":["thumbnails"],"albumId":"existing-album-id","mode":"refresh","timeoutSec":120}
+```
+
+This repairs failed or missing previews even if their historical state says `Processed`; metadata stays intact. Metadata-only refresh replaces extracted values while preserving Manual/Legacy values, so it is not a way to erase protected historical keys. A partial refresh can be repeated to advance its durable cursor; a completed refresh run returns to the normal pending scheduler flow. Inspect failures before retrying; pending mode deliberately excludes `Error` and already processed stages. Custom video times are per-run and must be supplied again when continuing a partial custom refresh. Verify retained results after restart. For interrupted runs or persistent locks, follow the [fail-closed recovery procedure](operations.md#scheduling-authentication-and-overlap); elapsed time alone never authorizes lock removal.
+
+Existing entry points retain the composition described above. If a release must be rolled back, stop all consumers and follow the paired database/generated-storage recovery procedure; retaining an old app image alone does not undo schema or ownership changes.
+
 ## Resumable discovery
 
 The additive `20261030120000_resumable_discovery` migration creates `DiscoveryDirectory` without changing existing media rows or enqueuing the library. `20261031100000_discovery_scan_version` adds directory identity while preserving existing queue rows/cursors; their first selected scan safely restarts when no identity was recorded. Apply migrations and regenerate Prisma before running discovery. Tasks are created lazily for selected album roots and discovered subdirectories. Each task stores its filename cursor, reconciliation ID cursor, directory version, and last-served time. Runs rotate tasks by oldest service time, so later album roots and directories get turns while an earlier import remains unfinished. Full/composed runs reserve half the dispatch budget for existing media work.
@@ -121,3 +147,29 @@ Only a later safely acquired writer lock can classify a previous unfinished run 
 Scheduler settings are `BACKGROUND_INTERVAL_SEC` (default 180, integer 1–86400), `BACKGROUND_CATCHUP_INTERVAL_SEC` (default 30, 1 through idle interval), and `BACKGROUND_MAX_BACKOFF_SEC` (default 900, at least idle interval and at most 86400). Catch-up applies only to deadline-limited partial runs with backlog. Other partial runs use idle cadence. Consecutive failures wait one idle interval, then twice, four times, and so on up to the cap; success/409 reset backoff, and 409 waits the idle interval. Configuring a shorter idle interval may require lowering catch-up too; a longer interval may require raising the backoff cap. Requests never overlap within a scheduler.
 
 The HTTP timeout covers dispatch budget plus 120 seconds, including bounded response consumption (64 KiB). Media tools retain 30-second timeouts; shutdown signals tools and stops new claims. The launcher/Compose grace remains 170/180 seconds for app/background and 20 seconds for scheduler. Unpreemptible filesystem/image work can exceed dispatch/drain allowances; HTTP abort does not release the server's lock. See [operations](operations.md) for shutdown and fail-closed recovery.
+
+## Fixture performance record (2026-10-31)
+
+The final implementation passed 79 isolated integration groups plus scheduler, operations, monitoring and HTTP shutdown regressions. A separate nine-scenario matrix ran three repetitions per scenario in production mode, using the [benchmark tooling](../scripts/benchmark/README.md) with `--measure-stages --budget-seconds 120`. All 27 runs drained their selected queues with zero stage failures; every health/authenticated foreground API probe returned 200. The 602-file fixture hash matched the original baseline.
+
+These measurements use Node 26.12.1, FFmpeg/ffprobe 7.1.5, MariaDB 13.0.2, two media workers in a 2-CPU/2-GiB container, a separate 1-CPU/1-GiB foreground app and 1-CPU/1-GiB DB, and five connections per application process. Wall time and SQL counts are medians of three runs; RSS is the largest worker lifetime peak, including startup.
+
+| Scenario | Wall seconds | SQL statements | Peak RSS MiB |
+| --- | ---: | ---: | ---: |
+| Initial full | 20.114 | 9,408 | 508.6 |
+| Unchanged full | 1.288 | 1,029 | 204.4 |
+| Size change + full | 1.492 | 1,052 | 244.5 |
+| Same-size change + full | 1.504 | 1,052 | 245.1 |
+| Initial discovery | 1.960 | 1,394 | 208.9 |
+| Unchanged discovery | 1.293 | 1,022 | 204.6 |
+| Independent discovery | 1.776 | 1,394 | 207.4 |
+| Metadata only | 2.714 | 4,381 | 208.5 |
+| Thumbnails only | 16.660 | 3,689 | 537.2 |
+
+Initial full indexing used 99 image decodes, three FFmpeg jobs and three metadata probes, compared with 297/nine/six in the original implementation. Its median CPU time was 30.486 seconds, summed SQL time 3.136 seconds, foreground API p95 20.1 ms, foreground readiness p95 4.4 ms, indexing liveness p95 89.5 ms and event-loop p95 67.3 ms. Per-run initial-full latency probes had at least 149 samples per endpoint. Thumbnail-only liveness p95 was 171.3 ms while foreground API p95 was 20.4 ms; Jimp still executes synchronous work inside the indexing process. Default thumbnail-only runs launched no metadata probes, and metadata-only runs launched no FFmpeg/image thumbnail decoding. Custom times add their limited probe, as validated separately.
+
+The historical full baseline was 23.116 seconds / 12,695 SQL statements / 502.1 MiB peak RSS; the final fixture has lower full wall time and query count with slightly higher worker RSS. This is a descriptive comparison: the same WSL2 host reported 4.69 GiB visible memory vs 5.65 GiB originally, with higher initial load, and OS caches were not flushed. Container limits and pinned tools are unchanged. No uniform or production-library speedup is established.
+
+Unchanged full rescans increased from 0.215 to 1.288 seconds and unchanged discovery from 0.220 to 1.293 seconds. The new paths persist discovery/cursor/run checkpoints and independent outcomes; that work was absent in the old helpers. Same-size changes now reprocess one changed file; the old baseline processed zero and retained stale derived output, so its faster result is not equivalent work. All unsupported files reach independent terminal states. SQL durations are millisecond-resolution sums under concurrency, and a lower statement count does not guarantee lower summed SQL time.
+
+The fixture includes 500 unsupported text files, so its throughput is not photo/video throughput. Short rescan p95 values have only 10–13 samples per endpoint/run. Small synthetic fixtures and warm local storage do not establish large-library, slow-storage or production capacity. The 120-second result covers dispatch/drain on these fixtures; scheduler cadence is tested separately. Use the retained benchmark output and a representative deployment workload before selecting a latency or capacity objective.
