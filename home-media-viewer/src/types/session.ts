@@ -1,4 +1,5 @@
 import type { IronSession } from 'iron-session';
+import type { CurrentUser } from '@/utils/auth/currentUser';
 
 export interface SessionData {
   user: {
@@ -11,5 +12,6 @@ export interface SessionData {
 declare module 'next' {
   interface NextApiRequest {
     session: IronSession<SessionData>;
+    authenticatedUser?: CurrentUser;
   }
 }

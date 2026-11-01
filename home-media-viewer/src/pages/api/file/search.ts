@@ -3,7 +3,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { HmvError, getApiResponseWithEntityList, getRequestBodyObject, handleApiError } from '@/utils/apiHelpers';
 import { type FileResultType, type FileSearchType } from '@/types/api/fileTypes';
 import { getFiles } from '@/utils/fileHelper';
-import { withSessionRoute } from '@/utils/sessionRoute';
+import { withAuthenticatedRoute } from '@/utils/auth/authenticatedRoute';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
   const { method } = req;
@@ -19,8 +19,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
           throw new HmvError('No search parameters specified');
         }
 
-        if (req.session?.user?.admin !== true) {
-          postData.user = req.session?.user?.id ?? '';
+        if (req.authenticatedUser?.isAdmin !== true) {
+          postData.user = req.authenticatedUser?.id ?? '';
         }
 
         const results = await getFiles(postData);
@@ -37,4 +37,4 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
   }
 };
 
-export default withSessionRoute(handler);
+export default withAuthenticatedRoute(handler);

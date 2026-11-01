@@ -3,7 +3,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { getApiResponse, getApiResponseWithData, getRequestBodyObject, handleApiError } from '@/utils/apiHelpers';
 import { deleteFile, fileUpdateDataSchema, getFileById, updateFile } from '@/utils/fileHelper';
 import { getFileThumbnailInBase64 } from '@/utils/thumbnailHelper';
-import { withSessionRoute } from '@/utils/sessionRoute';
+import { withAuthenticatedRoute } from '@/utils/auth/authenticatedRoute';
 
 import type { File } from '@prisma/client';
 import { validateData } from '@/utils/dataValidator';
@@ -20,7 +20,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
   }
 
   const id = query.id;
-  const userId = req.session?.user?.admin === true ? undefined : (req?.session?.user?.id ?? '');
+  const userId = req.authenticatedUser?.isAdmin === true ? undefined : (req.authenticatedUser?.id ?? '');
 
   const file = await getFileById(id, userId);
 
@@ -45,7 +45,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
       break;
     }
     case 'PATCH': {
-      if (req.session?.user?.admin !== true) {
+      if (req.authenticatedUser?.isAdmin !== true) {
         res.status(403).send('Only administrators allowed');
         return;
       }
@@ -59,7 +59,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
       break;
     }
     case 'DELETE': {
-      if (req.session?.user?.admin !== true) {
+      if (req.authenticatedUser?.isAdmin !== true) {
         // forbidden
         res.status(403).send('Only administrators allowed');
         return;
@@ -80,4 +80,4 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
   }
 };
 
-export default withSessionRoute(handler);
+export default withAuthenticatedRoute(handler);

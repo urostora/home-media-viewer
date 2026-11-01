@@ -2,7 +2,9 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import handler from '@/pages/api/file/[id]/index';
 import { deleteFile, getFileById, updateFile } from '@/utils/fileHelper';
 
-jest.mock('../../../src/utils/sessionRoute', () => ({ withSessionRoute: (handler: unknown) => handler }));
+jest.mock('../../../src/utils/auth/authenticatedRoute', () => ({
+  withAuthenticatedRoute: (handler: unknown) => handler,
+}));
 jest.mock('../../../src/utils/thumbnailHelper', () => ({ getFileThumbnailInBase64: () => null }));
 jest.mock('../../../src/utils/fileHelper', () => ({
   getFileById: jest.fn(),
@@ -12,8 +14,8 @@ jest.mock('../../../src/utils/fileHelper', () => ({
 }));
 
 const file = { id: 'shared-file', status: 'Active' } as NonNullable<Awaited<ReturnType<typeof getFileById>>>;
-const reader = { user: { id: 'reader', admin: false } };
-const administrator = { user: { id: 'administrator', admin: true } };
+const reader = { id: 'reader', isAdmin: false };
+const administrator = { id: 'administrator', isAdmin: true };
 
 const response = () => {
   // Sending a response does not stop execution: mutations after denial must be detected.
@@ -27,8 +29,8 @@ const response = () => {
   return res;
 };
 
-const request = (method: string, session: unknown, body: unknown = { status: 'Deleted' }): NextApiRequest =>
-  ({ method, query: { id: file.id }, session, body }) as unknown as NextApiRequest;
+const request = (method: string, authenticatedUser: unknown, body: unknown = { status: 'Deleted' }): NextApiRequest =>
+  ({ method, query: { id: file.id }, authenticatedUser, body }) as unknown as NextApiRequest;
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -37,7 +39,7 @@ beforeEach(() => {
 });
 
 describe.each(['PATCH', 'DELETE'])('%s shared file authorization', (method) => {
-  it.each([undefined, {}, { user: { id: 'reader' } }, reader, { user: { id: 'reader', admin: 'true' } }])(
+  it.each([undefined, {}, { id: 'reader' }, reader, { id: 'reader', isAdmin: 'true' }])(
     'rejects a request without administrator authority (%j) without writing',
     async (session) => {
       const res = response();
@@ -59,7 +61,7 @@ describe.each(['PATCH', 'DELETE'])('%s shared file authorization', (method) => {
 
     await handler(request(method, reader), res as unknown as NextApiResponse);
 
-    expect(getFileById).toHaveBeenCalledWith(file.id, reader.user.id);
+    expect(getFileById).toHaveBeenCalledWith(file.id, reader.id);
     expect(res.status).toHaveBeenCalledWith(404);
     expect(updateFile).not.toHaveBeenCalled();
     expect(deleteFile).not.toHaveBeenCalled();
@@ -108,7 +110,7 @@ it.each([reader, administrator])('preserves permitted GET access (%j)', async (s
 
   await handler(request('GET', session), res as unknown as NextApiResponse);
 
-  expect(getFileById).toHaveBeenCalledWith(file.id, session.user.admin ? undefined : session.user.id);
+  expect(getFileById).toHaveBeenCalledWith(file.id, session.isAdmin ? undefined : session.id);
   expect(res.status).toHaveBeenCalledWith(200);
   expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ ok: true, data: { ...file, thumbnail: null } }));
   expect(updateFile).not.toHaveBeenCalled();

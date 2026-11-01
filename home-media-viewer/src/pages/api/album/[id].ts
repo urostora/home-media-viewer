@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 import { getApiResponseWithData, getRequestBodyObject, handleApiError } from '@/utils/apiHelpers';
-import { withSessionRoute } from '@/utils/sessionRoute';
+import { withAuthenticatedRoute } from '@/utils/auth/authenticatedRoute';
 import { validateData } from '@/utils/dataValidator';
 import { albumUpdateDataSchema, deleteAlbum, getAlbum, updateAlbum } from '@/utils/albumHelper';
 
@@ -18,7 +18,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
     return;
   }
 
-  const isAdmin = req.session?.user?.admin ?? false;
+  const isAdmin = req.authenticatedUser?.isAdmin === true;
 
   const album = await getAlbum(id, false);
   if (album === null) {
@@ -31,7 +31,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
       // get album data
 
       // check user rights
-      const userId = req.session.user?.id;
+      const userId = req.authenticatedUser?.id;
       if (!isAdmin && album.users?.filter((u) => u.id === userId)?.length === 0) {
         // forbidden
         res.status(404).send(`User has no album with id ${id}`);
@@ -98,4 +98,4 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
   }
 };
 
-export default withSessionRoute(handler);
+export default withAuthenticatedRoute(handler);

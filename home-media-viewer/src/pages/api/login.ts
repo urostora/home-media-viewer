@@ -23,8 +23,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
 
     const user = await prisma.user.findFirst({ where: { email: loginData.email } });
 
-    if (user == null) {
-      // unknown user
+    if (user == null || user.status !== 'Active') {
+      // Unknown and inactive accounts have the same public failure.
       req.session.destroy();
       throw new HmvError('Login failed', {
         publicMessage: 'Invalid email or password',

@@ -2,26 +2,14 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 
 import { getApiResponse, getApiResponseWithData } from '@/utils/apiHelpers';
 import { getIronSessionOptions } from '@/utils/sessionHelper';
-import { withSessionRoute } from '@/utils/sessionRoute';
+import { withAuthenticatedRoute } from '@/utils/auth/authenticatedRoute';
 
 import type { LoginResponseDataType } from '@/types/loginTypes';
 
-import prisma from '@/utils/prisma/prismaImporter';
-
 const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
-  const isAuthenticated = req?.session?.user?.id != null;
-
-  if (!isAuthenticated) {
+  const user = req.authenticatedUser;
+  if (user === undefined) {
     res.status(403).send(getApiResponse({ ok: false, error: 'No user is authenticated' }));
-    return;
-  }
-
-  const userId = req.session.user?.id;
-  const user = await prisma.user.findFirst({ where: { id: userId } });
-
-  if (user == null) {
-    // unknown user
-    res.status(403).send(getApiResponse({ ok: false, error: `User (${userId}) not found` }));
     return;
   }
 
@@ -38,4 +26,4 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
   );
 };
 
-export default withSessionRoute(handler);
+export default withAuthenticatedRoute(handler);

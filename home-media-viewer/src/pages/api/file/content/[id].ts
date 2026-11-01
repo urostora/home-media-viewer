@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 
 import { handleFileResponseByPath } from '@/utils/responseHelper';
 import { getFullPath } from '@/utils/fileHelper';
-import { withSessionRoute } from '@/utils/sessionRoute';
+import { withAuthenticatedRoute } from '@/utils/auth/authenticatedRoute';
 
 import prisma from '@/utils/prisma/prismaImporter';
 
@@ -20,9 +20,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
         }
 
         const albumsFilter =
-          req.session?.user?.admin === true
+          req.authenticatedUser?.isAdmin === true
             ? undefined
-            : { some: { users: { some: { id: req.session?.user?.id ?? '' } } } };
+            : { some: { users: { some: { id: req.authenticatedUser?.id ?? '' } } } };
 
         const file = await prisma.file.findFirst({ where: { id, albums: albumsFilter } });
 
@@ -43,4 +43,4 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
   }
 };
 
-export default withSessionRoute(handler);
+export default withAuthenticatedRoute(handler);

@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getFileIdThumbnailPath } from '@/utils/thumbnailHelper';
 import { handleFileResponseByPath } from '@/utils/responseHelper';
+import { withAuthenticatedRoute } from '@/utils/auth/authenticatedRoute';
 
 const handler = (req: NextApiRequest, res: NextApiResponse): void => {
   const { method } = req;
@@ -36,4 +37,4 @@ const handler = (req: NextApiRequest, res: NextApiResponse): void => {
   }
 };
 
-export default handler;
+export default withAuthenticatedRoute(handler);

@@ -6,6 +6,9 @@ import prisma from '@/utils/prisma/prismaImporter';
 import { getHashedPassword, verifyPassword } from '@/utils/passwordHelper';
 
 jest.mock('../../../src/utils/sessionRoute', () => ({ withSessionRoute: (handler: unknown) => handler }));
+jest.mock('../../../src/utils/auth/authenticatedRoute', () => ({
+  withAuthenticatedRoute: (handler: unknown) => handler,
+}));
 jest.mock('../../../src/utils/passwordHelper', () => ({ getHashedPassword: jest.fn(), verifyPassword: jest.fn() }));
 jest.mock('../../../src/utils/prisma/prismaImporter', () => ({
   __esModule: true,
@@ -40,6 +43,7 @@ const request = (method: string, data: unknown): NextApiRequest =>
     body: data,
     query: { id: user.id },
     session: { user: { id: user.id, admin: true }, save: jest.fn(), destroy: jest.fn() },
+    authenticatedUser: user,
     socket: { remoteAddress: '127.0.0.1' },
     headers: { cookie: token, authorization: `Bearer ${token}` },
   }) as unknown as NextApiRequest;

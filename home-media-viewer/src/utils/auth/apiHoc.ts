@@ -1,11 +1,11 @@
 import type { NextApiHandler, NextApiRequest, NextApiResponse } from 'next';
-import { withSessionRoute } from '../sessionRoute';
+import { withAuthenticatedRoute } from './authenticatedRoute';
 
 export const apiOnlyWithAdminUsers = (
   handler: (req: NextApiRequest, res: NextApiResponse) => Promise<void> | void,
 ): NextApiHandler => {
   const hocFunction = async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
-    if (req.session?.user?.admin !== true) {
+    if (req.authenticatedUser?.isAdmin !== true) {
       // not admin user - forbidden
       res.status(403).send('Only administrators allowed');
       return undefined;
@@ -14,5 +14,5 @@ export const apiOnlyWithAdminUsers = (
     await handler(req, res);
   };
 
-  return withSessionRoute(hocFunction);
+  return withAuthenticatedRoute(hocFunction);
 };
