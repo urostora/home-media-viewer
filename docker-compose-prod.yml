@@ -88,6 +88,8 @@ services:
       DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in the private production environment file}
       LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
       TS_NODE_PROJECT: /home/node/app/tsconfig.json
+      LOGIN_TRUST_FORWARDED_HEADERS: ${LOGIN_TRUST_FORWARDED_HEADERS:-false}
+      LOGIN_TRUSTED_PROXY_CIDRS: ${LOGIN_TRUSTED_PROXY_CIDRS:-}
       APP_SESSION_SECRET: ${APP_SESSION_SECRET:?Set APP_SESSION_SECRET in the private production environment file}
       PROCESS_TOKEN: ${PROCESS_TOKEN:?Set PROCESS_TOKEN in the private production environment file}
       SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-true}
@@ -129,6 +131,8 @@ services:
       MIN_STORAGE_FREE_BYTES: ${MIN_STORAGE_FREE_BYTES:-268435456}
       DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in the private production environment file}
       LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
+      LOGIN_TRUST_FORWARDED_HEADERS: ${LOGIN_TRUST_FORWARDED_HEADERS:-false}
+      LOGIN_TRUSTED_PROXY_CIDRS: ${LOGIN_TRUSTED_PROXY_CIDRS:-}
       APP_SESSION_SECRET: ${APP_SESSION_SECRET:?Set APP_SESSION_SECRET in the private production environment file}
       PROCESS_TOKEN: ${PROCESS_TOKEN:?Set PROCESS_TOKEN in the private production environment file}
       TS_NODE_PROJECT: /home/node/app/tsconfig.json

@@ -78,3 +78,29 @@ test('login sends explicit JSON with credentials', async () => {
     }),
   );
 });
+
+test.each(['12', '99999', 'invalid', null])('login displays a bounded Retry-After %s', async (header) => {
+  fetchMock.mockResolvedValue({ status: 429, headers: { get: () => header } });
+  const seconds = header === '12' ? 12 : header === '99999' ? 300 : 1;
+  await expect(apiLogin({ email: 'reader@example.invalid', password: 'synthetic' })).rejects.toThrow(
+    `Try again in ${seconds} seconds`,
+  );
+});
+test('login displays retryable service outage', async () => {
+  response(503, {});
+  await expect(apiLogin({ email: 'reader@example.invalid', password: 'synthetic' })).rejects.toThrow(
+    'Login unavailable',
+  );
+});
+
+test('non-JSON credential failure remains a meaningful safe error', async () => {
+  fetchMock.mockResolvedValue({
+    status: 400,
+    json: () => {
+      throw new Error('must not parse text');
+    },
+  });
+  await expect(apiLogin({ email: 'reader@example.invalid', password: 'synthetic' })).rejects.toThrow(
+    'Invalid email or password',
+  );
+});

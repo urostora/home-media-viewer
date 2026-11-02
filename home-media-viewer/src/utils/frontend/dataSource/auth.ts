@@ -13,6 +13,13 @@ export const apiLogin = async (args: LoginRequestType): Promise<LoginResponseDat
   };
 
   const fetchResult = await fetch('/api/login', fetchArgs);
+  if (fetchResult.status === 429) {
+    const value = Number(fetchResult.headers.get('Retry-After'));
+    const seconds = Number.isFinite(value) && value >= 1 ? Math.min(300, Math.ceil(value)) : 1;
+    throw new Error(`Too many login attempts. Try again in ${seconds} seconds.`);
+  }
+  if (fetchResult.status === 503) throw new Error('Login unavailable. Please retry.');
+  if (fetchResult.status === 400 || fetchResult.status === 401) throw new Error('Invalid email or password');
   const resultData: GeneralResponseWithData<LoginResponseDataType> = await fetchResult.json();
 
   if (!fetchResult.ok || !resultData.ok) {

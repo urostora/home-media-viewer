@@ -14,7 +14,7 @@ const appRequire = createRequire(path.join(app, 'package.json'));
 process.env.TS_NODE_PROJECT = path.join(app, 'tsconfig.json');
 const database = new URL(process.env.DATABASE_URL ?? '');
 assert.equal(database.hostname, '127.0.0.1', 'Use the isolated database network namespace');
-assert(['/hmv_auth_t3_fixture', '/hmv_auth_t6_fixture'].includes(database.pathname), 'Refusing a non-task database');
+assert(['/hmv_auth_t3_fixture', '/hmv_auth_t6_fixture', '/hmv_auth_t7_fixture'].includes(database.pathname), 'Refusing a non-task database');
 process.env.APP_SESSION_SECRET = randomBytes(32).toString('hex');
 process.env.SESSION_COOKIE_SECURE = 'false';
 appRequire('ts-node').register({ project: path.join(app, 'tsconfig.json'), transpileOnly: true });

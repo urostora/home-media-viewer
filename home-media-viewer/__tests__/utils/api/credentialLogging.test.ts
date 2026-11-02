@@ -1,15 +1,18 @@
+import { admitLogin, admitLoginAccount, enterLogin } from '@/utils/auth/loginLimiter';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import createUser from '@/pages/api/user/index';
 import editUser from '@/pages/api/user/[id]';
+import { verifyLoginPassword } from '@/utils/auth/loginProof';
 import login from '@/pages/api/login';
 import { issueSession } from '@/utils/auth/serverSession';
 import prisma from '@/utils/prisma/prismaImporter';
-import { getHashedPassword, verifyPassword } from '@/utils/passwordHelper';
+import { getHashedPassword } from '@/utils/passwordHelper';
 
 jest.mock('../../../src/utils/sessionRoute', () => ({ withSessionRoute: (handler: unknown) => handler }));
 jest.mock('../../../src/utils/auth/authenticatedRoute', () => ({
   withAuthenticatedRoute: (handler: unknown) => handler,
 }));
+jest.mock('@/utils/auth/loginProof', () => ({ verifyLoginPassword: jest.fn() }));
 jest.mock('../../../src/utils/passwordHelper', () => ({ getHashedPassword: jest.fn(), verifyPassword: jest.fn() }));
 jest.mock('../../../src/utils/prisma/prismaImporter', () => ({
   __esModule: true,
@@ -33,6 +36,16 @@ jest.mock('../../../src/utils/sessionHelper', () => ({
 const password = 'Synthetic-P4ssword!_SECRET';
 const hash = 'SYNTHETIC_PASSWORD_HASH';
 const token = 'SYNTHETIC_SESSION_PROCESS_SECRET';
+
+jest.mock('@/utils/auth/loginLimiter', () => ({
+  admitLogin: jest.fn(),
+  admitLoginAccount: jest.fn(),
+  releaseLogin: jest.fn(),
+  cleanupLoginBudgets: jest.fn(),
+  enterLogin: jest.fn(),
+  leaveLogin: jest.fn(),
+}));
+
 const user = {
   id: '12345678-1234-1234-1234-123456789abc',
   status: 'Active' as const,
@@ -49,6 +62,7 @@ const response = () => ({
   end: jest.fn().mockReturnThis(),
   send: jest.fn().mockReturnThis(),
   json: jest.fn().mockReturnThis(),
+  setHeader: jest.fn(),
 });
 const request = (method: string, data: unknown): NextApiRequest =>
   ({
@@ -65,6 +79,9 @@ let warn: jest.SpyInstance;
 let log: jest.SpyInstance;
 beforeEach(() => {
   jest.resetAllMocks();
+  jest.mocked(enterLogin).mockReturnValue(true);
+  jest.mocked(admitLogin).mockResolvedValue({ allowed: true, permit: { slot: 0, owner: 'test' } });
+  jest.mocked(admitLoginAccount).mockResolvedValue({ allowed: true, retryAfter: 0 });
   warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
   log = jest.spyOn(console, 'log').mockImplementation(() => undefined);
   jest.mocked(getHashedPassword).mockResolvedValue(hash);
@@ -166,7 +183,7 @@ it.each(['unknown', 'wrong password', 'database error', 'invalid type', 'malform
           ? '{"password":"' + password
           : { email: user.email, password };
     await login(request('POST', data), res as unknown as NextApiResponse);
-    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.status).toHaveBeenCalledWith(scenario === 'database error' ? 503 : 400);
     expect(warn).toHaveBeenCalledTimes(1);
     expectNoCredentials(res);
   },
@@ -174,7 +191,7 @@ it.each(['unknown', 'wrong password', 'database error', 'invalid type', 'malform
 
 it('logs successful login without names, headers, credentials or session contents', async () => {
   jest.mocked(prisma.user.findFirst).mockResolvedValue({ ...user, name: token });
-  jest.mocked(verifyPassword).mockResolvedValue(true);
+  jest.mocked(verifyLoginPassword).mockResolvedValue(true);
   const res = response();
   await login(request('POST', { email: user.email, password }), res as unknown as NextApiResponse);
   expect(log).toHaveBeenCalledWith({ event: 'auth.login.success', userId: user.id });

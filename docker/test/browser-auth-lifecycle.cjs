@@ -15,7 +15,10 @@ const source = path.resolve(
 const appRequire = createRequire(path.join(source, 'package.json'));
 const database = new URL(process.env.DATABASE_URL ?? '');
 assert.equal(database.hostname, '127.0.0.1');
-assert(['/hmv_auth_t5_fixture', '/hmv_auth_t6_fixture'].includes(database.pathname), 'Refusing non-task database');
+assert(
+  ['/hmv_auth_t5_fixture', '/hmv_auth_t6_fixture', '/hmv_auth_t7_fixture'].includes(database.pathname),
+  'Refusing non-task database',
+);
 process.env.APP_SESSION_SECRET = randomBytes(32).toString('hex');
 process.env.SESSION_COOKIE_SECURE = 'true';
 process.env.NEXT_TELEMETRY_DISABLED = '1';
@@ -182,7 +185,46 @@ const check = (value, expected, label) => {
   await page.reload();
   await loginForm(page);
   check(await status(page, '/api/me'), 403, 'editable hints do not grant authority');
-  await login();
+  stage = 'login retry feedback';
+  let loginFailure = 429;
+  const loginFailureHook = (request) => {
+    if (new URL(request.url()).pathname === '/api/login' && loginFailure !== null) {
+      void request.respond({
+        status: loginFailure,
+        headers: { 'Retry-After': '12' },
+        contentType: 'application/json',
+        body: '{"ok":false}',
+      });
+    } else void request.continue();
+  };
+  await page.setRequestInterception(true);
+  page.on('request', loginFailureHook);
+  await page.type('input[name="email"]', account.email);
+  await page.type('input[name="password"]', password);
+  for (const [status, message] of [
+    [429, 'Too many login attempts. Try again in 12 seconds.'],
+    [503, 'Login unavailable. Please retry.'],
+  ]) {
+    loginFailure = status;
+    await page.click('input[type="submit"]');
+    await page.waitForFunction((text) => document.body.textContent.includes(text), {}, message);
+    check(
+      await page.evaluate(() => document.querySelector('input[name="email"]') !== null),
+      true,
+      'login failure remains retryable',
+    );
+    check(
+      (await page.cookies()).some((cookie) => cookie.name === 'home-media-viewer-user-cookie'),
+      false,
+      'login failure never claims authentication',
+    );
+  }
+  loginFailure = null;
+  page.off('request', loginFailureHook);
+  await page.setRequestInterception(false);
+  await page.click('input[type="submit"]');
+  await loggedIn(page);
+
   const cookie = (await page.cookies()).find((cookie) => cookie.name === 'home-media-viewer-user-cookie');
   check(cookie?.httpOnly, true, 'HttpOnly retained');
   check(cookie?.secure, true, 'Secure retained over HTTPS');

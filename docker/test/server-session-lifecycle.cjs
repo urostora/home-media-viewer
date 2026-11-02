@@ -9,7 +9,7 @@ const app = path.resolve(process.env.HMV_APP_ROOT ?? 'home-media-viewer');
 const reqApp = createRequire(path.join(app, 'package.json'));
 const dbURL = new URL(process.env.DATABASE_URL ?? '');
 assert.equal(dbURL.hostname, '127.0.0.1');
-assert.equal(dbURL.pathname, '/hmv_auth_t6_fixture');
+assert(['/hmv_auth_t6_fixture', '/hmv_auth_t7_fixture'].includes(dbURL.pathname), 'Refusing non-task DB');
 process.env.APP_SESSION_SECRET = randomBytes(32).toString('hex');
 process.env.SESSION_COOKIE_SECURE = 'false';
 reqApp('ts-node').register({ project: path.join(app, 'tsconfig.json'), transpileOnly: true });
@@ -80,6 +80,13 @@ const gate = () => {
       body: data ? JSON.stringify(data) : undefined,
     });
   const login = async (who = reader, pass = password, oldCookie) => {
+    // This suite tests session lifecycle independently of T7 attempt budgets.
+    // Its DB guard/empty-user requirement confines this reset to task fixtures.
+    if (prisma.loginBudget) {
+      await prisma.loginBudget.deleteMany({ where: { key: { not: 'global' } } });
+      await prisma.loginBudget.update({ where: { key: 'global' }, data: { used: 0, resetAt: new Date(0) } });
+    }
+
     const response = await call('/api/login', oldCookie, 'POST', { email: who.email, password: pass });
     check(response.status, 200, 'fixture login');
     const body = await response.json();

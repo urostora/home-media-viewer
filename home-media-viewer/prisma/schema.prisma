@@ -162,3 +162,20 @@ model FileMeta {
   @@index([metaKey])
   @@index([metaKey(length: 32), latitude, longitude])
 }
+
+// Shared login budgets. Keys are HMAC digests; the global coordination row is fixed.
+model LoginBudget {
+  key       String   @id @db.VarChar(64)
+  used      Int
+  startedAt DateTime
+  resetAt   DateTime
+
+  @@index([resetAt])
+}
+
+// No timed expiry: a slot is released only after its bcrypt work actually ends.
+model LoginPermit {
+  slot       Int       @id
+  owner      String?   @db.VarChar(191)
+  acquiredAt DateTime?
+}

@@ -34,3 +34,8 @@ export const logApiFailure = (
 export const logLoginSuccess = (userId: string): void => {
   console.log({ event: 'auth.login.success', ...getIdentifiers({ userId }) });
 };
+
+export const logLoginOutcome = (outcome: 'failure' | 'limited' | 'unavailable'): void => {
+  if (outcome !== 'failure' && outcome !== 'limited' && outcome !== 'unavailable') return;
+  console.log({ event: `auth.login.${outcome}` });
+};
