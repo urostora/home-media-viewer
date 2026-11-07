@@ -40,7 +40,8 @@ const MetadataDisplay: React.FC<MetadataDisplayProps> = (props: MetadataDisplayP
         ? null
         : (<div key="thumbnail" className={style.thumbnailContainer}>
                 <div className={style.imageWrapper}>
-                    <Image alt={file.name} src={getThumbnailUrl(file.id, 200, file.thumbnailProcessedAt)} width={200} height={200} />
+                    {/* The thumbnail API requires the browser's session cookie. */}
+                    <Image alt={file.name} src={getThumbnailUrl(file.id, 200, file.thumbnailProcessedAt)} width={200} height={200} unoptimized />
                 </div>
             </div>);
 
