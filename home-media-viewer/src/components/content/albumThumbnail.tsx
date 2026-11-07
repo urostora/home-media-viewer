@@ -1,41 +1,60 @@
 import { getThumbnailUrl } from '@/utils/frontend/contentUtils';
 import type { JSX } from 'react';
-import type { AlbumExtendedResultType } from "@/types/api/albumTypes";
+import type { AlbumExtendedResultType } from '@/types/api/albumTypes';
 
-import hmvStyle from '@/styles/hmv.module.scss';
+import hmvStyle from '@/styles/gallery.module.scss';
 
 interface AlbumThumbnailProps {
-    contentSelected?: (content: AlbumExtendedResultType) => void,
-    content: AlbumExtendedResultType,
+  contentSelected?: (content: AlbumExtendedResultType) => void;
+  content: AlbumExtendedResultType;
 }
 
 const AlbumThumbnail = (props: AlbumThumbnailProps): JSX.Element => {
-    const { content, contentSelected } = props;
+  const { content, contentSelected } = props;
 
-    const onCardClicked = (): void => {
-      if (typeof contentSelected === 'function') {
-        contentSelected(content);
-      }
+  const onCardClicked = (): void => {
+    if (typeof contentSelected === 'function') {
+      contentSelected(content);
     }
+  };
 
-    const imageContent = content.thumbnailFile === null || content.thumbnailFile === undefined
-        ? null
-        : (typeof content.thumbnailFile.thumbnailImage === 'string'
-            ? <img className={hmvStyle.thumbnailImage} alt={content.name} src={`data:image/jpeg;base64,${content.thumbnailFile.thumbnailImage}`} />
-            : <img className={hmvStyle.thumbnailImage} alt={content.name} src={getThumbnailUrl(content.thumbnailFile.id, 200, content.thumbnailFile.thumbnailProcessedAt)} />);
-
-    return (
-        <div className={`${hmvStyle.contentCardContainer} ${hmvStyle.albumCardContainer} ${hmvStyle.noDetails}`} onClick={onCardClicked} data-id={content.id} >
-            <div className={hmvStyle.contentName}>
-                <span dangerouslySetInnerHTML={{ __html: content.name.replaceAll('_', '_<wbr>')}}></span>
-            </div>
-            <div className={hmvStyle.contentDataContainer}>
-                <div className={hmvStyle.imageContainer}>
-                    {imageContent}
-                </div>
-            </div>
-        </div>
+  const imageContent =
+    content.thumbnailFile === null || content.thumbnailFile === undefined ? null : typeof content.thumbnailFile
+        .thumbnailImage === 'string' ? (
+      <img
+        className={hmvStyle.thumbnailImage}
+        alt={content.name}
+        src={`data:image/jpeg;base64,${content.thumbnailFile.thumbnailImage}`}
+      />
+    ) : (
+      <img
+        className={hmvStyle.thumbnailImage}
+        alt={content.name}
+        src={getThumbnailUrl(content.thumbnailFile.id, 200, content.thumbnailFile.thumbnailProcessedAt)}
+      />
     );
-}
+
+  return (
+    <div className={hmvStyle.contentCardContainer} data-testid="content-card" data-id={content.id}>
+      <div className={hmvStyle.contentName} data-testid="card-name">
+        <button type="button" onClick={onCardClicked}>
+          {content.name}
+        </button>
+      </div>
+      <div className={hmvStyle.contentDataContainer}>
+        <div className={hmvStyle.imageContainer}>
+          <button
+            type="button"
+            aria-label={`Open album ${content.name}`}
+            className={hmvStyle.imageButton}
+            onClick={onCardClicked}
+          >
+            {imageContent}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default AlbumThumbnail;

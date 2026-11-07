@@ -1,13 +1,16 @@
 import type { JSX } from 'react';
-import hmvStyle from '@/styles/hmv.module.scss';
 import Link from 'next/link';
+import styles from '@/styles/shell.module.scss';
 
-const TitleArea = (props: { title?: string }): JSX.Element => {
-    return (
-        <div className={hmvStyle.titleArea}>
-            <Link className={hmvStyle.title} href="/">{props?.title ?? 'Home media viewer'}</Link>
-            <Link className={`${hmvStyle.title} ${hmvStyle.titleMobile}`} href="/">{props?.title ?? 'HMV'}</Link>
-        </div>);
+export default function TitleArea({ title = 'Home media viewer' }: { title?: string }): JSX.Element {
+  return (
+    <div data-testid="title-area">
+      <Link className={styles.brand} href="/">
+        <span className={styles.brandIcon} aria-hidden="true">
+          ▧
+        </span>
+        <span>{title}</span>
+      </Link>
+    </div>
+  );
 }
-
-export default TitleArea;

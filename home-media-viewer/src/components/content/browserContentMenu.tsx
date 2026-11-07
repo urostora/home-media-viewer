@@ -1,274 +1,303 @@
-import { type JSX, type MouseEventHandler, useState } from "react";
+import { type JSX, type MouseEventHandler, useState, useRef, useId } from 'react';
 
-import { apiFileActivate, apiFileDelete, apiFileDisable, apiFileRefreshMetadata, apiGetFile } from "@/utils/frontend/dataSource/file";
-import { apiAlbumAdd, apiAlbumUpdate } from "@/utils/frontend/dataSource/album";
+import {
+  apiFileActivate,
+  apiFileDelete,
+  apiFileDisable,
+  apiFileRefreshMetadata,
+  apiGetFile,
+} from '@/utils/frontend/dataSource/file';
+import { apiAlbumAdd, apiAlbumUpdate } from '@/utils/frontend/dataSource/album';
 
-import type { FileResultType } from "@/types/api/fileTypes";
-import type { BrowseResultFile } from "@/types/api/browseTypes"
+import type { FileResultType } from '@/types/api/fileTypes';
+import type { BrowseResultFile } from '@/types/api/browseTypes';
 
 import hmvStyle from '@/styles/hmv.module.scss';
 
 interface BrowseContentMenuProps {
-    content: BrowseResultFile,
-    onFileChanged?: (id: string) => void,
+  content: BrowseResultFile;
+  onFileChanged?: (id: string) => void;
 }
 
 interface MenuItem {
-    key: string,
-    name: string,
-    clickHandler?: MouseEventHandler<HTMLLIElement>,
-    data?: Record<string, string>,
+  key: string;
+  name: string;
+  clickHandler?: MouseEventHandler<HTMLButtonElement>;
+  data?: Record<string, string>;
 }
 
 interface SetAsThumbnailData {
-    albumId: string;
+  albumId: string;
 }
 
 const OperationCode = {
-    refreshMetadata: 'refreshMetadata',
-    addFile: 'addFile',
-    deleteFile: 'deleteFile',
-    addAlbum: 'addAlbum',
-    deleteAlbum: 'deleteAlbum',
-    setThumbnail: 'setThumbnail',
-    disableFile: 'disableFile',
-    activateFile: 'activateFile',
-}
+  refreshMetadata: 'refreshMetadata',
+  addFile: 'addFile',
+  deleteFile: 'deleteFile',
+  addAlbum: 'addAlbum',
+  deleteAlbum: 'deleteAlbum',
+  setThumbnail: 'setThumbnail',
+  disableFile: 'disableFile',
+  activateFile: 'activateFile',
+};
 
 const getDataObjectFromElement = <T extends object>(element: HTMLElement): T | null => {
-    const dataStringValue = element.getAttribute('data-data');
-    if (dataStringValue === null) {
-        return null;
-    }
+  const dataStringValue = element.getAttribute('data-data');
+  if (dataStringValue === null) {
+    return null;
+  }
 
-    const dataValue = JSON.parse(dataStringValue);
-    if (dataValue === undefined) {
-        return null;
-    }
+  const dataValue = JSON.parse(dataStringValue);
+  if (dataValue === undefined) {
+    return null;
+  }
 
-    return dataValue as T;
-}
+  return dataValue as T;
+};
 
 const BrowseContentMenu = (props: BrowseContentMenuProps): JSX.Element => {
-    const { content, onFileChanged } = props;
+  const { content, onFileChanged } = props;
 
-    const [ isOpen, setIsOpen ] = useState<boolean>(false);
-    const [ operationInProgress, setOpertationInProgress ] = useState<string | null>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const menuId = useId();
+  const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [operationInProgress, setOpertationInProgress] = useState<string | null>(null);
 
-    const [ isLoadingFileData, setIsLoadingFileData ] = useState<boolean>(false);
-    const [ fileData, setFileData ] = useState<FileResultType | null | undefined>(undefined);
+  const [isLoadingFileData, setIsLoadingFileData] = useState<boolean>(false);
+  const [fileData, setFileData] = useState<FileResultType | null | undefined>(undefined);
 
-    const loadFileData = (): void => {
-        if (content?.storedFile === null) {
-            return;
-        }
-
-        setIsLoadingFileData(true);
-
-        void apiGetFile(content.storedFile.id)
-            .then(fileData => {
-                setFileData(fileData);
-            })
-            .catch((e) => {
-                console.log(`Error while loading file data: ${e}`);
-                setFileData(null);
-            })
-            .finally(() => {
-                setIsLoadingFileData(false);
-            });
+  const loadFileData = (): void => {
+    if (content?.storedFile === null) {
+      return;
     }
 
-    if (isOpen && fileData === undefined && !isLoadingFileData) {
-        loadFileData();
+    setIsLoadingFileData(true);
+
+    void apiGetFile(content.storedFile.id)
+      .then((fileData) => {
+        setFileData(fileData);
+      })
+      .catch((e) => {
+        console.log(`Error while loading file data: ${e}`);
+        setFileData(null);
+      })
+      .finally(() => {
+        setIsLoadingFileData(false);
+      });
+  };
+
+  if (isOpen && fileData === undefined && !isLoadingFileData) {
+    loadFileData();
+  }
+
+  const placeholderClickedHandler = (): void => {
+    setIsOpen(!isOpen);
+  };
+
+  const addAlbumHandler = (): void => {
+    if (content.exactAlbum !== null) {
+      return;
     }
 
-    const placeholderClickedHandler = (): void => {
-        setIsOpen(!isOpen);
-    };
+    setOpertationInProgress(OperationCode.addAlbum);
+    void apiAlbumAdd(content.path).finally(() => {
+      setOpertationInProgress(null);
+    });
+  };
 
-    const addAlbumHandler = (): void => {
-        if (content.exactAlbum !== null) {
-            return;
-        }
-
-        setOpertationInProgress(OperationCode.addAlbum);
-        void apiAlbumAdd(content.path)
-        .finally(() => {
-            setOpertationInProgress(null);
-        });
-    };
-
-    const refreshMetadataHandler = (): void => {
-        if (typeof content.storedFile?.id !== 'string') {
-            return;
-        }
-
-        setOpertationInProgress(OperationCode.refreshMetadata);
-        void apiFileRefreshMetadata(content.storedFile.id)
-        .then(() => {
-            if (content.storedFile !== null && typeof onFileChanged === 'function') {
-                onFileChanged(content.storedFile?.id);
-            }
-        })
-        .finally(() => {
-            setOpertationInProgress(null);
-        });
-    };
-
-    const deleteFileHandler = (): void => {
-        if (typeof content.storedFile?.id !== 'string') {
-            return;
-        }
-
-        setOpertationInProgress(OperationCode.deleteFile);
-
-        void apiFileDelete(content.storedFile.id)
-        .then(() => {
-            if (content.storedFile !== null && typeof onFileChanged === 'function') {
-                onFileChanged(content.storedFile?.id);
-            }
-        })
-        .finally(() => {
-            setOpertationInProgress(null);
-        });
-    };
-
-    const disableFileHandler = (): void => {
-        if (typeof content.storedFile?.id !== 'string') {
-            return;
-        }
-
-        setOpertationInProgress(OperationCode.disableFile);
-
-        void apiFileDisable(content.storedFile.id)
-        .then(() => {
-            if (content.storedFile !== null && typeof onFileChanged === 'function') {
-                onFileChanged(content.storedFile?.id);
-            }
-        })
-        .finally(() => {
-            setOpertationInProgress(null);
-        });
-    };
-
-    const activateFileHandler = (): void => {
-        if (typeof content.storedFile?.id !== 'string') {
-            return;
-        }
-
-        setOpertationInProgress(OperationCode.disableFile);
-
-        void apiFileActivate(content.storedFile.id)
-        .then(() => {
-            if (content.storedFile !== null && typeof onFileChanged === 'function') {
-                onFileChanged(content.storedFile?.id);
-            }
-        })
-        .finally(() => {
-            setOpertationInProgress(null);
-        });
-    };
-
-    const setThumbnailHandler = (e: React.SyntheticEvent<HTMLLIElement>): void => {
-        const data = getDataObjectFromElement<SetAsThumbnailData>(e.currentTarget);
-        if (data === null || content.storedFile?.id === undefined) {
-            return;
-        }
-
-        const { albumId } = data;
-
-        setOpertationInProgress(`${OperationCode.setThumbnail}-${albumId}`);
-
-        void apiAlbumUpdate(albumId, { thumbnailFileId: content.storedFile?.id })
-            .finally(() => {
-                setOpertationInProgress(null);
-            });
+  const refreshMetadataHandler = (): void => {
+    if (typeof content.storedFile?.id !== 'string') {
+      return;
     }
 
-    // collect menu items
-    const menuList: MenuItem[] = [];
-    
-    if (content.isDirectory && content.exactAlbum === null) {
-        // directory out of an album
-
-        menuList.push({
-            key: OperationCode.addAlbum,
-            name: 'Add album',
-            clickHandler: addAlbumHandler,
-        });
-    }
-
-    if (content.storedFile != null) {
-        menuList.push({
-            key: OperationCode.refreshMetadata,
-            name: 'Refresh metadata',
-            clickHandler: refreshMetadataHandler,
-        });
-
-        menuList.push({
-            key: OperationCode.deleteFile,
-            name: 'Delete file',
-            clickHandler: deleteFileHandler,
-        });
-
-        if (content.storedFile.status !== 'Disabled') {
-            menuList.push({
-                key: OperationCode.activateFile,
-                name: 'Disable',
-                clickHandler: disableFileHandler,
-            });
+    setOpertationInProgress(OperationCode.refreshMetadata);
+    void apiFileRefreshMetadata(content.storedFile.id)
+      .then(() => {
+        if (content.storedFile !== null && typeof onFileChanged === 'function') {
+          onFileChanged(content.storedFile?.id);
         }
+      })
+      .finally(() => {
+        setOpertationInProgress(null);
+      });
+  };
 
-        if (content.storedFile.status !== 'Active') {
-            menuList.push({
-                key: OperationCode.activateFile,
-                name: 'Activate',
-                clickHandler: activateFileHandler,
-            });
+  const deleteFileHandler = (): void => {
+    if (typeof content.storedFile?.id !== 'string') {
+      return;
+    }
+
+    setOpertationInProgress(OperationCode.deleteFile);
+
+    void apiFileDelete(content.storedFile.id)
+      .then(() => {
+        if (content.storedFile !== null && typeof onFileChanged === 'function') {
+          onFileChanged(content.storedFile?.id);
         }
+      })
+      .finally(() => {
+        setOpertationInProgress(null);
+      });
+  };
+
+  const disableFileHandler = (): void => {
+    if (typeof content.storedFile?.id !== 'string') {
+      return;
     }
 
-    if (fileData != null && Array.isArray(fileData.albums) && !fileData.isDirectory) {
-        for(const album of fileData.albums) {
-            menuList.push({
-                key: `${OperationCode.setThumbnail}-${album.id}`,
-                name: `Set as ${album.name} thumbnail`,
-                clickHandler: setThumbnailHandler,
-                data: {
-                    albumId: album.id,
-                }
-            });
+    setOpertationInProgress(OperationCode.disableFile);
+
+    void apiFileDisable(content.storedFile.id)
+      .then(() => {
+        if (content.storedFile !== null && typeof onFileChanged === 'function') {
+          onFileChanged(content.storedFile?.id);
         }
+      })
+      .finally(() => {
+        setOpertationInProgress(null);
+      });
+  };
+
+  const activateFileHandler = (): void => {
+    if (typeof content.storedFile?.id !== 'string') {
+      return;
     }
 
-    if (menuList.length === 0) {
-        return <></>;
+    setOpertationInProgress(OperationCode.disableFile);
+
+    void apiFileActivate(content.storedFile.id)
+      .then(() => {
+        if (content.storedFile !== null && typeof onFileChanged === 'function') {
+          onFileChanged(content.storedFile?.id);
+        }
+      })
+      .finally(() => {
+        setOpertationInProgress(null);
+      });
+  };
+
+  const setThumbnailHandler = (e: React.SyntheticEvent<HTMLButtonElement>): void => {
+    const data = getDataObjectFromElement<SetAsThumbnailData>(e.currentTarget);
+    if (data === null || content.storedFile?.id === undefined) {
+      return;
     }
 
-    const menuItems = menuList.map((mi: MenuItem) => 
-        (<li
-            key={mi.key}
-            className={operationInProgress !== null ? hmvStyle.operationInProgress : ''}
-            onClick={mi.clickHandler}
-            data-data={JSON.stringify(mi.data ?? null)}
-        >
-            {mi.name}
-            {operationInProgress === mi.key ? '...' : null}
-        </li>)
-    );
+    const { albumId } = data;
 
-    return (
-        <div className={hmvStyle.menuOuter}>
-            <div className={`${hmvStyle.menu} ${isOpen ? hmvStyle.open : ''}`}>
-                <div className={hmvStyle.placeholder} onClick={placeholderClickedHandler}>{isOpen ? '[X]' : '...'}</div>
-                <div className={hmvStyle.menuContent}>
-                    <ul>
-                        {menuItems}
-                    </ul>
-                </div>
-            </div>
+    setOpertationInProgress(`${OperationCode.setThumbnail}-${albumId}`);
+
+    void apiAlbumUpdate(albumId, { thumbnailFileId: content.storedFile?.id }).finally(() => {
+      setOpertationInProgress(null);
+    });
+  };
+
+  // collect menu items
+  const menuList: MenuItem[] = [];
+
+  if (content.isDirectory && content.exactAlbum === null) {
+    // directory out of an album
+
+    menuList.push({
+      key: OperationCode.addAlbum,
+      name: 'Add album',
+      clickHandler: addAlbumHandler,
+    });
+  }
+
+  if (content.storedFile != null) {
+    menuList.push({
+      key: OperationCode.refreshMetadata,
+      name: 'Refresh metadata',
+      clickHandler: refreshMetadataHandler,
+    });
+
+    menuList.push({
+      key: OperationCode.deleteFile,
+      name: 'Delete file',
+      clickHandler: deleteFileHandler,
+    });
+
+    if (content.storedFile.status !== 'Disabled') {
+      menuList.push({
+        key: OperationCode.activateFile,
+        name: 'Disable',
+        clickHandler: disableFileHandler,
+      });
+    }
+
+    if (content.storedFile.status !== 'Active') {
+      menuList.push({
+        key: OperationCode.activateFile,
+        name: 'Activate',
+        clickHandler: activateFileHandler,
+      });
+    }
+  }
+
+  if (fileData != null && Array.isArray(fileData.albums) && !fileData.isDirectory) {
+    for (const album of fileData.albums) {
+      menuList.push({
+        key: `${OperationCode.setThumbnail}-${album.id}`,
+        name: `Set as ${album.name} thumbnail`,
+        clickHandler: setThumbnailHandler,
+        data: {
+          albumId: album.id,
+        },
+      });
+    }
+  }
+
+  if (menuList.length === 0) {
+    return <></>;
+  }
+
+  const menuItems = menuList.map((mi: MenuItem) => (
+    <li key={mi.key}>
+      <button
+        type="button"
+        disabled={operationInProgress !== null}
+        key={mi.key}
+        onClick={mi.clickHandler}
+        data-data={JSON.stringify(mi.data ?? null)}
+      >
+        {mi.name}
+        {operationInProgress === mi.key ? '...' : null}
+      </button>
+    </li>
+  ));
+
+  return (
+    <div
+      className={hmvStyle.menuOuter}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setIsOpen(false);
+      }}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') {
+          event.stopPropagation();
+          setIsOpen(false);
+          trigger.current?.focus();
+        }
+      }}
+    >
+      <button
+        ref={trigger}
+        type="button"
+        className={hmvStyle.placeholder}
+        aria-label={`Actions for ${content.name}`}
+        aria-expanded={isOpen}
+        aria-controls={menuId}
+        onClick={placeholderClickedHandler}
+      >
+        ⋯
+      </button>
+      {isOpen && (
+        <div id={menuId} className={hmvStyle.menuContent}>
+          <ul>{menuItems}</ul>
         </div>
-    );
-}
+      )}
+    </div>
+  );
+};
 
 export default BrowseContentMenu;

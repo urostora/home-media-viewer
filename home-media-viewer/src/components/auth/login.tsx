@@ -4,6 +4,9 @@ import { apiLogin } from '@/utils/frontend/dataSource/auth';
 import { type AuthData } from './authContext';
 
 import hmvStyle from '@/styles/hmv.module.scss';
+import styles from '@/styles/shell.module.scss';
+import ThemeSwitch from '@/components/layout/themeSwitch';
+import TitleArea from '@/components/layout/titleArea';
 
 interface LoginProps {
   onUserAuthenticated: (ad: AuthData) => void;
@@ -56,30 +59,45 @@ const Login = (props: LoginProps): JSX.Element => {
   };
 
   return (
-    <div className={hmvStyle.loginForm}>
-      <div className={hmvStyle.loginTitle}>HMV</div>
-      <form onSubmit={onLoginRequest}>
-        <div className={hmvStyle.inputContainer}>
-          <div>
-            <label>E-mail</label>
-            <input type="text" name="email" required />
-          </div>
-          <div>
-            <label>Password</label>
-            <input type="password" name="password" required />
-          </div>
+    <main id="main-content" className={styles.loginPage}>
+      <div className={styles.loginPanel}>
+        <div className={styles.loginBrand}>
+          <TitleArea />
         </div>
-        <div className={hmvStyle.controlContainer}>
-          <input
-            type="submit"
-            className={`${hmvStyle.buttonElement} ${hmvStyle.primaryButton}`}
-            value={isOperationInProgress ? 'Logging in...' : 'Log in'}
-            disabled={isOperationInProgress}
-          />
-          {typeof errorMessage === 'string' ? <div className="errorMessage">{errorMessage}</div> : null}
+        <div className={styles.loginCard}>
+          <h1>Welcome home.</h1>
+          <p>Sign in to explore your photos and videos.</p>
+          <form onSubmit={onLoginRequest}>
+            <div>
+              <div className={styles.field}>
+                <label htmlFor="login-email">E-mail</label>
+                <input id="login-email" type="text" inputMode="email" autoComplete="username" name="email" required />
+              </div>
+              <div className={styles.field}>
+                <label htmlFor="login-password">Password</label>
+                <input id="login-password" type="password" autoComplete="current-password" name="password" required />
+              </div>
+            </div>
+            <div>
+              <input
+                type="submit"
+                className={`${hmvStyle.buttonElement} ${hmvStyle.primaryButton}`}
+                value={isOperationInProgress ? 'Logging in...' : 'Log in'}
+                disabled={isOperationInProgress}
+              />
+              {typeof errorMessage === 'string' ? (
+                <div className="errorMessage" role="alert">
+                  {errorMessage}
+                </div>
+              ) : null}
+            </div>
+          </form>
         </div>
-      </form>
-    </div>
+        <div className={styles.loginTheme}>
+          <ThemeSwitch />
+        </div>
+      </div>
+    </main>
   );
 };
 

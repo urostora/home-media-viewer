@@ -52,7 +52,7 @@ afterEach(() => {
 afterAll(() => server.close());
 
 function ready(container: HTMLElement, time = 0): HTMLVideoElement {
-  const video = container.querySelector('video')!;
+  const video = container.ownerDocument.querySelector('video')!;
   Object.defineProperties(video, {
     readyState: { configurable: true, value: 2 },
     duration: { configurable: true, value: 10 },
@@ -111,9 +111,9 @@ it.each([-1, NaN, Infinity])('rejects invalid time %s without a request', async 
 
 it('only exposes the action on administrator video previews', () => {
   const { rerender } = render(preview(file, false));
-  expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Use current frame as thumbnail' })).not.toBeInTheDocument();
   rerender(preview({ ...file, extension: 'jpg' }));
-  expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Use current frame as thumbnail' })).not.toBeInTheDocument();
   rerender(preview());
   expect(screen.getByRole('button', { name: 'Use current frame as thumbnail' })).toBeDisabled();
 });
@@ -129,7 +129,7 @@ it('captures click-time playback position, blocks duplicate submissions, and pre
   const { container } = render(preview(file, true, changed));
   const video = ready(container);
   video.currentTime = 2.75;
-  const button = screen.getByRole('button');
+  const button = screen.getByRole('button', { name: 'Use current frame as thumbnail' });
   fireEvent.click(button);
   fireEvent.click(button);
   expect(button).toBeDisabled();
@@ -138,13 +138,13 @@ it('captures click-time playback position, blocks duplicate submissions, and pre
   expect(requests[0]).toMatchObject({ videoThumbnailTimeSec: 2.75 });
   expect(changed).toHaveBeenCalledWith(expect.objectContaining({ id: file.id, thumbnail: 'new' }));
   expect(video.currentTime).toBe(2.75);
-  expect(container.querySelector('video')).toBe(video);
+  expect(container.ownerDocument.querySelector('video')).toBe(video);
 });
 
 it('disables capture during seeking, at the end, and after media errors', () => {
   const { container } = render(preview());
   const video = ready(container);
-  const button = screen.getByRole('button');
+  const button = screen.getByRole('button', { name: 'Use current frame as thumbnail' });
   expect(button).toBeEnabled();
   Object.defineProperty(video, 'seeking', { configurable: true, value: true });
   fireEvent.seeking(video);
@@ -170,11 +170,11 @@ it('shows errors and permits retry', async () => {
   );
   const { container } = render(preview());
   ready(container);
-  fireEvent.click(screen.getByRole('button'));
+  fireEvent.click(screen.getByRole('button', { name: 'Use current frame as thumbnail' }));
   expect(await screen.findByRole('alert')).toHaveTextContent('Indexing is locked');
-  expect(screen.getByRole('button')).toBeEnabled();
+  expect(screen.getByRole('button', { name: 'Use current frame as thumbnail' })).toBeEnabled();
   server.resetHandlers();
-  fireEvent.click(screen.getByRole('button'));
+  fireEvent.click(screen.getByRole('button', { name: 'Use current frame as thumbnail' }));
   await screen.findByText('Thumbnail updated');
   expect(screen.queryByRole('alert')).not.toBeInTheDocument();
 });
@@ -193,11 +193,11 @@ it('loads a fresh player on navigation and keeps late feedback out of the new pr
   const changed = jest.fn();
   const { container, rerender } = render(preview(file, true, changed));
   const first = ready(container, 1.5);
-  fireEvent.click(screen.getByRole('button'));
+  fireEvent.click(screen.getByRole('button', { name: 'Use current frame as thumbnail' }));
   rerender(preview({ ...file, id: 'video-two' }, true, changed));
-  expect(container.querySelector('video')).not.toBe(first);
-  expect(container.querySelector('video')).toHaveAttribute('src', '/api/file/content/video-two');
-  expect(screen.getByRole('button')).toBeDisabled();
+  expect(container.ownerDocument.querySelector('video')).not.toBe(first);
+  expect(container.ownerDocument.querySelector('video')).toHaveAttribute('src', '/api/file/content/video-two');
+  expect(screen.getByRole('button', { name: 'Use current frame as thumbnail' })).toBeDisabled();
   await act(async () => {
     finish();
   });
@@ -218,14 +218,14 @@ it('replaces gallery and album inline thumbnails after an update without interru
       />
     </AuthContext.Provider>,
   );
-  fireEvent.click(container.querySelector('[data-id="video-one"]')!);
+  fireEvent.click(screen.getByRole('button', { name: 'Open Sample.mp4' }));
   const video = ready(container, 1.5);
   fireEvent.click(screen.getByRole('button', { name: 'Use current frame as thumbnail' }));
   await screen.findByText('Thumbnail updated');
-  expect(screen.getByAltText('Sample')).toHaveAttribute('src', 'data:image/jpeg;base64,new');
-  expect(screen.getByAltText('Album')).toHaveAttribute('src', 'data:image/jpeg;base64,new');
+  expect(container.querySelector('img[alt="Sample"]')).toHaveAttribute('src', 'data:image/jpeg;base64,new');
+  expect(container.querySelector('img[alt="Album"]')).toHaveAttribute('src', 'data:image/jpeg;base64,new');
   expect(metadataChanged).not.toHaveBeenCalled();
-  expect(container.querySelector('video')).toBe(video);
+  expect(container.ownerDocument.querySelector('video')).toBe(video);
 });
 
 it('versions URL thumbnails while preserving existing callers without a version', () => {
@@ -265,7 +265,7 @@ it('refreshes browser cards and still navigates after replacing a stored file', 
   fireEvent.click(screen.getByRole('button', { name: 'Use current frame as thumbnail' }));
   await screen.findByText('Thumbnail updated');
   expect(container.querySelector('[style*="base64,new"]')).toBeInTheDocument();
-  expect(container.querySelector('video')).toBe(video);
-  fireEvent.click(screen.getByText('>'));
-  expect(container.querySelector('video')).toHaveAttribute('src', '/api/file/content/video-two');
+  expect(container.ownerDocument.querySelector('video')).toBe(video);
+  fireEvent.click(screen.getByRole('button', { name: 'Next →' }));
+  expect(container.ownerDocument.querySelector('video')).toHaveAttribute('src', '/api/file/content/video-two');
 });

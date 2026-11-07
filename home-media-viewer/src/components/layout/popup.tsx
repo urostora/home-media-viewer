@@ -1,31 +1,19 @@
-import style from '@/styles/hmv.module.scss';
+import Modal from './modal';
 
 interface PopupProps {
-    onClose: () => void;
+  onClose: () => void;
+  title?: string;
 }
 
-const Popup: React.FC<React.PropsWithChildren<PopupProps>> =
-    (props: React.PropsWithChildren<PopupProps>): React.ReactElement =>
-{
-    const { onClose, children } = props;
-
-    const onLayerClicked = (e: React.MouseEvent): void => {
-        // if popup layer clicked, close popup
-
-        if ('className' in e.target && (e.target as Element).className.includes('hmv_popup')) {
-            e.stopPropagation();
-            e.preventDefault();
-            
-            onClose();
-        }
-    }
-
-    return (<div className={style.popup} onClick={onLayerClicked}>
-        <div className={style.operationsBlock}>
-                <div onClick={onClose}>X</div>
-            </div>
-        {children}
-    </div>);
-}
+const Popup: React.FC<React.PropsWithChildren<PopupProps>> = (
+  props: React.PropsWithChildren<PopupProps>,
+): React.ReactElement => {
+  const { onClose, children, title = 'Media information' } = props;
+  return (
+    <Modal title={title} onClose={onClose}>
+      {children}
+    </Modal>
+  );
+};
 
 export default Popup;

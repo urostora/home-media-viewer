@@ -64,7 +64,7 @@ describe('location maps with real Pigeon Maps in Strict Mode', () => {
     expect(container.querySelector('img')).toBeInTheDocument();
     expect(container.querySelector('[latLngToPixel], [pixelToLatLng], [setCenterZoom], [mapState]')).toBeNull();
     fireEvent.click(screen.getByLabelText('Filter to location'));
-    fireEvent.click(screen.getByRole('button', { name: '+' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }));
     fireEvent.click(screen.getByRole('button', { name: 'Apply filters' }));
     expect(onFilterChanged).toHaveBeenLastCalledWith(
       expect.objectContaining({
@@ -89,7 +89,7 @@ describe('location maps with real Pigeon Maps in Strict Mode', () => {
     fireEvent.click(screen.getByRole('button', { name: /Set it manually/ }));
     expect(container.querySelector('svg')).toBeInTheDocument();
     expect(container.querySelector('img')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: '+' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }));
     fireEvent.click(screen.getByRole('button', { name: 'Update location' }));
     await waitFor(() => {
       expect(onFileChanged).toHaveBeenCalledWith(file);

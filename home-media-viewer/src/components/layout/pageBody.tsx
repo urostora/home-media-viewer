@@ -1,12 +1,9 @@
 import { type JSX, type ReactNode } from 'react';
-
-import style from '@/styles/hmv.module.scss';
-
-const PageBody = (props: { children?: ReactNode }): JSX.Element => {
-    return (
-        <div className={style.pageBody}>
-            {props.children}
-        </div>);
+import styles from '@/styles/shell.module.scss';
+export default function PageBody({ children }: { children?: ReactNode }): JSX.Element {
+  return (
+    <main id="main-content" tabIndex={-1} className={styles.body}>
+      {children}
+    </main>
+  );
 }
-
-export default PageBody;

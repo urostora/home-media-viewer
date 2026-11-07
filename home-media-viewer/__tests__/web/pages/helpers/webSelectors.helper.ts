@@ -9,20 +9,20 @@ export const selectors = {
   },
   main: {
     title: {
-      container: 'div[class^="hmv_titleArea"]',
-      titleText: 'a[class^="hmv_title_"]',
-      titleTextMobile: 'a[class*="hmv_titleMobile_"]',
+      container: '[data-testid="title-area"]',
+      titleText: 'a',
+      titleTextMobile: 'a',
     },
     user: {
-      userHeaderContainer: 'div[class^="hmv_userHeaderContainer"]',
-      userName: 'span[class^="hmv_userName"]',
-      logoutButton: 'div[class^="hmv_userHeaderContainer"] button',
+      userHeaderContainer: '[data-testid="user-header"]',
+      userName: '[data-testid="user-name"]',
+      logoutButton: '[data-testid="user-header"] button:not([role="switch"])',
     },
     menu: {
-      container: 'div[class^="hmv_mainMenu"]',
-      toggle: 'div[class^="hmv_mainMenuToggle"]',
-      elementsContainer: 'div[class^="hmv_mainMenuElements"]',
-      elements: 'div[class^="hmv_linkItem"]',
+      container: '[data-testid="main-menu"]',
+      toggle: 'button[aria-controls]',
+      elementsContainer: '[data-testid="menu-links"]',
+      elements: 'a',
     },
     navigation: {
       container: 'div[class^="hmv_navigationBar"]',
@@ -30,8 +30,8 @@ export const selectors = {
     },
   },
   contents: {
-    container: 'div[class^="hmv_contentsContainer"]',
-    card: 'div[class^="hmv_contentCardContainer"]',
-    cardName: 'div[class^="hmv_contentName"]',
+    container: '[data-testid="content-list"]',
+    card: '[data-testid="content-card"]',
+    cardName: '[data-testid="card-name"]',
   },
 };

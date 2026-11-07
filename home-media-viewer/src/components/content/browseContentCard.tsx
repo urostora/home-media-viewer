@@ -1,137 +1,151 @@
 import { getThumbnailUrl } from '@/utils/frontend/contentUtils';
 import type { JSX } from 'react';
-import Image from "next/image";
+import Image from 'next/image';
 
-import BrowseContentMenu from "./browserContentMenu";
-import { MetaType, contentSizeToString, durationInSecToString } from "@/utils/metaUtils";
-import { isVideoByExtension } from '@/utils/frontend/contentUtils'
+import BrowseContentMenu from './browserContentMenu';
+import { MetaType, contentSizeToString, durationInSecToString } from '@/utils/metaUtils';
+import { isVideoByExtension } from '@/utils/frontend/contentUtils';
 
-import type { BrowseResultFile } from "@/types/api/browseTypes"
+import type { BrowseResultFile } from '@/types/api/browseTypes';
 
-import hmvStyle from '@/styles/hmv.module.scss';
+import hmvStyle from '@/styles/gallery.module.scss';
 import globus from 'public/globus.png';
 
 interface BrowseContentCardProps {
-    content: BrowseResultFile,
-    contentSelected?: (content: BrowseResultFile) => void,
-    contentChanged?: (id: string) => void,
+  content: BrowseResultFile;
+  contentSelected?: (content: BrowseResultFile) => void;
+  contentChanged?: (id: string) => void;
 }
 
 const BrowseContentCard = (props: BrowseContentCardProps): JSX.Element => {
-    const { content, contentSelected, contentChanged } = props;
+  const { content, contentSelected, contentChanged } = props;
 
-    const name = content.name;
-    const path = content.path;
+  const name = content.name;
+  const path = content.path;
 
-    const metadataTextList: string[] = [];
+  const metadataTextList: string[] = [];
 
-    const isDirectory = content?.isDirectory;
-    const isVideo = typeof content?.storedFile?.extension === 'string'
-        ? isVideoByExtension(content.storedFile.extension)
-        : false;
+  const isDirectory = content?.isDirectory;
+  const isVideo =
+    typeof content?.storedFile?.extension === 'string' ? isVideoByExtension(content.storedFile.extension) : false;
 
-    const thumbnailContent = content?.storedFile?.thumbnail;
-    const thumbnailStyle = {
-        backgroundImage: isDirectory
-            ? "url('/directory.png')"
-            : (typeof thumbnailContent === 'string'
-                ? `url(data:image/jpeg;base64,${thumbnailContent})`
-                : (content?.storedFile?.thumbnailStatus === 'Processed'
-                    ? `url('${getThumbnailUrl(content.storedFile.id, 200, content.storedFile.thumbnailProcessedAt)}')`
-                    : 'inherit')),
+  const thumbnailContent = content?.storedFile?.thumbnail;
+  const thumbnailStyle = {
+    backgroundImage: isDirectory
+      ? "url('/directory.png')"
+      : typeof thumbnailContent === 'string'
+        ? `url(data:image/jpeg;base64,${thumbnailContent})`
+        : content?.storedFile?.thumbnailStatus === 'Processed'
+          ? `url('${getThumbnailUrl(content.storedFile.id, 200, content.storedFile.thumbnailProcessedAt)}')`
+          : 'inherit',
+  };
+  const videoIcon = isVideo ? <img alt="play icon" src="/play.svg" className={hmvStyle.videoIcon} /> : null;
+
+  const onContentClickedHandler = (): void => {
+    if (typeof contentSelected === 'function') {
+      contentSelected(content);
     }
-    const hasThumbnailStyle =
-        typeof thumbnailContent === 'string'
-        || content?.storedFile?.thumbnailStatus === 'Processed'
-        || isDirectory ? hmvStyle.hasThumbnail : '';
+  };
 
-    const videoIcon = isVideo
-        ? <img alt="play icon" src="/play.svg" className={hmvStyle.videoIcon} />
-        : null;
+  const containerClickedHandler =
+    !content.isDirectory && content.storedFile === null ? undefined : onContentClickedHandler;
 
-    const onContentClickedHandler = (): void => {
-        if (typeof contentSelected === 'function') {
-            contentSelected(content);
-        }
-    };
+  const onLocationClicked = (e: React.SyntheticEvent): void => {
+    e.preventDefault();
+    e.stopPropagation();
 
-    const containerClickedHandler = !content.isDirectory && content.storedFile === null
-        ? undefined
-        : onContentClickedHandler;
-
-    const onLocationClicked = (e: React.SyntheticEvent): void => {
-        e.preventDefault();
-        e.stopPropagation();
-    
-        const locationMeta = content?.storedFile?.metas.find(m => m.metaKey === MetaType.GpsCoordinates);
-        if (locationMeta === undefined) {
-            return;
-        }
-    
-        const url = `https://www.google.com/maps/search/?api=1&query=${locationMeta.latitude}%2C${locationMeta.longitude}`;
-        window.open(url, '__blank');
+    const locationMeta = content?.storedFile?.metas.find((m) => m.metaKey === MetaType.GpsCoordinates);
+    if (locationMeta === undefined) {
+      return;
     }
 
-    const tooltipText = content.path;
+    const url = `https://www.google.com/maps/search/?api=1&query=${locationMeta.latitude}%2C${locationMeta.longitude}`;
+    window.open(url, '__blank');
+  };
 
-    let coordinates: { latitude?: number, longitude?: number} | undefined;
+  const tooltipText = content.path;
 
-    if (!content.isDirectory) {
-        if (content.storedFile !== null) {
-            const fpsMeta = content.storedFile.metas.find(m => m.metaKey === MetaType.Fps);
-            if (fpsMeta !== undefined) {
-                metadataTextList.push(`${fpsMeta.intValue}fps`);
-            }
+  let coordinates: { latitude?: number; longitude?: number } | undefined;
 
-            const durationMeta = content.storedFile.metas.find(m => m.metaKey === MetaType.Duration);
-            if (durationMeta !== undefined && durationMeta?.floatValue !== null) {
-                metadataTextList.push(durationInSecToString(durationMeta.floatValue));
-            }
+  if (!content.isDirectory) {
+    if (content.storedFile !== null) {
+      const fpsMeta = content.storedFile.metas.find((m) => m.metaKey === MetaType.Fps);
+      if (fpsMeta !== undefined) {
+        metadataTextList.push(`${fpsMeta.intValue}fps`);
+      }
 
-            const widthMeta = content.storedFile.metas.find(m => m.metaKey === MetaType.ResolutionX);
-            const heightMeta = content.storedFile.metas.find(m => m.metaKey === MetaType.ResolutionY);
-            if (widthMeta !== undefined && heightMeta !== undefined) {
-                metadataTextList.push(`${widthMeta.intValue} x ${heightMeta.intValue}`);
-            }
+      const durationMeta = content.storedFile.metas.find((m) => m.metaKey === MetaType.Duration);
+      if (durationMeta !== undefined && durationMeta?.floatValue !== null) {
+        metadataTextList.push(durationInSecToString(durationMeta.floatValue));
+      }
 
-            const locationMeta = content.storedFile.metas.find(m => m.metaKey === MetaType.GpsCoordinates);
-            if (locationMeta !== undefined && typeof locationMeta.latitude === 'number' && typeof locationMeta.longitude === 'number') {
-                coordinates = { latitude: locationMeta.latitude, longitude: locationMeta.longitude };
-            }
-        }
+      const widthMeta = content.storedFile.metas.find((m) => m.metaKey === MetaType.ResolutionX);
+      const heightMeta = content.storedFile.metas.find((m) => m.metaKey === MetaType.ResolutionY);
+      if (widthMeta !== undefined && heightMeta !== undefined) {
+        metadataTextList.push(`${widthMeta.intValue} x ${heightMeta.intValue}`);
+      }
 
-        metadataTextList.push(contentSizeToString(content.size ?? 0));
+      const locationMeta = content.storedFile.metas.find((m) => m.metaKey === MetaType.GpsCoordinates);
+      if (
+        locationMeta !== undefined &&
+        typeof locationMeta.latitude === 'number' &&
+        typeof locationMeta.longitude === 'number'
+      ) {
+        coordinates = { latitude: locationMeta.latitude, longitude: locationMeta.longitude };
+      }
     }
 
-    const isDisabled = content?.storedFile?.status === 'Disabled';
-    if (isDisabled) {
-        metadataTextList.push('Disabled');
-    }
+    metadataTextList.push(contentSizeToString(content.size ?? 0));
+  }
 
-    const metadataElements = metadataTextList.map((txt, index) => <div key={index}>{txt}</div>);
+  const isDisabled = content?.storedFile?.status === 'Disabled';
+  if (isDisabled) {
+    metadataTextList.push('Disabled');
+  }
 
-    if (coordinates !== undefined) {
-        metadataElements.push(<div key="location" onClick={onLocationClicked} className={hmvStyle.locationIcon}><Image src={globus} alt="" /></div>);
-    }
+  const metadataElements = metadataTextList.map((txt, index) => <div key={index}>{txt}</div>);
 
-    return (<div className={`${hmvStyle.browseContentCard} ${isDisabled ? hmvStyle.disabled : ''}`}>
-        <div className={hmvStyle.name} title={path} onClick={onContentClickedHandler}>
-            <abbr title={tooltipText}>{name}</abbr>
-        </div>
-        <div
-            className={`${hmvStyle.thumbnail} ${hasThumbnailStyle}`}
-            style={thumbnailStyle}
-            onClick={containerClickedHandler}
-        >
-            {videoIcon}
-        </div>
-        <div className={hmvStyle.details}>
-            <div className={hmvStyle.metadataContainer}>
-                {metadataElements}
-            </div>
-            <BrowseContentMenu content={content} onFileChanged={contentChanged} />
-        </div>
-    </div>);
-}
+  if (coordinates !== undefined) {
+    metadataElements.push(
+      <button
+        type="button"
+        aria-label={`View location of ${name}`}
+        key="location"
+        onClick={onLocationClicked}
+        className={hmvStyle.locationIcon}
+      >
+        <Image src={globus} alt="" />
+      </button>,
+    );
+  }
+
+  return (
+    <div className={`${hmvStyle.browseContentCard} ${isDisabled ? hmvStyle.disabled : ''}`}>
+      <button
+        type="button"
+        className={hmvStyle.name}
+        title={path}
+        onClick={containerClickedHandler}
+        disabled={containerClickedHandler === undefined}
+      >
+        <abbr title={tooltipText}>{name}</abbr>
+      </button>
+      <button
+        type="button"
+        aria-label={`Open ${name}`}
+        disabled={containerClickedHandler === undefined}
+        className={hmvStyle.thumbnail}
+        style={thumbnailStyle}
+        onClick={containerClickedHandler}
+      >
+        {videoIcon}
+      </button>
+      <div className={hmvStyle.details}>
+        <div className={hmvStyle.metadataContainer}>{metadataElements}</div>
+        <BrowseContentMenu content={content} onFileChanged={contentChanged} />
+      </div>
+    </div>
+  );
+};
 
 export default BrowseContentCard;

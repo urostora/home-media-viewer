@@ -36,7 +36,7 @@ describe('React hydration and map navigation', () => {
     await testPage.waitForSelector(selectors.main.user.userName);
     await testPage.click('a[href="/search"]');
     await testPage.waitForSelector('div[class*="mapCenter"]');
-    await testPage.click('span[class*="filterOpenToggle"]');
+    await testPage.click('[data-testid="filter-toggle"]');
     await testPage.waitForSelector('input[name="isLocationFilterEnabled"]', { visible: true });
     await testPage.click('input[name="isLocationFilterEnabled"]');
     await testPage.click('input[value="Apply filters"]');

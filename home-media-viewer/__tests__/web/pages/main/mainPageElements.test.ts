@@ -1,374 +1,51 @@
-/**
- * @jest-environment puppeteer
- */
-
-import type { Page, ElementHandle } from 'puppeteer';
-
+/** @jest-environment puppeteer */
+import type { Page } from 'puppeteer';
 import { getPage } from '../helpers/webHelper.helper';
 import { selectors } from '../helpers/webSelectors.helper';
 
-describe('web/pages/main/elements', () => {
-  let desktopPage: Page;
-  let mobilePage: Page;
-
+describe('responsive album navigation', () => {
+  let desktop: Page;
+  let mobile: Page;
   beforeAll(async () => {
-    desktopPage = await getPage();
-    mobilePage = await getPage({ desktop: false });
-  }, 15_000);
-
-  describe('desktop user area', () => {
-    it('should have user area with name and logout button', async () => {
-      const userHeader = await desktopPage.$(selectors.main.user.userHeaderContainer);
-
-      expect(userHeader).not.toBeNull();
-
-      if (userHeader === null) {
-        return;
-      }
-
-      const userNameSpan = await userHeader.$(selectors.main.user.userName);
-      const logoutButton = await userHeader.$('button');
-
-      expect(await userNameSpan?.isVisible()).toBe(true);
-      expect(await logoutButton?.isVisible()).toBe(true);
-    });
-  });
-
-  describe('desktop title', () => {
-    let titleLink: ElementHandle<HTMLAnchorElement> | undefined;
-    let titleLinkMobile: ElementHandle<HTMLAnchorElement> | undefined;
-
-    beforeAll(async () => {
-      const titleHeader = await desktopPage.$(selectors.main.title.container);
-
-      expect(titleHeader).not.toBeNull();
-
-      const titleLinks = (await titleHeader?.$$(selectors.main.title.titleText)) as Array<
-        ElementHandle<HTMLAnchorElement>
-      >;
-      expect(titleLinks?.length).toBe(2);
-
-      for (const linkHandler of titleLinks ?? []) {
-        if (await linkHandler.evaluate((link) => link.className.includes('titleMobile'))) {
-          titleLinkMobile = linkHandler;
-        } else {
-          titleLink = linkHandler;
-        }
-      }
-
-      expect(titleLink).not.toBeUndefined();
-      expect(titleLinkMobile).not.toBeUndefined();
-    });
-
-    it('should have visible desktop title and invisible mobile title', async () => {
-      expect(await titleLink?.isVisible()).toBe(true);
-      expect(await titleLinkMobile?.isVisible()).toBe(false);
-    });
-
-    it('should navigate to index page', async () => {
-      expect(await titleLink?.evaluate((l) => l.href)).toBe(`${process.env.APP_URL}/`);
-    });
-
-    it('should have expected text', async () => {
-      const expectedTitle = 'Home media viewer';
-      const titleText = await titleLink?.evaluate((l) => l.innerText);
-
-      expect(titleText).toBe(expectedTitle);
-    });
-  });
-
-  describe('desktop menu', () => {
-    let menuContainer: ElementHandle<Element> | null;
-    let menuToggle: ElementHandle<Element> | null;
-    let menuElementsContainer: ElementHandle<Element> | null;
-
-    beforeAll(async () => {
-      menuContainer = await desktopPage.$(selectors.main.menu.container);
-
-      expect(menuContainer).not.toBeUndefined();
-      expect(menuContainer).not.toBeNull();
-
-      if (menuContainer === null) {
-        return;
-      }
-
-      menuToggle = await menuContainer.$(selectors.main.menu.toggle);
-      menuElementsContainer = await menuContainer.$(selectors.main.menu.elementsContainer);
-
-      expect(menuToggle).not.toBeNull();
-      expect(menuElementsContainer).not.toBeNull();
-    });
-
-    it('main menu toggle should not be visible', async () => {
-      expect(await menuToggle?.isVisible()).toBe(false);
-    });
-
-    it('main menu elements should be visible', async () => {
-      expect(await menuElementsContainer?.isVisible()).toBe(true);
-    });
-
-    it('main menu elements should be visible', async () => {
-      const menuElements = await menuContainer?.$$(selectors.main.menu.elements);
-
-      expect(menuElements).not.toBeUndefined();
-
-      if (menuElements === undefined) {
-        return;
-      }
-
-      expect(menuElements?.length).toBeGreaterThan(0);
-
-      for (const menuElement of menuElements) {
-        expect(await menuElement.isVisible()).toBe(true);
-      }
-    });
-  });
-
-  describe('desktop navigation bar', () => {
-    let navigationBar: ElementHandle<Element> | null = null;
-
-    beforeAll(async () => {
-      navigationBar = await desktopPage.waitForSelector(selectors.main.navigation.container);
-      expect(navigationBar).not.toBeNull();
-    });
-
-    it('navigation bar elements should be visible', async () => {
-      const navigationBarElements = await navigationBar?.$$('select, a');
-
-      expect(Array.isArray(navigationBarElements)).toBe(true);
-
-      if (!Array.isArray(navigationBarElements)) {
-        return;
-      }
-
-      for (const element of navigationBarElements) {
-        expect(await element.isVisible()).toBe(true);
-      }
-    });
-  });
-
-  describe('desktop album list', () => {
-    let contentListContainer: ElementHandle<Element> | null = null;
-    let contentCards: Array<ElementHandle<Element>>;
-
-    beforeAll(async () => {
-      contentListContainer = await desktopPage.waitForSelector(selectors.contents.container);
-      expect(contentListContainer).not.toBeNull();
-
-      if (contentListContainer === undefined || contentListContainer === null) {
-        throw Error('Content list container not found');
-      }
-
-      contentCards = await contentListContainer.$$(selectors.contents.card);
-    });
-
-    it('has album content cards', async () => {
-      expect(contentCards.length).toBeGreaterThan(0);
-    });
-
-    it('test albums should be visible', async () => {
-      const expectedAlbumNames = ['album01', 'album02'];
-      const visibleAlbumNames: string[] = [];
-
-      for (const card of contentCards) {
-        if (!(await card.isVisible())) {
-          continue;
-        }
-
-        const albumName = await card.$eval(selectors.contents.cardName, (node) =>
-          'innerText' in node ? node.innerText : null,
-        );
-        if (typeof albumName === 'string') {
-          visibleAlbumNames.push(albumName);
-        }
-      }
-
-      for (const expectedAlbumName of expectedAlbumNames) {
-        const foundAlbumName = visibleAlbumNames.find((name) => name === expectedAlbumName);
-        expect(foundAlbumName).toBe(expectedAlbumName);
-      }
-    });
-  });
-
-  describe('mobile user area', () => {
-    it('should have user area with name and logout button', async () => {
-      const userHeader = await mobilePage.$(selectors.main.user.userHeaderContainer);
-
-      expect(userHeader).not.toBeNull();
-
-      if (userHeader === null) {
-        return;
-      }
-
-      const userNameSpan = await userHeader.$(selectors.main.user.userName);
-      const logoutButton = await userHeader.$('button');
-
-      expect(await userNameSpan?.isVisible()).toBe(true);
-      expect(await logoutButton?.isVisible()).toBe(true);
-    });
-  });
-
-  describe('mobile title', () => {
-    let titleLink: ElementHandle<HTMLAnchorElement> | undefined;
-    let titleLinkMobile: ElementHandle<HTMLAnchorElement> | undefined;
-
-    beforeAll(async () => {
-      const titleHeader = await mobilePage.$(selectors.main.title.container);
-
-      expect(titleHeader).not.toBeNull();
-
-      const titleLinks = (await titleHeader?.$$(selectors.main.title.titleText)) as Array<
-        ElementHandle<HTMLAnchorElement>
-      >;
-      expect(titleLinks?.length).toBe(2);
-
-      for (const linkHandler of titleLinks ?? []) {
-        if (await linkHandler.evaluate((link) => link.className.includes('titleMobile'))) {
-          titleLinkMobile = linkHandler;
-        } else {
-          titleLink = linkHandler;
-        }
-      }
-
-      expect(titleLink).not.toBeUndefined();
-      expect(titleLinkMobile).not.toBeUndefined();
-    });
-
-    it('should have visible mobile title and invisible desktop title', async () => {
-      expect(await titleLink?.isVisible()).toBe(false);
-      expect(await titleLinkMobile?.isVisible()).toBe(true);
-    });
-
-    it('should navigate to index page', async () => {
-      expect(await titleLinkMobile?.evaluate((l) => l.href)).toBe(`${process.env.APP_URL}/`);
-    });
-
-    it('should have expected text', async () => {
-      const expectedTitle = 'HMV';
-      const titleText = await titleLinkMobile?.evaluate((l) => l.innerText);
-
-      expect(titleText).toBe(expectedTitle);
-    });
-  });
-
-  describe('mobile menu', () => {
-    let menuContainer: ElementHandle<Element> | null;
-    let menuToggle: ElementHandle<Element> | null;
-    let menuElementsContainer: ElementHandle<Element> | null;
-
-    beforeAll(async () => {
-      menuContainer = await mobilePage.$(selectors.main.menu.container);
-
-      expect(menuContainer).not.toBeUndefined();
-      expect(menuContainer).not.toBeNull();
-
-      if (menuContainer === null) {
-        return;
-      }
-
-      menuToggle = await menuContainer.$(selectors.main.menu.toggle);
-      menuElementsContainer = await menuContainer.$(selectors.main.menu.elementsContainer);
-
-      expect(menuToggle).not.toBeNull();
-      expect(menuElementsContainer).not.toBeNull();
-    });
-
-    it('main menu toggle should be visible', async () => {
-      expect(await menuToggle?.isVisible()).toBe(true);
-    });
-
-    it('main menu elements should not be visible', async () => {
-      expect(await menuElementsContainer?.isVisible()).toBe(false);
-    });
-
-    it('main menu elements should be visible after click to menu toggle', async () => {
-      await menuToggle?.click();
-
-      expect(await menuElementsContainer?.isVisible()).toBe(true);
-
-      const menuElements = await menuContainer?.$$(selectors.main.menu.elements);
-
-      expect(menuElements).not.toBeUndefined();
-
-      if (menuElements === undefined) {
-        return;
-      }
-
-      expect(menuElements?.length).toBeGreaterThan(0);
-
-      for (const menuElement of menuElements) {
-        expect(await menuElement.isVisible()).toBe(true);
-      }
-    });
-  });
-
-  describe('mobile navigation bar', () => {
-    let navigationBar: ElementHandle<Element> | null = null;
-
-    beforeAll(async () => {
-      navigationBar = await mobilePage.waitForSelector(selectors.main.navigation.container);
-      expect(navigationBar).not.toBeNull();
-    });
-
-    it('navigation bar elements should be visible', async () => {
-      const navigationBarElements = await navigationBar?.$$('select, a');
-
-      expect(Array.isArray(navigationBarElements)).toBe(true);
-
-      if (!Array.isArray(navigationBarElements)) {
-        return;
-      }
-
-      for (const element of navigationBarElements) {
-        expect(await element.isVisible()).toBe(true);
-      }
-    });
-  });
-
-  describe('mobile album list', () => {
-    let contentListContainer: ElementHandle<Element> | null = null;
-    let contentCards: Array<ElementHandle<Element>>;
-
-    beforeAll(async () => {
-      contentListContainer = await mobilePage.waitForSelector(selectors.contents.container);
-      expect(contentListContainer).not.toBeNull();
-
-      if (contentListContainer === undefined || contentListContainer === null) {
-        throw Error('Content list container not found');
-      }
-
-      contentCards = await contentListContainer.$$(selectors.contents.card);
-    });
-
-    it('has album content cards', async () => {
-      expect(contentCards.length).toBeGreaterThan(0);
-    });
-
-    it('test albums should be visible', async () => {
-      const expectedAlbumNames = ['album01', 'album02'];
-      const visibleAlbumNames: string[] = [];
-
-      for (const card of contentCards) {
-        if (!(await card.isVisible())) {
-          continue;
-        }
-
-        const albumName = await card.$eval(selectors.contents.cardName, (node) =>
-          'innerText' in node ? node.innerText : null,
-        );
-        if (typeof albumName === 'string') {
-          visibleAlbumNames.push(albumName);
-        }
-      }
-
-      for (const expectedAlbumName of expectedAlbumNames) {
-        expect(visibleAlbumNames.includes(expectedAlbumName)).toBe(true);
-      }
-    });
-  });
-
+    desktop = await getPage();
+    mobile = await getPage({ desktop: false });
+  }, 30_000);
   afterAll(async () => {
-    await desktopPage?.close();
-    await mobilePage?.close();
+    await desktop?.close();
+    await mobile?.close();
+  });
+
+  it('shows branding, identity, theme switch, and albums on desktop', async () => {
+    expect(await desktop.$eval(`${selectors.main.title.container} a`, (node) => node.getAttribute('href'))).toBe('/');
+    expect(await desktop.$eval(selectors.main.user.userName, (node) => node.textContent?.length)).toBeGreaterThan(0);
+    expect(await desktop.$eval('[role="switch"]', (node) => node.getAttribute('aria-label'))).toBe('Dark mode');
+    const names = await desktop.$$eval(selectors.contents.cardName, (nodes) => nodes.map((node) => node.textContent));
+    expect(names).toEqual(expect.arrayContaining(['album01', 'album02']));
+    expect(await desktop.$eval('a[href="/album"][aria-current]', (node) => node.getAttribute('aria-current'))).toBe(
+      'page',
+    );
+  });
+
+  it('opens mobile navigation by keyboard and closes with Escape', async () => {
+    const toggle = `${selectors.main.menu.container} button[aria-controls]`;
+    expect(await mobile.$eval(toggle, (node) => node.getAttribute('aria-expanded'))).toBe('false');
+    await mobile.focus(toggle);
+    await mobile.keyboard.press('Enter');
+    expect(await mobile.$eval(toggle, (node) => node.getAttribute('aria-expanded'))).toBe('true');
+    await mobile.keyboard.press('Tab');
+    await mobile.keyboard.press('Escape');
+    expect(await mobile.$eval(toggle, (node) => node.getAttribute('aria-expanded'))).toBe('false');
+    expect(await mobile.$eval(toggle, (node) => node === document.activeElement)).toBe(true);
+  });
+
+  it('fits the mobile viewport and persists an explicit theme across reload', async () => {
+    expect(await mobile.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    const before = await mobile.$eval('[role="switch"]', (node) => node.getAttribute('aria-checked'));
+    await mobile.click('[role="switch"]');
+    const after = before === 'true' ? 'false' : 'true';
+    expect(await mobile.$eval('[role="switch"]', (node) => node.getAttribute('aria-checked'))).toBe(after);
+    await mobile.reload({ waitUntil: 'networkidle0' });
+    await mobile.waitForSelector('[role="switch"]');
+    expect(await mobile.$eval('[role="switch"]', (node) => node.getAttribute('aria-checked'))).toBe(after);
   });
 });

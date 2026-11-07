@@ -1,5 +1,6 @@
 import { type FileResultType } from '@/types/api/fileTypes';
-import hmvStyle from '@/styles/hmv.module.scss';
+import hmvStyle from '@/styles/dialog.module.scss';
+import Modal from '@/components/layout/modal';
 import { type JSX, type ReactElement, useContext, useEffect, useRef, useState } from 'react';
 import { AuthContext } from '@/components/auth/authContext';
 import { apiFileUpdateVideoThumbnail } from '@/utils/frontend/dataSource/file';
@@ -15,7 +16,7 @@ interface ContentDisplayProps {
 }
 
 const getImageUrl = (id: string): string => {
-  if (window === undefined) {
+  if (typeof window === 'undefined') {
     return getContentUrl(id);
   }
 
@@ -29,12 +30,38 @@ const getImageUrl = (id: string): string => {
 };
 
 // A new file gets a fresh player and request state, including when navigating back.
-const ContentDisplay = (props: ContentDisplayProps): JSX.Element => (
-  <ContentDisplayForFile key={props.content?.id} {...props} />
-);
+const ContentDisplay = (props: ContentDisplayProps): JSX.Element => {
+  if (props.content === undefined) return <></>;
+  return (
+    <Modal
+      fullscreen
+      title={`${props.content.name}.${props.content.extension}`}
+      onClose={() => props.closeHandler?.()}
+      onKeyDown={(event) => {
+        if (
+          (event.target as HTMLElement).closest('video, input, textarea, select, [role="slider"]') ||
+          event.altKey ||
+          event.ctrlKey ||
+          event.metaKey
+        )
+          return;
+        if (event.key === 'ArrowLeft' && props.previousHandler) {
+          event.preventDefault();
+          props.previousHandler();
+        }
+        if (event.key === 'ArrowRight' && props.nextHandler) {
+          event.preventDefault();
+          props.nextHandler();
+        }
+      }}
+    >
+      <ContentDisplayForFile key={props.content.id} {...props} />
+    </Modal>
+  );
+};
 
 const ContentDisplayForFile = (props: ContentDisplayProps): JSX.Element => {
-  const { content, closeHandler, previousHandler, nextHandler, onThumbnailUpdated } = props;
+  const { content, previousHandler, nextHandler, onThumbnailUpdated } = props;
   const { isAdmin } = useContext(AuthContext);
   const videoRef = useRef<HTMLVideoElement>(null);
   const mounted = useRef(false);
@@ -128,21 +155,10 @@ const ContentDisplayForFile = (props: ContentDisplayProps): JSX.Element => {
     return <></>;
   };
 
-  const onBackgroundClicked = (e: React.MouseEvent<HTMLElement>): void => {
-    const targetElement = e.target as HTMLElement;
-
-    if (targetElement.tagName.toLowerCase() === 'img') {
-      if (typeof closeHandler === 'function') {
-        closeHandler();
-        e.stopPropagation();
-      }
-    }
-  };
-
   const onDownloadClickedHandler = (): void => {
     const contentUrl = getContentUrl(content.id);
 
-    if (window === undefined) {
+    if (typeof window === 'undefined') {
       return;
     }
 
@@ -150,7 +166,16 @@ const ContentDisplayForFile = (props: ContentDisplayProps): JSX.Element => {
   };
 
   return (
-    <div className={hmvStyle.contentDisplayContainer} onClick={onBackgroundClicked}>
+    <>
+      <div className={hmvStyle.toolbar}>
+        <span className={hmvStyle.fileName}>
+          {content.name}
+          {content.extension ? `.${content.extension}` : ''}
+        </span>
+        <button type="button" onClick={onDownloadClickedHandler} aria-label="Download media">
+          Download ↓
+        </button>
+      </div>
       {isAdmin === true && isVideoByExtension(content.extension) && (
         <div className={hmvStyle.videoThumbnailAction}>
           <button
@@ -166,18 +191,16 @@ const ContentDisplayForFile = (props: ContentDisplayProps): JSX.Element => {
           {error && <span role="alert">{error}</span>}
         </div>
       )}
-      <div className={hmvStyle.operationsBlock}>
-        <div onClick={onDownloadClickedHandler}>&#8615;</div>
-        <div onClick={closeHandler}>X</div>
-      </div>
-      <div className={`${hmvStyle.navigationArea} ${hmvStyle.previousContainer}`} onClick={previousHandler}>
-        <div>&lt;</div>
-      </div>
       <div className={hmvStyle.contentWrapper}>{getContentElement(content)}</div>
-      <div className={`${hmvStyle.navigationArea} ${hmvStyle.nextContainer}`} onClick={nextHandler}>
-        <div>&gt;</div>
+      <div className={hmvStyle.navigation}>
+        <button type="button" disabled={!previousHandler} onClick={previousHandler}>
+          ← Previous
+        </button>
+        <button type="button" disabled={!nextHandler} onClick={nextHandler}>
+          Next →
+        </button>
       </div>
-    </div>
+    </>
   );
 };
 

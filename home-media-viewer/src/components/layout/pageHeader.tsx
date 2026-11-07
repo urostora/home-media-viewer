@@ -1,16 +1,20 @@
 import type { JSX } from 'react';
-import MainMenu from '@/components/layout/mainMenu'
-import TitleArea from '@/components/layout/titleArea';
-import hmvStyle from '@/styles/hmv.module.scss';
+import MainMenu from './mainMenu';
+import TitleArea from './titleArea';
 import UserHeader from './userHeader';
+import styles from '@/styles/shell.module.scss';
 
-const PageHeader = (): JSX.Element => {
-    return (
-        <div className={hmvStyle.pageHeader}>
-            <MainMenu />
-            <TitleArea />
-            <UserHeader />
-        </div>);
+export default function PageHeader(): JSX.Element {
+  return (
+    <header className={styles.header}>
+      <a className={styles.skipLink} href="#main-content">
+        Skip to content
+      </a>
+      <div className={styles.headerInner}>
+        <TitleArea />
+        <MainMenu />
+        <UserHeader />
+      </div>
+    </header>
+  );
 }
-
-export default PageHeader;

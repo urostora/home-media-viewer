@@ -1,4 +1,4 @@
-import { type JSX, useState, useEffect } from 'react'
+import { type JSX, useState, useEffect } from 'react';
 
 import ContentFilter, { type ContentFilterType } from '@/components/content/filter/contentFilter';
 import ContentList from '@/components//content/contentList';
@@ -14,175 +14,182 @@ import style from '@/styles/hmv.module.scss';
 const TAKE_VALUE = 20;
 
 export default function FileList(): JSX.Element {
-    const [ currentFilter, setCurrentFilter ] = useState<ContentFilterType>({ dateFrom: undefined, dateTo: undefined, contentType: 'all', location: undefined });
-    const [ data, setData ] = useState<FileResultType[] | null>(null);
-    const [ isLoading, setLoading ] = useState<boolean>(false);
-    const [ isLastData, setIsLastData ] = useState<boolean>(false);
-    const [ isScrolledToTheEnd, setIsScrolledToTheEnd ] = useState<boolean>(false);
-    const [ errorMessage, setErrorMessage ] = useState<string | null>(null);
-    const [ contentSelected, setContentSelected ] = useState<FileResultType | null>(null);
+  const [currentFilter, setCurrentFilter] = useState<ContentFilterType>({
+    dateFrom: undefined,
+    dateTo: undefined,
+    contentType: 'all',
+    location: undefined,
+  });
+  const [data, setData] = useState<FileResultType[] | null>(null);
+  const [isLoading, setLoading] = useState<boolean>(false);
+  const [isLastData, setIsLastData] = useState<boolean>(false);
+  const [isScrolledToTheEnd, setIsScrolledToTheEnd] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [contentSelected, setContentSelected] = useState<FileResultType | null>(null);
 
-    const getFileFilter = (): FileSearchType => {
-        return {
-            status: Status.Active,
-            metadataStatus: 'Processed',
-            take: TAKE_VALUE,
-            isDirectory: false,
-        };
-    }
-
-    const fetchData = async (filter: FileSearchType): Promise<void> => {
-        setLoading(true);
-
-        try {
-            const result = await apiLoadFiles(filter);
-
-            // look for existing data
-            if (Array.isArray(result) && result.length > 0) {
-                const firstElementId = result[0].id;
-
-                // update data when content not exists already
-                setData(oldData => {
-                    const isExistingData = Array.isArray(oldData)
-                        ? oldData.filter(d => d.id === firstElementId).length > 0
-                        : false;
-
-                    return isExistingData
-                        ? oldData
-                        : Array.isArray(oldData) ? [...oldData, ...result] : result;
-                });
-
-                if (result.length < TAKE_VALUE) {
-                    setIsLastData(true);
-                }
-            } else {
-                setIsLastData(true);
-            }
-        } catch(e) {
-            setData(oldData => Array.isArray(oldData) ? [ ...oldData ] : []);
-            setErrorMessage(e !== null ? `${e}` : 'Could not load file list');
-        } finally {
-            setLoading(false);
-        }
+  const getFileFilter = (): FileSearchType => {
+    return {
+      status: Status.Active,
+      metadataStatus: 'Processed',
+      take: TAKE_VALUE,
+      isDirectory: false,
     };
+  };
 
-    const loadNextPage = (): void => {
-        if (isLoading || isLastData) {
-            return;
-        }
+  const fetchData = async (filter: FileSearchType): Promise<void> => {
+    setLoading(true);
 
-        const filter: FileSearchType = {
-            ...getFileFilter(),
-            contentDate: { from: currentFilter.dateFrom, to: currentFilter.dateTo },
-            contentType: currentFilter.contentType,
-            location: currentFilter.location,
-            skip: data?.length ?? 0,
-        };
+    try {
+      const result = await apiLoadFiles(filter);
 
-        void fetchData(filter);
-    };
+      // look for existing data
+      if (Array.isArray(result) && result.length > 0) {
+        const firstElementId = result[0].id;
 
-    if (isScrolledToTheEnd) {
-        loadNextPage();
-        setIsScrolledToTheEnd(false);
-    }
+        // update data when content not exists already
+        setData((oldData) => {
+          const isExistingData = Array.isArray(oldData)
+            ? oldData.filter((d) => d.id === firstElementId).length > 0
+            : false;
 
-    useEffect(() => {
-        const onScrollEventHandler =
-            (): void => {
-                const body = document.body;
-                const html = document.documentElement;
-
-                const scrolledToEnd = body.clientHeight - (html.scrollTop + html.clientHeight) <= 100;
-
-                if (scrolledToEnd) {
-                    setIsScrolledToTheEnd(true);
-                }
-            }
-        ;
-
-        void fetchData({
-            ...getFileFilter(),
-            contentDate: { from: currentFilter.dateFrom, to: currentFilter.dateTo },
-            contentType: currentFilter.contentType,
-            location: currentFilter.location,
+          return isExistingData ? oldData : Array.isArray(oldData) ? [...oldData, ...result] : result;
         });
 
-
-        if (typeof document === 'object') {
-            document?.addEventListener('scroll', onScrollEventHandler);
+        if (result.length < TAKE_VALUE) {
+          setIsLastData(true);
         }
+      } else {
+        setIsLastData(true);
+      }
+    } catch (e) {
+      setData((oldData) => (Array.isArray(oldData) ? [...oldData] : []));
+      setErrorMessage(e !== null ? `${e}` : 'Could not load file list');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        return () => {
-            if (typeof document === 'object') {
-                document?.removeEventListener('scroll', onScrollEventHandler);
-            }
-        }
-    }, [
-        currentFilter.contentType,
-        currentFilter.dateFrom,
-        currentFilter.dateTo,
-        currentFilter.location,
-    ]);
+  const loadNextPage = (): void => {
+    if (isLoading || isLastData) {
+      return;
+    }
 
-    const onContentFilterChanged = (contentFilter: ContentFilterType): void => {
-
-        setCurrentFilter(contentFilter);
-        setData(null);
-        setIsLastData(false);
-
-        const filter: FileSearchType = {
-            ...getFileFilter(),
-            contentDate: { from: contentFilter.dateFrom, to: contentFilter.dateTo },
-            contentType: contentFilter.contentType,
-            location: contentFilter.location,
-            skip: 0,
-        };
-
-        void fetchData(filter);
+    const filter: FileSearchType = {
+      ...getFileFilter(),
+      contentDate: { from: currentFilter.dateFrom, to: currentFilter.dateTo },
+      contentType: currentFilter.contentType,
+      location: currentFilter.location,
+      skip: data?.length ?? 0,
     };
 
-    const onThumbnailUpdated = (file: FileResultType): void => {
-        setData(current => current?.map(item => item.id === file.id ? file : item) ?? null);
+    void fetchData(filter);
+  };
+
+  if (isScrolledToTheEnd) {
+    loadNextPage();
+    setIsScrolledToTheEnd(false);
+  }
+
+  useEffect(() => {
+    const onScrollEventHandler = (): void => {
+      const body = document.body;
+      const html = document.documentElement;
+
+      const scrolledToEnd = body.clientHeight - (html.scrollTop + html.clientHeight) <= 100;
+
+      if (scrolledToEnd) {
+        setIsScrolledToTheEnd(true);
+      }
     };
 
-    const onCardSelected = (content: FileResultType): void => {
-        setContentSelected(content);
+    void fetchData({
+      ...getFileFilter(),
+      contentDate: { from: currentFilter.dateFrom, to: currentFilter.dateTo },
+      contentType: currentFilter.contentType,
+      location: currentFilter.location,
+    });
+
+    if (typeof document === 'object') {
+      document?.addEventListener('scroll', onScrollEventHandler);
     }
 
-    const onContentDisplayClosed = (): void => {
-        setContentSelected(null);
+    return () => {
+      if (typeof document === 'object') {
+        document?.removeEventListener('scroll', onScrollEventHandler);
+      }
+    };
+  }, [currentFilter.contentType, currentFilter.dateFrom, currentFilter.dateTo, currentFilter.location]);
+
+  const onContentFilterChanged = (contentFilter: ContentFilterType): void => {
+    setCurrentFilter(contentFilter);
+    setData(null);
+    setIsLastData(false);
+
+    const filter: FileSearchType = {
+      ...getFileFilter(),
+      contentDate: { from: contentFilter.dateFrom, to: contentFilter.dateTo },
+      contentType: contentFilter.contentType,
+      location: contentFilter.location,
+      skip: 0,
+    };
+
+    void fetchData(filter);
+  };
+
+  const onThumbnailUpdated = (file: FileResultType): void => {
+    setData((current) => current?.map((item) => (item.id === file.id ? file : item)) ?? null);
+  };
+
+  const onCardSelected = (content: FileResultType): void => {
+    setContentSelected(content);
+  };
+
+  const onContentDisplayClosed = (): void => {
+    setContentSelected(null);
+  };
+
+  const getContentDisplay = (content: FileResultType | null = null): JSX.Element => {
+    if (content == null) {
+      return <></>;
     }
 
-    const getContentDisplay = (content: FileResultType | null = null): JSX.Element => {
-        if (content == null) {
-            return <></>;
-        }
+    return (
+      <ContentDisplay content={content} onThumbnailUpdated={onThumbnailUpdated} closeHandler={onContentDisplayClosed} />
+    );
+  };
 
-        return <ContentDisplay content={content} onThumbnailUpdated={onThumbnailUpdated} closeHandler={onContentDisplayClosed} />;
-    }
+  let contentList = null;
 
-    let contentList = null;
+  if (!isLoading && data === null) contentList = <p>No files available</p>;
+  else if (data !== null) contentList = <ContentList data={data} fileSelected={onCardSelected} />;
+  else contentList = null;
 
-    if (!isLoading && data === null) contentList = <p>No files available</p>
-    else if (data !== null) contentList = <ContentList data={data} fileSelected={onCardSelected} />
-    else contentList = null;
+  let loadingContent = null;
+  if (isLoading) {
+    loadingContent = <>Loading data...</>;
+  } else if (!isLastData) {
+    loadingContent = (
+      <div className={style.fullWidthContainer}>
+        <button className={style.buttonElement} onClick={loadNextPage}>
+          Load more content
+        </button>
+      </div>
+    );
+  }
 
-    let loadingContent = null;
-    if (isLoading) {
-        loadingContent = <>Loading data...</>;
-    } else if (!isLastData) {
-        loadingContent = <div className={style.fullWidthContainer}><button className={style.buttonElement} onClick={loadNextPage}>Load more content</button></div>;
-    }
-
-    return (<div className={style.fileListContainer}>
-        <ContentFilter key={1} currentFilter={currentFilter} onFilterChanged={onContentFilterChanged} />
-        {contentList}
-        { loadingContent }
-        {getContentDisplay(contentSelected)}
-        {typeof errorMessage === 'string'
-            ? <p className='errorMessage'>{errorMessage}</p>
-            : null
-        }
-    </div>);
+  return (
+    <div>
+      <h1 className={style.pageTitle}>Explore your library</h1>
+      <p className={style.pageDescription}>Find a moment by date, media type, or place.</p>
+      <ContentFilter key={1} currentFilter={currentFilter} onFilterChanged={onContentFilterChanged} />
+      {contentList}
+      {loadingContent}
+      {getContentDisplay(contentSelected)}
+      {typeof errorMessage === 'string' ? (
+        <p role="alert" className="errorMessage">
+          {errorMessage}
+        </p>
+      ) : null}
+    </div>
+  );
 }

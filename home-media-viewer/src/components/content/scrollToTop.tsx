@@ -1,29 +1,18 @@
 import style from '@/styles/hmv.module.scss';
 
-const ScrollToTop: React.FC = () => {
-    const onScrollToTopClicked = (e: React.MouseEvent<HTMLDivElement>): void => {
-        const target = e.currentTarget;
-
-        if (target === undefined || target.tagName.toLowerCase() !== 'div') {
-            return;
-        }
-
-        let scrollableElement = target.parentElement;
-        while(scrollableElement !== undefined) {
-            if (scrollableElement === undefined || scrollableElement === null) {
-                break;
-            }
-
-            if (scrollableElement.scrollHeight > scrollableElement.clientHeight) {
-                scrollableElement.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
-                break;
-            }
-
-            scrollableElement = scrollableElement.parentElement;
-        }
+const ScrollToTop: React.FC = () => (
+  <button
+    type="button"
+    className={style.scrollToTop}
+    aria-label="Scroll to top"
+    onClick={() =>
+      window.scrollTo({
+        top: 0,
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+      })
     }
-
-    return <div className={style.scrollToTop} onClick={onScrollToTopClicked}>&#8682;</div>;
-}
-
+  >
+    ↑
+  </button>
+);
 export default ScrollToTop;
