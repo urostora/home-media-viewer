@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import sys
 import tempfile
+import tarfile
 import unittest
 from unittest.mock import patch
 
@@ -66,6 +67,35 @@ class MonitorTests(unittest.TestCase):
             for name in ['database.sql', 'storage.tar.gz', 'media.tar.gz']:
                 (backup / name).touch()
             self.assertIsNone(monitor.inspect_backups(directory, 'fixture', now))
+
+    def test_single_file_backup_age_and_missing_payload(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            path = directory / 'hmv-fixture-all-20261105T120000000000Z.tar.gz'
+            now = dt.datetime.now(dt.timezone.utc)
+            for complete in (True, False):
+                with tarfile.open(path, 'w:gz') as archive:
+                    payloads = {'manifest.json': json.dumps(dict(format=1, project='fixture', scope='all', created=now.isoformat())).encode(),
+                                'database.sql': b'SQL', 'storage.tar.gz': b'storage', 'media.tar.gz': b'media'}
+                    if not complete:
+                        del payloads['storage.tar.gz']
+                    for name, data in payloads.items():
+                        member = tarfile.TarInfo(name)
+                        member.size = len(data)
+                        archive.addfile(member, io.BytesIO(data))
+                self.assertEqual(monitor.inspect_backups(directory, 'fixture', now), 0 if complete else None)
+
+    def test_bash_archive_age(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            now = dt.datetime.now(dt.timezone.utc).replace(microsecond=0)
+            path = directory / ('hmv-fixture-all-' + now.strftime('%Y%m%dT%H%M%S') + '000000000Z.tar.gz')
+            for complete in (True, False):
+                with tarfile.open(path, 'w:gz') as archive:
+                    names = ['database.sql', 'storage.tar', 'storage-path', 'SHA256SUMS']
+                    for name in names if complete else names[:-1]:
+                        archive.addfile(tarfile.TarInfo(name))
+                self.assertEqual(monitor.inspect_backups(directory, 'fixture', now), 0 if complete else None)
 
 
 if __name__ == '__main__':

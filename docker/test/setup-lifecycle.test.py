@@ -98,13 +98,15 @@ def main():
             (source[3] / 'media.txt').write_text('source-media-preserved\n')
             run(*source[1], 'run', '--rm', '--no-deps', 'app', 'sh', '-ec',
                 'mkdir -p /mnt/storage/thumbnail; printf generated-preserved > /mnt/storage/thumbnail/probe')
-            backup = ['python3', ROOT / 'scripts/backup/backup.py', '--env-file', settings,
+            backup = ['bash', ROOT / 'scripts/backup/backup.sh', '--env-file', settings,
                       '--destination', scratch / 'backups']
             run(*backup, '--compose-file', source[2], '--project', source[0])
             sets = list((scratch / 'backups').glob('hmv-*-all-*'))
-            assert len(sets) == 1
-            run(*backup, '--compose-file', restored[2], '--project', restored[0], '--restore', sets[0])
-            assert (restored[3] / 'media.txt').read_text() == 'source-media-preserved\n'
+            assert len(sets) == 1 and sets[0].is_file() and sets[0].name.endswith('.tar.gz')
+            run('bash', ROOT / 'scripts/backup/restore.sh', sets[0], '--env-file', settings,
+                '--destination', scratch / 'backups', '--compose-file', restored[2], '--project', restored[0])
+            assert not (restored[3] / 'media.txt').exists()  # Source media is backed up separately.
+            assert (source[3] / 'media.txt').read_text() == 'source-media-preserved\n'
             assert capture(*restored[1], 'exec', '-T', 'db', *sql,
                 '-N', '-e', 'SELECT value FROM lifecycle_probe WHERE id=9') == 'preserved'
             assert capture(*restored[1], 'run', '--rm', '--no-deps', 'app',
@@ -130,7 +132,7 @@ def main():
                         assert label == project, 'Refusing shared-volume cleanup'
                 run(*compose, 'down', '--volumes', '--remove-orphans')
             # The restore helper preserves root ownership; remove its task-only output through Docker.
-            run('docker', 'run', '--rm', '--network', 'none', '-v', str(scratch) + ':/task', NODE,
+            run('docker', 'run', '--rm', '--network', 'none', '-v', str(scratch) + ':/task', app['image'],
                 'sh', '-ec', 'rm -rf /task/source /task/restore /task/backups')
 
 

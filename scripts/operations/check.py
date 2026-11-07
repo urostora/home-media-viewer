@@ -4,17 +4,42 @@ import argparse
 import datetime as dt
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
 import sys
+import tarfile
 
 
 def inspect_backups(directory, project, now):
     dates = []
-    for manifest in directory.glob(f'hmv-{project}-all-*/manifest.json'):
-        data = json.loads(manifest.read_text())
+    for path in directory.glob(f'hmv-{project}-all-*'):
+        if path.is_symlink():
+            continue
+        required = {'database.sql', 'media.tar.gz', 'storage.tar.gz'}
+        if path.is_dir():
+            data = json.loads((path / 'manifest.json').read_text())
+            complete = all((path / name).is_file() for name in required)
+        elif path.name.endswith('.tar.gz'):
+            with tarfile.open(path, 'r:gz') as archive:
+                members = archive.getmembers()
+                names = [member.name for member in members if member.isfile()]
+                complete = len(names) == len(set(names)) and required | {'manifest.json'} == set(names)
+                if set(names) == {'database.sql', 'storage.tar', 'storage-path', 'SHA256SUMS'}:
+                    stamp = re.fullmatch(re.escape(f'hmv-{project}-all-') + r'(\d{8}T\d{6})\d{9}Z\.tar\.gz', path.name)
+                    if stamp and len(members) == 4:
+                        date = dt.datetime.strptime(stamp[1], '%Y%m%dT%H%M%S').replace(tzinfo=dt.timezone.utc)
+                        age = (now - date).total_seconds()
+                        if age >= 0:
+                            dates.append(age)
+                    continue
+                if 'manifest.json' not in names:
+                    continue
+                data = json.load(archive.extractfile('manifest.json'))
+        else:
+            continue
         if data.get('format') == 1 and data.get('project') == project and data.get('scope') == 'all':
-            if all((manifest.parent / name).is_file() for name in ['database.sql', 'media.tar.gz', 'storage.tar.gz']):
+            if complete:
                 date = dt.datetime.fromisoformat(data['created'])
                 age = (now - date).total_seconds()
                 if age >= 0:

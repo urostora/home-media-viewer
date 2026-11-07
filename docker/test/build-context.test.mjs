@@ -28,7 +28,9 @@ for (const path of [
   "home-media-viewer/validateProductionConfig.mjs",
   "home-media-viewer/startServer.cjs",
   "home-media-viewer/src/pages/api/health/ready.ts",
-  "scripts/backup/backup.py",
+  "scripts/backup/backup.sh",
+  "scripts/backup/common.sh",
+  "scripts/backup/restore.sh",
 ]) {
   assert(existsSync(path), `Required build input excluded: ${path}`);
 }
