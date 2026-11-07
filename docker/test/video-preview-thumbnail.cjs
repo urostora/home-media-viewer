@@ -38,7 +38,7 @@ async function main() {
     const metadata = async () => {
       const row = await prisma.file.findUniqueOrThrow({ where: { id: file.id } });
       for (const key of ['thumbnailStatus', 'thumbnailProcessedAt', 'thumbnailProcessingError', 'thumbnailSourceVersion']) delete row[key];
-      return JSON.stringify({ row, metas: await prisma.fileMeta.findMany({ where: { fileId: file.id } }) });
+      return JSON.stringify({ row, metas: await prisma.fileMeta.findMany({ where: { fileId: file.id, metaKey: { not: 'video_thumbnail_time' } } }) });
     };
     const beforeMetadata = await metadata();
     const previews = () => Promise.all(sizes.map(size => fs.readFile(getFileThumbnailPath(file, size))));
@@ -59,6 +59,11 @@ async function main() {
     }
     assert.equal((await request(1.5)).body.data.stages.thumbnails.succeeded, 1);
     const green = await previews();
+    assert.equal((await request(undefined)).status, 200);
+    assert.deepEqual(await previews(), green);
+    const saved = await prisma.fileMeta.findUniqueOrThrow({ where: { fileId_metaKey: { fileId: file.id, metaKey: 'video_thumbnail_time' } } });
+    assert.equal(saved.floatValue, 1.5);
+    assert.equal(saved.origin, 'Manual');
     for (const [index, size] of sizes.entries()) {
       const first = await Jimp.read(red[index]);
       const second = await Jimp.read(green[index]);
@@ -79,7 +84,7 @@ async function main() {
     assert(refreshed.thumbnailProcessedAt);
     assert.equal(await metadata(), beforeMetadata);
     assert.deepEqual(await fs.readFile('/fixtures/changing.mp4'), source);
-    console.log(JSON.stringify({ passed: true, checks: ['administrator zero/fractional frames at all sizes and default parity', 'anonymous/member forbidden without mutations', 'invalid/end time preserves thumbnails', 'missing target rejected', 'refetch returns current image and generation time', 'source and metadata unchanged'] }));
+    console.log(JSON.stringify({ passed: true, checks: ['administrator zero/fractional frames at all sizes and default parity', 'anonymous/member forbidden without mutations', 'invalid/end time preserves thumbnails', 'missing target rejected', 'refetch returns current image and generation time', 'source and unrelated metadata unchanged; saved selection reused'] }));
   } finally {
     if (file) {
       await prisma.fileMeta.deleteMany({ where: { fileId: file.id } });

@@ -14,16 +14,18 @@ export type ThumbnailGenerator = (
 const images = new Set(['bmp', 'jpg', 'jpeg', 'gif', 'png', 'tiff']);
 const videos = new Set(['mp4', 'mkv', 'avi', 'mpg', 'mpeg', 'mov']);
 
+export const isVideoFile = (file: File): boolean => !file.isDirectory && videos.has(file.extension.toLowerCase());
+
 export const getMetadataExtractor = (file: File): MetadataExtractor | undefined => {
   if (file.isDirectory) return undefined;
   if (images.has(file.extension.toLowerCase())) return extractImageMetadata;
-  if (videos.has(file.extension.toLowerCase())) return extractVideoMetadata;
+  if (isVideoFile(file)) return extractVideoMetadata;
   return undefined;
 };
 
 export const getThumbnailGenerator = (file: File): ThumbnailGenerator | undefined => {
   if (file.isDirectory) return undefined;
   if (images.has(file.extension.toLowerCase())) return generateImageThumbnails;
-  if (videos.has(file.extension.toLowerCase())) return generateVideoThumbnails;
+  if (isVideoFile(file)) return generateVideoThumbnails;
   return undefined;
 };

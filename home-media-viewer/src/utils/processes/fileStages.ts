@@ -1,12 +1,15 @@
 import type { File, Prisma } from '@prisma/client';
 import { VideoThumbnailTimeError, type MediaStage } from '@/types/processingTypes';
 import prisma from '../prisma/prismaImporter';
-import { getMetadataExtractor, getThumbnailGenerator } from '../fileProcessor/processorFactory';
+import { getMetadataExtractor, getThumbnailGenerator, isVideoFile } from '../fileProcessor/processorFactory';
 import { readSource, SourceChangedError } from './sourceIdentity';
 import { publishThumbnails } from './thumbnailPublication';
 import { withProcessingLock } from './processingLock';
 import { isShuttingDownHandler } from '../isShuttingDown';
 import { publishMetadata } from './publishMetadata';
+import { MetaType } from '../metaUtils';
+import { getReadableThumbnailPath } from '../thumbnailHelper';
+import { thumbnailSizes } from '../frontend/thumbnailUtils';
 
 export type StageResult = 'succeeded' | 'failed' | 'notSupported' | 'deferred';
 
@@ -47,16 +50,59 @@ export const processFileStage = async (
         });
         return 'notSupported';
       }
+      const video = isVideoFile(file);
+      const savedTime =
+        video && videoThumbnailTimeSec === undefined
+          ? await prisma.fileMeta.findUnique({
+              where: { fileId_metaKey: { fileId: file.id, metaKey: MetaType.VideoThumbnailTime } },
+            })
+          : null;
       await publishThumbnails(
         file,
         source.version,
-        (target, outputs) => generate(target, outputs, videoThumbnailTimeSec),
+        async (target, outputs) => {
+          if (savedTime === null) return await generate(target, outputs, videoThumbnailTimeSec);
+          try {
+            if (savedTime.type !== 'Float' || savedTime.floatValue === null)
+              throw new VideoThumbnailTimeError('Invalid saved video thumbnail time');
+            await generate(target, outputs, savedTime.floatValue);
+          } catch (error) {
+            if (!(error instanceof VideoThumbnailTimeError)) throw error;
+            const existing = await Promise.all(
+              thumbnailSizes.map(async (size) => await getReadableThumbnailPath(file.id, size)),
+            );
+            if (existing.some((thumbnail) => thumbnail !== null)) throw error;
+            // An invalid selection may bootstrap a missing preview, but must never replace an existing one.
+            await generate(target, outputs);
+          }
+        },
         async () => {
-          await update({
+          const status: Prisma.FileUpdateManyMutationInput = {
             thumbnailStatus: 'Processed',
             thumbnailProcessedAt: new Date(),
             thumbnailProcessingError: null,
             thumbnailSourceVersion: source.version,
+          };
+          if (!video || videoThumbnailTimeSec === undefined) return await update(status);
+          // Publication restores the previous previews if this transaction fails.
+          await prisma.$transaction(async (transaction) => {
+            const result = await transaction.file.updateMany({ where: { id: file.id }, data: status });
+            if (result.count !== 1) throw new Error('Media target disappeared');
+            const value = {
+              type: 'Float' as const,
+              origin: 'Manual' as const,
+              floatValue: videoThumbnailTimeSec,
+              intValue: null,
+              stringValue: null,
+              dateValue: null,
+              latitude: null,
+              longitude: null,
+            };
+            await transaction.fileMeta.upsert({
+              where: { fileId_metaKey: { fileId: file.id, metaKey: MetaType.VideoThumbnailTime } },
+              create: { fileId: file.id, metaKey: MetaType.VideoThumbnailTime, ...value },
+              update: value,
+            });
           });
         },
       );

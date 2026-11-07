@@ -18,6 +18,7 @@ export const MetaType = {
   Duration: 'duration',
   Bitrate: 'bitrate',
   Fps: 'fps',
+  VideoThumbnailTime: 'video_thumbnail_time',
 };
 
 interface DetailedMetaData {
@@ -28,6 +29,12 @@ interface DetailedMetaData {
 }
 
 export const MetaDetails: Record<string, DetailedMetaData> = {
+  video_thumbnail_time: {
+    key: 'video_thumbnail_time',
+    type: 'Float',
+    label: 'Video thumbnail time',
+    unit: 's',
+  },
   dateTime: {
     key: 'dateTime',
     type: 'DateTime',

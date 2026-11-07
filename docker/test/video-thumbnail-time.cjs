@@ -27,14 +27,22 @@ async function row(id) { return prisma.file.findUniqueOrThrow({where:{id}}); }
 async function metadata(id) {
   const value = await row(id);
   for (const key of ['thumbnailStatus','thumbnailProcessedAt','thumbnailProcessingError','thumbnailSourceVersion']) delete value[key];
-  return JSON.stringify({file:value,metas:await prisma.fileMeta.findMany({where:{fileId:id},orderBy:{id:'asc'}})});
+  return JSON.stringify({file:value,metas:await prisma.fileMeta.findMany({where:{fileId:id,metaKey:{not:'video_thumbnail_time'}},orderBy:{id:'asc'}})});
+}
+async function selection(file, time) {
+  const values=await prisma.fileMeta.findMany({where:{fileId:file.id,metaKey:'video_thumbnail_time'}});
+  assert.equal(values.length,1);
+  assert.equal(values[0].type,'Float');
+  assert.equal(values[0].origin,'Manual');
+  assert.equal(values[0].floatValue,time);
+  return values[0];
 }
 async function previews(file) { return Promise.all(sizes.map(size=>fs.readFile(getFileThumbnailPath(file,size)))); }
 async function main() {
   assert.equal(new URL(process.env.DATABASE_URL).pathname,'/benchmark');
   assert.equal(process.env.APP_ALBUM_ROOT_PATH,'/fixtures');
   const directory = await fs.mkdtemp('/tmp/hmv-video-time-');
-  let target;
+  let target, album;
   const outputs = prefix => new Map(sizes.map(size=>[size,path.join(directory,`${prefix}-${size}.jpg`)]));
   try {
     await check('strict time options and CLI: zero/fraction allowed; invalid values/stages rejected',async()=>{
@@ -80,13 +88,14 @@ async function main() {
       try {
         await refresh(); baseline = await previews(target);
         assert.equal(ffmpegCount,1); assert.equal(probeCount,0);
-        await refresh(0); assert.deepEqual(await previews(target),baseline);
+        await refresh(0); assert.deepEqual(await previews(target),baseline); await selection(target,0);
         for (const [time,channel] of [[1e-7,0],[1.5,1],[2.5,2],[2.9,2]]) {
           const before=[ffmpegCount,probeCount];
           const result=await refresh(time);
           assert.equal(ffmpegCount-before[0],1); assert.equal(probeCount-before[1],1);
           const record=await readProcessingRun(result.runId);
           assert.equal(record.videoThumbnailTimeSec,time);
+          await selection(target,time);
           for (const size of sizes) {
             const image=await Jimp.read(getFileThumbnailPath(target,size));
             assert.equal(image.bitmap.width,size);
@@ -95,8 +104,11 @@ async function main() {
             assert(channels.every((value,index)=>index===channel || value<15));
           }
         }
-        await refresh(); assert.deepEqual(await previews(target),baseline);
+        const custom=await previews(target);
+        await refresh(); assert.deepEqual(await previews(target),custom);
+        await selection(target,2.9);
         assert.equal((await readProcessingRun()).videoThumbnailTimeSec,undefined);
+        await refresh(0); assert.deepEqual(await previews(target),baseline); await selection(target,0);
       } finally { commands.mediaCommand=original; }
       assert.equal(await metadata(target.id),metadataBefore);
     });
@@ -123,12 +135,14 @@ async function main() {
         assert.deepEqual(await previews(target),baseline);
       }
       const success=(await row(target.id)).thumbnailProcessedAt;
+      const saved=await selection(target,0);
       for (const time of [3,3.1,1e100]) {
         await assert.rejects(refresh(time),ProcessingFailedError);
         const current=await row(target.id);
         assert.equal(current.thumbnailStatus,'Error');
         assert.match(current.thumbnailProcessingError,/less than the video duration/);
         assert.deepEqual(current.thumbnailProcessedAt,success);
+        assert.deepEqual(await selection(target,0),saved);
         assert.deepEqual(await previews(target),baseline);
         assert.equal(await metadata(target.id),metadataBefore);
       }
@@ -160,13 +174,107 @@ async function main() {
         await assert.rejects(refresh(2.5),ProcessingFailedError);
         assert.deepEqual(await previews(target),before);
         assert.equal(await metadata(target.id),metadataBefore);
+        await selection(target,1.5);
       } finally { commands.mediaCommand=original; }
       await refresh();
       const abandoned=(await fs.readdir(path.dirname(getFileThumbnailPath(target,200)))).filter(name=>name.startsWith('.generation-'));
       assert.deepEqual(abandoned,[]);
     });
+    await check('saved selections survive full metadata refresh and album processing; zero explicitly overrides',async()=>{
+      await refresh(2.5);
+      const custom=await previews(target), saved=await selection(target,2.5);
+      await runner.run({fileId:target.id,stages:['metadata','thumbnails'],mode:'refresh'});
+      assert.deepEqual(await previews(target),custom);
+      assert.deepEqual(await selection(target,2.5),saved);
+      album=await prisma.album.create({data:{name:'saved-time-test',sourceType:'File',connectionString:'',basePath:'',files:{connect:{id:target.id}}}});
+      await runner.run({albumId:album.id,stages:['thumbnails'],mode:'refresh'});
+      assert.deepEqual(await previews(target),custom);
+      await prisma.file.update({where:{id:target.id},data:{thumbnailStatus:'New'}});
+      await runner.run({albumId:album.id,stages:['thumbnails'],mode:'pending'});
+      assert.deepEqual(await previews(target),custom);
+      await refresh(0); await selection(target,0);
+      assert.deepEqual(await previews(target),baseline);
+    });
+    await check('invalid saved selection preserves full and partial previews; missing previews use default without overwriting selection',async()=>{
+      await refresh(2.5);
+      const custom=await previews(target);
+      const set=async value=>prisma.fileMeta.update({where:{fileId_metaKey:{fileId:target.id,metaKey:'video_thumbnail_time'}},data:value});
+      // Simulate a shorter replacement source without changing the source mount.
+      const original=commands.mediaCommand;
+      try {
+        commands.mediaCommand=async(executable,args)=>path.basename(executable)==='ffprobe'
+          ? JSON.stringify({streams:[{duration:'1'}]}) : original(executable,args);
+        await assert.rejects(refresh(),ProcessingFailedError);
+        assert.deepEqual(await previews(target),custom); await selection(target,2.5);
+      } finally { commands.mediaCommand=original; }
+      await set({floatValue:3});
+      await assert.rejects(refresh(),ProcessingFailedError);
+      assert.deepEqual(await previews(target),custom);
+      await fs.rm(getFileThumbnailPath(target,200));
+      await fs.rm(getFileThumbnailPath(target,600));
+      await assert.rejects(refresh(),ProcessingFailedError);
+      assert.deepEqual(await fs.readFile(getFileThumbnailPath(target,1280)),custom[2]);
+      await fs.rm(getFileThumbnailPath(target,1280));
+      await refresh(); assert.deepEqual(await previews(target),baseline); await selection(target,3);
+      for (const value of [{floatValue:-1},{type:'String',floatValue:null,stringValue:'bad'}]) {
+        await set(value);
+        await assert.rejects(refresh(),ProcessingFailedError);
+        assert.deepEqual(await previews(target),baseline);
+        await Promise.all(sizes.map(size=>fs.rm(getFileThumbnailPath(target,size))));
+        await refresh(); assert.deepEqual(await previews(target),baseline);
+      }
+      await refresh(0);
+      const saved=await selection(target,0);
+      assert.equal(saved.stringValue,null);
+    });
+    await check('source-change and database commit failures restore thumbnails and do not save a new selection',async()=>{
+      const identity=load('utils/processes/sourceIdentity');
+      const originalAssert=identity.assertSourceVersion;
+      const originalTransaction=prisma.$transaction;
+      const before=await previews(target), saved=await selection(target,0);
+      const success=(await row(target.id)).thumbnailProcessedAt;
+      let assertions=0;
+      try {
+        identity.assertSourceVersion=async(...args)=>{
+          await originalAssert(...args);
+          if (++assertions===2) throw new identity.SourceChangedError('forced post-publication source change');
+        };
+        const interrupted=await refresh(1.5);
+        assert.equal(interrupted.outcome,'partial');
+        assert.equal(interrupted.stages.thumbnails.deferred,1);
+        assert.equal((await row(target.id)).thumbnailStatus,'New');
+        assert.deepEqual(await previews(target),before);
+        assert.deepEqual(await selection(target,0),saved);
+        identity.assertSourceVersion=originalAssert;
+        let upserted=false;
+        prisma.$transaction=(callback,...args)=>originalTransaction.call(prisma,async transaction=>{
+          const proxy=new Proxy(transaction,{get(object,key){
+            if(key!=='fileMeta') return object[key];
+            return new Proxy(object.fileMeta,{get(model,method){
+              if(method!=='upsert') return model[method];
+              return async options=>{await model.upsert(options); upserted=true; throw new Error('forced transaction rollback');};
+            }});
+          }});
+          return callback(proxy);
+        },...args);
+        await assert.rejects(refresh(1.5),ProcessingFailedError);
+        assert(upserted);
+        assert.equal((await row(target.id)).thumbnailStatus,'Error');
+        assert.deepEqual((await row(target.id)).thumbnailProcessedAt,success);
+        assert.deepEqual(await previews(target),before);
+        assert.deepEqual(await selection(target,0),saved);
+        await prisma.fileMeta.delete({where:{id:saved.id}});
+        await assert.rejects(refresh(1.5),ProcessingFailedError);
+        assert.deepEqual(await previews(target),before);
+        assert.equal(await prisma.fileMeta.count({where:{fileId:target.id,metaKey:'video_thumbnail_time'}}),0);
+      } finally {
+        identity.assertSourceVersion=originalAssert;
+        prisma.$transaction=originalTransaction;
+      }
+      assert.deepEqual((await fs.readdir(path.dirname(getFileThumbnailPath(target,200)))).filter(name=>name.startsWith('.generation-')),[]);
+    });
     const shared=await prisma.file.findFirstOrThrow({where:{path:'mixed/synthetic-video.mp4'}});
-    const sharedMetadata=await metadata(shared.id);
+    let sharedMetadata=await metadata(shared.id);
     async function request(route, body, cookie='') {
       const response=await fetch(`http://app:3000${route}`,{method:'POST',headers:{'content-type':'application/json',cookie},
         body:JSON.stringify(body),signal:AbortSignal.timeout(120000)});
@@ -183,6 +291,7 @@ async function main() {
       const before=await previews(shared);
       let result=await request('/api/process/run',options,cookie);
       assert.equal(result.status,200); assert.equal(result.body.data.stages.thumbnails.succeeded,1);
+      const saved=await selection(shared,1.25);
       const custom=await previews(shared);
       assert.notDeepEqual(custom,before);
       const expected=outputs('api-expected');
@@ -190,6 +299,11 @@ async function main() {
       assert.deepEqual(custom,await Promise.all([...expected.values()].map(output=>fs.readFile(output))));
       result=await request('/api/process/run',{...options,mode:'pending',videoThumbnailTimeSec:2},cookie);
       assert.equal(result.body.data.stages.thumbnails.attempted,0); assert.deepEqual(await previews(shared),custom);
+      assert.deepEqual(await selection(shared,1.25),saved);
+      result=await request('/api/file/metadata',{id:shared.id},cookie);
+      assert.equal(result.status,200); assert.deepEqual(await previews(shared),custom);
+      assert.deepEqual(await selection(shared,1.25),saved);
+      sharedMetadata=await metadata(shared.id);
       for (const time of [-1,null,'1']) {
         result=await request('/api/process/run',{...options,videoThumbnailTimeSec:time},cookie);
         assert.equal(result.status,400); assert.match(result.body.error,/finite nonnegative/);
@@ -199,19 +313,22 @@ async function main() {
       assert.deepEqual(await previews(shared),custom);
       result=await request('/api/process/run',{...options,videoThumbnailTimeSec:0},cookie);
       assert.equal(result.status,200); assert.deepEqual(await previews(shared),before);
+      await selection(shared,0);
       assert.equal(await metadata(shared.id),sharedMetadata);
     });
     await check('real CLI passes fractional/zero times and reports invalid and out-of-range failures',async()=>{
       const args=['-r','ts-node/register/transpile-only','-r','tsconfig-paths/register','src/backgroundProcesses/updateMetadata.ts',
         '--file',shared.id,'--stages','thumbnails','--mode','refresh','--video-thumbnail-time'];
       const cli=time=>cp.spawnSync(process.execPath,[...args,time],{cwd:'/home/node/app',encoding:'utf8',timeout:120000});
-      let result=cli('1.25'); assert.equal(result.status,0,result.stderr);
+      let result=cli('1.25'); assert.equal(result.status,0,result.stderr); await selection(shared,1.25);
       const expected=outputs('cli-expected'); await video.generateVideoThumbnails(shared,expected,1.25);
       const custom=await previews(shared);
       assert.deepEqual(custom,await Promise.all([...expected.values()].map(output=>fs.readFile(output))));
       result=cli('Infinity'); assert.equal(result.status,1); assert.match(result.stderr,/finite nonnegative/);
       result=cli('3'); assert.equal(result.status,1); assert.deepEqual(await previews(shared),custom);
-      assert.equal(cli('0').status,0);
+      const reused=cp.spawnSync(process.execPath,args.slice(0,-1),{cwd:'/home/node/app',encoding:'utf8',timeout:120000});
+      assert.equal(reused.status,0,reused.stderr); assert.deepEqual(await previews(shared),custom);
+      assert.equal(cli('0').status,0); await selection(shared,0);
       assert.equal(await metadata(shared.id),sharedMetadata);
     });
     await check('video time leaves image generation and image metadata unchanged',async()=>{
@@ -224,6 +341,7 @@ async function main() {
     });
     originalLog(JSON.stringify({passed:true,checks}));
   } finally {
+    if (album) await prisma.album.delete({where:{id:album.id}});
     if (target) {
       await prisma.fileMeta.deleteMany({where:{fileId:target.id}});
       await prisma.file.delete({where:{id:target.id}});
