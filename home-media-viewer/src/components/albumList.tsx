@@ -12,9 +12,26 @@ export interface AlbumListPropsType {
   onAlbumSelected?: (album: AlbumResultType) => void;
 }
 
+type AlbumOrder = 'nameAsc' | 'nameDesc' | 'dateAsc' | 'dateDesc';
+const ALBUM_ORDER_KEY = 'hmv:album-order';
+const isAlbumOrder = (value: unknown): value is AlbumOrder =>
+  value === 'nameAsc' || value === 'nameDesc' || value === 'dateAsc' || value === 'dateDesc';
+
+const initialOrder = (): AlbumOrder => {
+  if (typeof window !== 'undefined') {
+    try {
+      const saved = window.localStorage.getItem(ALBUM_ORDER_KEY);
+      if (isAlbumOrder(saved)) return saved;
+    } catch {
+      // Storage may be disabled; sorting still works for the current list.
+    }
+  }
+  return 'dateDesc';
+};
+
 export default function AlbumList(props: AlbumListPropsType): JSX.Element {
   const [albumData, setAlbumData] = useState<AlbumExtendedResultType[] | null>(null);
-  const [order, setOrder] = useState<'nameAsc' | 'nameDesc' | 'dateAsc' | 'dateDesc'>('dateDesc');
+  const [order, setOrder] = useState<AlbumOrder>(initialOrder);
   const [error, setError] = useState<string | undefined>(undefined);
   const [scrollResetCompleted, setScrollResetCompleted] = useState<boolean>(false);
 
@@ -62,8 +79,13 @@ export default function AlbumList(props: AlbumListPropsType): JSX.Element {
   const onOrderChanged = (e: React.FormEvent<HTMLSelectElement>): void => {
     const newValue = e.currentTarget.value;
 
-    if (newValue === 'nameAsc' || newValue === 'nameDesc' || newValue === 'dateAsc' || newValue === 'dateDesc') {
+    if (isAlbumOrder(newValue)) {
       setOrder(newValue);
+      try {
+        window.localStorage.setItem(ALBUM_ORDER_KEY, newValue);
+      } catch {
+        // Keep the selected order usable even when it cannot be persisted.
+      }
     }
   };
 
