@@ -109,13 +109,20 @@ export default function AlbumList(props: AlbumListPropsType): JSX.Element {
             <p className={hmvStyle.pageDescription}>Photos, videos, and moments worth keeping.</p>
           </div>
         </div>
-        <div className={`${hmvStyle.rightSide} ${hmvStyle.sortSelector}`}>
-          <select aria-label="Sort albums" className={hmvStyle.roundedElement} value={order} onChange={onOrderChanged}>
-            <option value="nameAsc">Name ascending</option>
-            <option value="nameDesc">Name descending</option>
-            <option value="dateAsc">Date ascending</option>
-            <option value="dateDesc">Date descending</option>
-          </select>
+        <div className={hmvStyle.rightSide}>
+          <div className={hmvStyle.selectWrapper}>
+            <select
+              aria-label="Sort albums"
+              className={hmvStyle.roundedElement}
+              value={order}
+              onChange={onOrderChanged}
+            >
+              <option value="nameAsc">Name ascending</option>
+              <option value="nameDesc">Name descending</option>
+              <option value="dateAsc">Date ascending</option>
+              <option value="dateDesc">Date descending</option>
+            </select>
+          </div>
         </div>
       </div>
       <ContentList data={albumData} contentSelected={onAlbumSelectedHandler} />

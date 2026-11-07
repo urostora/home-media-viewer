@@ -74,14 +74,19 @@
 .roundedElement {
   max-width: 100%;
 }
-.sortSelector {
+.selectWrapper {
   position: relative;
+  display: inline-grid;
+  min-width: 0;
+  max-width: 100%;
+  color: var(--color-text);
 }
-.sortSelector select {
+.selectWrapper select {
+  -webkit-appearance: none;
   appearance: none;
   padding-inline-end: 2.75rem;
 }
-.sortSelector::after {
+.selectWrapper::after {
   content: '';
   position: absolute;
   inset-inline-end: 1rem;
