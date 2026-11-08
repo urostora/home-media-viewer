@@ -56,7 +56,12 @@ beforeEach(() => {
   jest
     .mocked(prisma.$transaction)
     .mockImplementation(async (fn: unknown) => (fn as (tx: typeof prisma) => Promise<never>)(prisma));
-  jest.mocked(prisma.$queryRaw).mockResolvedValue([{ id: user.id }]);
+  jest.mocked(prisma.$queryRaw).mockImplementation((async (query: unknown) => {
+    const sql = (query as TemplateStringsArray).join('?');
+    if (sql.includes('FROM AuthSession')) return [record];
+    if (sql.includes('LOCK IN SHARE MODE')) return [user];
+    return [{ id: user.id }];
+  }) as unknown as typeof prisma.$queryRaw);
   jest.mocked(prisma.user.findUnique).mockResolvedValue(user);
   jest.mocked(prisma.authSession.findUnique).mockResolvedValue(record);
   jest.mocked(prisma.authSession.updateMany).mockResolvedValue({ count: 1 });
@@ -109,7 +114,10 @@ it.each([
   { ...record, idleExpiresAt: now },
   null,
 ])('cannot touch revoked/expired/stale-generation sessions (%#)', async (stored) => {
-  jest.mocked(prisma.authSession.findUnique).mockResolvedValueOnce(record).mockResolvedValueOnce(stored);
+  jest
+    .mocked(prisma.$queryRaw)
+    .mockResolvedValueOnce([user])
+    .mockResolvedValueOnce(stored === null ? [] : [stored]);
   expect(await resolveServerSession(cookie)).toBeNull();
   expect(prisma.authSession.updateMany).not.toHaveBeenCalled();
 });
@@ -130,8 +138,22 @@ it('refreshes idle expiry under the lock, retains absolute limit and reports act
 });
 it('caps idle extension at absolute expiry', async () => {
   const expiresAt = new Date(now.getTime() + 5000);
-  jest.mocked(prisma.authSession.findUnique).mockResolvedValue({ ...record, expiresAt });
+  jest
+    .mocked(prisma.$queryRaw)
+    .mockResolvedValueOnce([user])
+    .mockResolvedValueOnce([{ ...record, expiresAt }]);
   expect((await resolveServerSession(cookie))?.expiresOn).toBe(expiresAt.getTime());
+});
+it.each([0, 1])('normalizes a MySQL raw boolean value %s in the current principal', async (isAdmin) => {
+  jest.mocked(prisma.$queryRaw).mockResolvedValueOnce([{ ...user, isAdmin }]);
+  expect((await resolveServerSession(cookie))?.user.isAdmin).toBe(isAdmin === 1);
+});
+
+it.each(['Disabled', 'Deleted'])('denies %s accounts before locking or refreshing a session', async (status) => {
+  jest.mocked(prisma.$queryRaw).mockResolvedValueOnce([{ ...user, status }]);
+  expect(await resolveServerSession(cookie)).toBeNull();
+  expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+  expect(prisma.authSession.updateMany).not.toHaveBeenCalled();
 });
 it('denies a zero-row conditional activity update', async () => {
   jest.mocked(prisma.authSession.updateMany).mockResolvedValue({ count: 0 });

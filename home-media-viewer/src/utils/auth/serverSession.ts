@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto';
-import type { Prisma, User } from '@prisma/client';
+import type { AuthSession, Prisma, User } from '@prisma/client';
 import prisma from '@/utils/prisma/prismaImporter';
 import type { SessionData } from '@/types/session';
 import type { CurrentUser } from './currentUser';
@@ -20,6 +20,21 @@ export const sessionExpiryData = (
 export const lockSessionUser = async (tx: Prisma.TransactionClient, id: string): Promise<User | null> => {
   const rows = await tx.$queryRaw<Array<{ id: string }>>`SELECT id FROM User WHERE id = ${id} FOR UPDATE`;
   return rows.length === 0 ? null : tx.user.findUnique({ where: { id } });
+};
+
+// Readers share the account lock, while account/session writers still take it exclusively.
+// Always lock the account before its session, and choose activity time after both locks.
+const readSessionUser = async (
+  tx: Prisma.TransactionClient,
+  id: string,
+): Promise<(CurrentUser & { sessionVersion: number }) | null> => {
+  const rows = await tx.$queryRaw<
+    Array<Omit<CurrentUser, 'isAdmin'> & { isAdmin: boolean | number; sessionVersion: number }>
+  >`
+    SELECT id, name, email, isAdmin, status, sessionVersion FROM User WHERE id = ${id} LOCK IN SHARE MODE
+  `;
+  const user = rows[0];
+  return user === undefined ? null : { ...user, isAdmin: Boolean(user.isAdmin) };
 };
 
 export const issueSession = async (
@@ -66,13 +81,19 @@ export const resolveServerSession = async (
   const found = await prisma.authSession.findUnique({ where: { tokenHash: digest(cookie.token!) } });
   if (found === null) return null;
   return prisma.$transaction(async (tx) => {
-    const user = await lockSessionUser(tx, found.userId);
+    const user = await readSessionUser(tx, found.userId);
     if (user === null || user.status !== 'Active') return null;
-    // Refresh under the account lock; never base idle extension on a stale read.
-    const record = await tx.authSession.findUnique({ where: { id: found.id } });
+    // Serialize refreshes of this session without serializing every session on the account.
+    const records = await tx.$queryRaw<
+      Array<Pick<AuthSession, 'id' | 'userVersion' | 'revokedAt' | 'expiresAt' | 'idleExpiresAt'>>
+    >`
+      SELECT id, userVersion, revokedAt, expiresAt, idleExpiresAt
+      FROM AuthSession WHERE id = ${found.id} AND userId = ${found.userId} FOR UPDATE
+    `;
+    const record = records[0];
     const now = new Date(Date.now());
     if (
-      record === null ||
+      record === undefined ||
       record.revokedAt !== null ||
       record.userVersion !== user.sessionVersion ||
       effectiveExpiry(record) <= now.getTime()

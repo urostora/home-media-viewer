@@ -62,15 +62,15 @@ it('does not stream directories or escape the configured root', async () => {
   expect(() => getFileIdThumbnailPath('../../outside', 200, false)).toThrow('Invalid thumbnail path');
 });
 
-it('ends a missing-file response before attempting stat or stream', () => {
+it('ends a missing-file response before attempting stat or stream', async () => {
   const res = { status: jest.fn().mockReturnThis(), end: jest.fn(), writeHead: jest.fn() };
-  expect(() =>
+  await expect(
     handleFileResponseByPath(
       { headers: {} } as NextApiRequest,
       res as unknown as NextApiResponse,
       path.join(temporary, 'missing.jpg'),
     ),
-  ).not.toThrow();
+  ).resolves.toBeUndefined();
   expect(res.status).toHaveBeenCalledWith(404);
   expect(res.end).toHaveBeenCalledWith('File not found');
   expect(res.writeHead).not.toHaveBeenCalled();

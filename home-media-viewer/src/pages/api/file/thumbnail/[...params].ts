@@ -37,10 +37,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
           res.status(404).end('File not found');
           return;
         }
-        handleFileResponseByPath(req, res, thumbnailPath);
+        await handleFileResponseByPath(req, res, thumbnailPath);
       } catch (e) {
         logApiFailure('read thumbnail', 500, e);
-        res.status(500).end('Thumbnail unavailable');
+        if (!res.headersSent && !res.destroyed) res.status(500).end('Thumbnail unavailable');
+        else if (!res.destroyed) res.destroy();
       }
 
       break;

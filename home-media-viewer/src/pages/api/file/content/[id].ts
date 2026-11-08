@@ -7,6 +7,9 @@ import { withAuthenticatedRoute } from '@/utils/auth/authenticatedRoute';
 import { isFileIdentifier, resolveReadableFile } from '@/utils/auth/readableFile';
 import { logApiFailure } from '@/utils/apiLogger';
 
+// Original media is intentionally larger than the API JSON response warning threshold.
+export const config = { api: { responseLimit: false } };
+
 const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
   const { method } = req;
 
@@ -29,10 +32,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
         }
 
         const filePath = getFullPath(file);
-        handleFileResponseByPath(req, res, filePath);
+        await handleFileResponseByPath(req, res, filePath);
       } catch (e) {
         logApiFailure('read file content', 500, e);
-        res.status(500).end('File content unavailable');
+        if (!res.headersSent && !res.destroyed) res.status(500).end('File content unavailable');
+        else if (!res.destroyed) res.destroy();
       }
 
       break;

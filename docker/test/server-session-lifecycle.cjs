@@ -222,7 +222,7 @@ const gate = () => {
         failRevocation = false;
         throw new Error('Synthetic rollback');
       }
-      if (onTouch && params.args.data.lastSeenAt) await onTouch();
+      if (onTouch && params.args.data.lastSeenAt) await onTouch(params.args);
     }
     return next(params);
   });
@@ -295,6 +295,55 @@ const gate = () => {
   check((await touching) !== null, true, 'already authorized touch may finish before logout');
   await pendingLogout;
   check(await resolveServerSession(await unpack(first.cookie)), null, 'touch cannot resurrect logged-out session');
+  stage = 'shared-account reader concurrency';
+  first = await login();
+  second = await login();
+  const firstId = (await sessionRow(first.cookie)).id;
+  const heldTouch = gate(),
+    releaseHeldTouch = gate();
+  onTouch = async (args) => {
+    if (args.where.id === firstId) {
+      heldTouch.open();
+      await releaseHeldTouch.promise;
+    }
+  };
+  const heldRead = resolveServerSession(await unpack(first.cookie));
+  await heldTouch.promise;
+  let timeout;
+  try {
+    // Completion while the first refresh still holds its locks proves account-S compatibility.
+    const otherRead = await Promise.race([
+      resolveServerSession(await unpack(second.cookie)),
+      new Promise((_, reject) => {
+        timeout = setTimeout(() => reject(new Error('independent session blocked on account reader')), 3000);
+      }),
+    ]);
+    check(otherRead !== null, true, 'another session on the account refreshes while the first is held');
+  } finally {
+    clearTimeout(timeout);
+    onTouch = null;
+    releaseHeldTouch.open();
+    await heldRead;
+  }
+  const latest = await sessionRow(first.cookie);
+  check(
+    latest.idleExpiresAt.getTime(),
+    Math.min(latest.expiresAt.getTime(), latest.lastSeenAt.getTime() + 86400000),
+    'idle timeout remains exact',
+  );
+  const concurrentCookie = await unpack(first.cookie);
+  const refreshes = await Promise.all(Array.from({ length: 8 }, () => resolveServerSession(concurrentCookie)));
+  check(
+    refreshes.every((value) => value !== null),
+    true,
+    'concurrent same-session refreshes all remain valid',
+  );
+  const refreshed = await sessionRow(first.cookie);
+  check(
+    refreshed.idleExpiresAt >= latest.idleExpiresAt,
+    true,
+    'serialized refreshes cannot move idle expiry backwards',
+  );
   stage = 'rollback';
   first = await login();
   for (const change of [{ password: nextPassword }, { isAdmin: true }, { status: 'Disabled' }]) {

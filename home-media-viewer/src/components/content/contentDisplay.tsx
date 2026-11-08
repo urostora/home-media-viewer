@@ -15,20 +15,6 @@ interface ContentDisplayProps {
   onThumbnailUpdated?: (file: FileResultType) => void;
 }
 
-const getImageUrl = (id: string): string => {
-  if (typeof window === 'undefined') {
-    return getContentUrl(id);
-  }
-
-  if (window.innerWidth <= thumbnailSize.medium) {
-    return getThumbnailUrl(id, thumbnailSize.medium);
-  } else if (window.innerWidth <= thumbnailSize.large) {
-    return getThumbnailUrl(id, thumbnailSize.large);
-  }
-
-  return getContentUrl(id);
-};
-
 // A new file gets a fresh player and request state, including when navigating back.
 const ContentDisplay = (props: ContentDisplayProps): JSX.Element => {
   if (props.content === undefined) return <></>;
@@ -132,7 +118,7 @@ const ContentDisplayForFile = (props: ContentDisplayProps): JSX.Element => {
 
   const getContentElement = (content: FileResultType): ReactElement => {
     if (isImageByExtension(content.extension)) {
-      const thumbnailLink = getImageUrl(content.id);
+      const thumbnailLink = getThumbnailUrl(content.id, thumbnailSize.large, content.thumbnailProcessedAt);
       return <img src={thumbnailLink} alt={content.path} />;
     } else if (isVideoByExtension(content.extension)) {
       const contentLink = getContentUrl(content.id);

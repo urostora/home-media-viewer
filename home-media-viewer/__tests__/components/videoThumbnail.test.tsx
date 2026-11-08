@@ -68,6 +68,36 @@ const preview = (content = file, isAdmin = true, onThumbnailUpdated = jest.fn())
   </AuthContext.Provider>
 );
 
+it.each([375, 1024, 1920])('displays the largest versioned image thumbnail at viewport %s', (width) => {
+  const previous = window.innerWidth;
+  Object.defineProperty(window, 'innerWidth', { configurable: true, value: width });
+  try {
+    const image = { ...updated, extension: 'jpg' };
+    const { rerender } = render(preview(image));
+    expect(screen.getByRole('img')).toHaveAttribute('src', getThumbnailUrl(file.id, 1280, image.thumbnailProcessedAt));
+    const other = { ...image, id: 'image-two', thumbnailProcessedAt: new Date('2026-11-07T12:00:00Z') };
+    rerender(preview(other));
+    expect(screen.getByRole('img')).toHaveAttribute('src', getThumbnailUrl(other.id, 1280, other.thumbnailProcessedAt));
+    rerender(preview({ ...other, thumbnailProcessedAt: new Date('2026-11-07T12:01:00Z') }));
+    expect(screen.getByRole('img').getAttribute('src')).toContain('12%3A01');
+  } finally {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: previous });
+  }
+});
+
+it('downloads the original image and keeps the original video source', () => {
+  const open = jest.spyOn(window, 'open').mockImplementation(() => null);
+  try {
+    const { rerender, container } = render(preview({ ...file, extension: 'jpg' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Download media' }));
+    expect(open).toHaveBeenCalledWith(`/api/file/content/${file.id}`, '__blank');
+    rerender(preview(file));
+    expect(container.ownerDocument.querySelector('video')).toHaveAttribute('src', `/api/file/content/${file.id}`);
+  } finally {
+    open.mockRestore();
+  }
+});
+
 it.each([0, 1.25])('sends a thumbnail-only refresh at %s seconds and reloads thumbnail data', async (time) => {
   const result = await apiFileUpdateVideoThumbnail(file.id, time);
   expect(result.thumbnail).toBe('new');
