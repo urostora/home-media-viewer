@@ -2,15 +2,15 @@ import assert from 'node:assert/strict';
 
 const base = process.env.APP_URL;
 const login = await fetch(new URL('/api/login', base), {
-  method: 'POST',
-  headers: { 'content-type': 'application/json' },
-  body: JSON.stringify({ email: process.env.ADMIN_EMAIL, password: process.env.ADMIN_PASSWORD }),
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ email: process.env.ADMIN_EMAIL, password: process.env.ADMIN_PASSWORD }),
 });
 assert.equal(login.status, 200);
 const cookie = login.headers
-  .getSetCookie()
-  .map((value) => value.split(';')[0])
-  .join('; ');
+    .getSetCookie()
+    .map((value) => value.split(';')[0])
+    .join('; ');
 const browse = await fetch(new URL('/api/browse/album01/album01dir01', base), { headers: { cookie } });
 assert.equal(browse.status, 200);
 const directory = await browse.json();
@@ -18,9 +18,9 @@ assert.equal(directory.data.relativePath, 'album01/album01dir01');
 assert(directory.data.content.some((file) => file.name === 'IMG_20220709_111415.jpg'));
 
 const search = await fetch(new URL('/api/file/search', base), {
-  method: 'POST',
-  headers: { cookie, 'content-type': 'application/json' },
-  body: JSON.stringify({ take: 0, contentType: 'video', metadataStatus: 'Processed' }),
+    method: 'POST',
+    headers: { cookie, 'content-type': 'application/json' },
+    body: JSON.stringify({ take: 0, contentType: 'video', metadataStatus: 'Processed' }),
 });
 assert.equal(search.status, 200);
 const files = await search.json();
@@ -39,7 +39,7 @@ assert(streamedBytes > 0);
 assert.equal(streamedBytes, Number(stream.headers.get('content-length')));
 const totalBytes = Number(stream.headers.get('content-range').split('/')[1]);
 const firstBytes = await fetch(content, {
-  headers: { cookie, range: 'bytes=0-1' },
+    headers: { cookie, range: 'bytes=0-1' },
 });
 assert.equal(firstBytes.status, 206);
 assert.equal(firstBytes.headers.get('content-range'), `bytes 0-1/${totalBytes}`);
@@ -49,7 +49,7 @@ assert.equal(suffix.status, 206);
 assert.equal(suffix.headers.get('content-range'), `bytes ${totalBytes - 2}-${totalBytes - 1}/${totalBytes}`);
 assert.equal((await suffix.arrayBuffer()).byteLength, 2);
 const outside = await fetch(content, {
-  headers: { cookie, range: `bytes=${totalBytes}-` },
+    headers: { cookie, range: `bytes=${totalBytes}-` },
 });
 assert.equal(outside.status, 416);
 assert.equal(outside.headers.get('content-range'), `bytes */${totalBytes}`);

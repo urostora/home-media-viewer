@@ -219,3 +219,10 @@ Back up the database and entire generated-storage volume using the [backup and i
 - [Database lifecycle and rollback](docs/database-lifecycle.md)
 - [Release builds and disposable integration tests](scripts/build/README.md)
 - [Media/stage benchmarks](scripts/benchmark/README.md)
+
+Code uses four spaces for indentation (`.editorconfig` and `home-media-viewer/.prettierrc`).
+Format current application and repository JavaScript, TypeScript, styles, JSON, YAML and Bash scripts with
+`bash scripts/format.sh --write`, or verify with `bash scripts/format.sh --check`.
+These commands run Prettier and the pinned shfmt Bash formatter through Docker and leave lockfiles, generated files,
+media fixtures and historical release records untouched. For application code only,
+run `docker compose exec app npm run prettier-format` or `docker compose exec app npm run format:check`.

@@ -1,11 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  images: {
-    // Allow version query strings used to refresh regenerated thumbnails.
-    localPatterns: [{ pathname: '/api/file/thumbnail/**' }],
-  },
-  reactStrictMode: true,
-  output: 'standalone',
+    images: {
+        // Allow version query strings used to refresh regenerated thumbnails.
+        localPatterns: [{ pathname: '/api/file/thumbnail/**' }],
+    },
+    reactStrictMode: true,
+    output: 'standalone',
 };
 
 module.exports = nextConfig;

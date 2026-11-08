@@ -6,4 +6,4 @@ export type CurrentUser = Pick<User, 'id' | 'name' | 'email' | 'isAdmin' | 'stat
 
 // Retained helper for callers that need only the current principal.
 export const resolveCurrentUser = async (session: Partial<SessionData> | undefined): Promise<CurrentUser | null> =>
-  (await resolveServerSession(session))?.user ?? null;
+    (await resolveServerSession(session))?.user ?? null;

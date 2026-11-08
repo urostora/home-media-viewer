@@ -1,169 +1,169 @@
 services:
-  dependencies:
-    profiles: [tools]
-    extends:
-      file: ./docker/base-images.yml
-      service: node
-    working_dir: /home/node/app
-    environment:
-      PUPPETEER_SKIP_DOWNLOAD: 'true'
-      DATABASE_URL: ${DATABASE_URL}
-      SHADOW_DATABASE_URL: ${SHADOW_DATABASE_URL}
-      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
-    volumes:
-      - ./home-media-viewer:/home/node/app
-    networks:
-      - home-media-dev-network
+    dependencies:
+        profiles: [tools]
+        extends:
+            file: ./docker/base-images.yml
+            service: node
+        working_dir: /home/node/app
+        environment:
+            PUPPETEER_SKIP_DOWNLOAD: 'true'
+            DATABASE_URL: ${DATABASE_URL}
+            SHADOW_DATABASE_URL: ${SHADOW_DATABASE_URL}
+            ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+            ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+        volumes:
+            - ./home-media-viewer:/home/node/app
+        networks:
+            - home-media-dev-network
 
-  db:
-    hostname: media-viewer-dev-db
-    extends:
-      file: ./docker/base-images.yml
-      service: mariadb
-    environment:
-      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
-      MARIADB_DATABASE: ${MARIADB_DATABASE}
-      MARIADB_USER: ${MARIADB_USER}
-      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
-    healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
-      interval: 5s
-      timeout: 5s
-      retries: 12
-      start_period: 30s
-    ports:
-      - "127.0.0.1:${MARIADB_PORT_ON_HOST}:3306"
-    volumes:
-      - home-media-dev-db:/var/lib/mysql
-      - ./docker/dev/db/10-shadow.sh:/docker-entrypoint-initdb.d/10-shadow.sh:ro
-    networks:
-      - home-media-dev-network
-    deploy:
-      resources:
-        limits:
-          cpus: "1.50"
-          memory: 800m
+    db:
+        hostname: media-viewer-dev-db
+        extends:
+            file: ./docker/base-images.yml
+            service: mariadb
+        environment:
+            MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+            MARIADB_DATABASE: ${MARIADB_DATABASE}
+            MARIADB_USER: ${MARIADB_USER}
+            MARIADB_PASSWORD: ${MARIADB_PASSWORD}
+        healthcheck:
+            test: ['CMD', 'healthcheck.sh', '--connect', '--innodb_initialized']
+            interval: 5s
+            timeout: 5s
+            retries: 12
+            start_period: 30s
+        ports:
+            - '127.0.0.1:${MARIADB_PORT_ON_HOST}:3306'
+        volumes:
+            - home-media-dev-db:/var/lib/mysql
+            - ./docker/dev/db/10-shadow.sh:/docker-entrypoint-initdb.d/10-shadow.sh:ro
+        networks:
+            - home-media-dev-network
+        deploy:
+            resources:
+                limits:
+                    cpus: '1.50'
+                    memory: 800m
 
-  migration:
-    extends:
-      file: ./docker/base-images.yml
-      service: node
-    working_dir: /home/node/app
-    command: ["npx", "--no-install", "prisma", "migrate", "deploy"]
-    restart: "no"
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      DATABASE_URL: ${DATABASE_URL}
-    volumes:
-      - ./home-media-viewer:/home/node/app
-    networks:
-      - home-media-dev-network
+    migration:
+        extends:
+            file: ./docker/base-images.yml
+            service: node
+        working_dir: /home/node/app
+        command: ['npx', '--no-install', 'prisma', 'migrate', 'deploy']
+        restart: 'no'
+        depends_on:
+            db:
+                condition: service_healthy
+        environment:
+            DATABASE_URL: ${DATABASE_URL}
+        volumes:
+            - ./home-media-viewer:/home/node/app
+        networks:
+            - home-media-dev-network
 
-  app:
-    hostname: media-viewer-dev-app
-    extends:
-      file: ./docker/base-images.yml
-      service: build
-    build:
-      dockerfile: ./docker/dev/app/Dockerfile
-      context: .
-    depends_on:
-      db:
-        condition: service_healthy
-      migration:
-        condition: service_completed_successfully
-    environment:
-      APP_ALBUM_ROOT_PATH: ${APP_ALBUM_ROOT_PATH}
-      APP_STORAGE_PATH: ${APP_STORAGE_PATH:-/mnt/storage}
-      APP_THUMBNAIL_SUBDIRECTORY: ${APP_THUMBNAIL_SUBDIRECTORY:-thumbnail}
-      DATABASE_URL: ${DATABASE_URL}
-      LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
-      PROCESS_TOKEN: ${PROCESS_TOKEN}
-      TS_NODE_PROJECT: /home/node/app/tsconfig.json
-      LOGIN_TRUST_FORWARDED_HEADERS: ${LOGIN_TRUST_FORWARDED_HEADERS:-false}
-      LOGIN_TRUSTED_PROXY_CIDRS: ${LOGIN_TRUSTED_PROXY_CIDRS:-}
-      APP_SESSION_SECRET: ${APP_SESSION_SECRET}
-      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
-      IS_BACKGROUND_PROCESS_ENABLED: ${IS_BACKGROUND_PROCESS_ENABLED}
-    volumes:
-      - ./home-media-viewer:/home/node/app
-      # Used while development - custom structure
-      # - ./static:${APP_ALBUM_ROOT_PATH}:ro
-      # Used by test suite
-      - ./test/files:${APP_ALBUM_ROOT_PATH}:ro
-      - home-media-dev-storage:${APP_STORAGE_PATH}
-    ports:
-      - ${WEB_PORT}:3000
-    networks:
-      home-media-dev-network:
-        aliases: [web.test]
-    deploy:
-      resources:
-        limits:
-          cpus: "2"
-          memory: 800m
+    app:
+        hostname: media-viewer-dev-app
+        extends:
+            file: ./docker/base-images.yml
+            service: build
+        build:
+            dockerfile: ./docker/dev/app/Dockerfile
+            context: .
+        depends_on:
+            db:
+                condition: service_healthy
+            migration:
+                condition: service_completed_successfully
+        environment:
+            APP_ALBUM_ROOT_PATH: ${APP_ALBUM_ROOT_PATH}
+            APP_STORAGE_PATH: ${APP_STORAGE_PATH:-/mnt/storage}
+            APP_THUMBNAIL_SUBDIRECTORY: ${APP_THUMBNAIL_SUBDIRECTORY:-thumbnail}
+            DATABASE_URL: ${DATABASE_URL}
+            LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
+            PROCESS_TOKEN: ${PROCESS_TOKEN}
+            TS_NODE_PROJECT: /home/node/app/tsconfig.json
+            LOGIN_TRUST_FORWARDED_HEADERS: ${LOGIN_TRUST_FORWARDED_HEADERS:-false}
+            LOGIN_TRUSTED_PROXY_CIDRS: ${LOGIN_TRUSTED_PROXY_CIDRS:-}
+            APP_SESSION_SECRET: ${APP_SESSION_SECRET}
+            SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
+            IS_BACKGROUND_PROCESS_ENABLED: ${IS_BACKGROUND_PROCESS_ENABLED}
+        volumes:
+            - ./home-media-viewer:/home/node/app
+            # Used while development - custom structure
+            # - ./static:${APP_ALBUM_ROOT_PATH}:ro
+            # Used by test suite
+            - ./test/files:${APP_ALBUM_ROOT_PATH}:ro
+            - home-media-dev-storage:${APP_STORAGE_PATH}
+        ports:
+            - ${WEB_PORT}:3000
+        networks:
+            home-media-dev-network:
+                aliases: [web.test]
+        deploy:
+            resources:
+                limits:
+                    cpus: '2'
+                    memory: 800m
 
-  scheduler:
-    extends:
-      file: ./docker/base-images.yml
-      service: node
-    profiles: [scheduled]
-    init: true
-    working_dir: /home/node/app
-    command: ["node", "runBackgroundScheduler.mjs"]
-    depends_on: [app]
-    environment:
-      BACKGROUND_URL: http://app:3000
-      PROCESS_TOKEN: ${PROCESS_TOKEN}
-      LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
-      BACKGROUND_INTERVAL_SEC: ${BACKGROUND_INTERVAL_SEC:-180}
-      BACKGROUND_CATCHUP_INTERVAL_SEC: ${BACKGROUND_CATCHUP_INTERVAL_SEC:-30}
-      BACKGROUND_MAX_BACKOFF_SEC: ${BACKGROUND_MAX_BACKOFF_SEC:-900}
-    volumes:
-      - ./home-media-viewer:/home/node/app:ro
-    networks:
-      - home-media-dev-network
+    scheduler:
+        extends:
+            file: ./docker/base-images.yml
+            service: node
+        profiles: [scheduled]
+        init: true
+        working_dir: /home/node/app
+        command: ['node', 'runBackgroundScheduler.mjs']
+        depends_on: [app]
+        environment:
+            BACKGROUND_URL: http://app:3000
+            PROCESS_TOKEN: ${PROCESS_TOKEN}
+            LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
+            BACKGROUND_INTERVAL_SEC: ${BACKGROUND_INTERVAL_SEC:-180}
+            BACKGROUND_CATCHUP_INTERVAL_SEC: ${BACKGROUND_CATCHUP_INTERVAL_SEC:-30}
+            BACKGROUND_MAX_BACKOFF_SEC: ${BACKGROUND_MAX_BACKOFF_SEC:-900}
+        volumes:
+            - ./home-media-viewer:/home/node/app:ro
+        networks:
+            - home-media-dev-network
 
-  testrunner:
-    profiles: [test]
-    hostname: media-viewer-dev-testrunner
-    extends:
-      file: ./docker/base-images.yml
-      service: build
-    build:
-      dockerfile: ./docker/dev/testrunner/Dockerfile
-      context: .
-      target: testrunner
-    depends_on:
-      - app
-    environment:
-      APP_ALBUM_ROOT_PATH: ${APP_ALBUM_ROOT_PATH}
-      APP_STORAGE_PATH: ${APP_STORAGE_PATH:-/mnt/storage}
-      APP_THUMBNAIL_SUBDIRECTORY: ${APP_THUMBNAIL_SUBDIRECTORY:-thumbnail}
-      DATABASE_URL: ${DATABASE_URL}
-      LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
-      LOGIN_TRUST_FORWARDED_HEADERS: ${LOGIN_TRUST_FORWARDED_HEADERS:-false}
-      LOGIN_TRUSTED_PROXY_CIDRS: ${LOGIN_TRUSTED_PROXY_CIDRS:-}
-      APP_SESSION_SECRET: ${APP_SESSION_SECRET}
-      PROCESS_TOKEN: ${PROCESS_TOKEN}
-      TS_NODE_PROJECT: /home/node/app/tsconfig.json
-      APP_URL: http://web.test:3000
-      BACKGROUND_URL: http://app:3000
-      ADMIN_EMAIL: ${ADMIN_EMAIL}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
-    volumes:
-      - ./home-media-viewer:/home/node/app
-      - ./scripts/test:/home/node/scripts
-    networks:
-      - home-media-dev-network
+    testrunner:
+        profiles: [test]
+        hostname: media-viewer-dev-testrunner
+        extends:
+            file: ./docker/base-images.yml
+            service: build
+        build:
+            dockerfile: ./docker/dev/testrunner/Dockerfile
+            context: .
+            target: testrunner
+        depends_on:
+            - app
+        environment:
+            APP_ALBUM_ROOT_PATH: ${APP_ALBUM_ROOT_PATH}
+            APP_STORAGE_PATH: ${APP_STORAGE_PATH:-/mnt/storage}
+            APP_THUMBNAIL_SUBDIRECTORY: ${APP_THUMBNAIL_SUBDIRECTORY:-thumbnail}
+            DATABASE_URL: ${DATABASE_URL}
+            LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
+            LOGIN_TRUST_FORWARDED_HEADERS: ${LOGIN_TRUST_FORWARDED_HEADERS:-false}
+            LOGIN_TRUSTED_PROXY_CIDRS: ${LOGIN_TRUSTED_PROXY_CIDRS:-}
+            APP_SESSION_SECRET: ${APP_SESSION_SECRET}
+            PROCESS_TOKEN: ${PROCESS_TOKEN}
+            TS_NODE_PROJECT: /home/node/app/tsconfig.json
+            APP_URL: http://web.test:3000
+            BACKGROUND_URL: http://app:3000
+            ADMIN_EMAIL: ${ADMIN_EMAIL}
+            ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+        volumes:
+            - ./home-media-viewer:/home/node/app
+            - ./scripts/test:/home/node/scripts
+        networks:
+            - home-media-dev-network
 
 networks:
-  home-media-dev-network:
+    home-media-dev-network:
 
 volumes:
-  home-media-dev-storage:
+    home-media-dev-storage:
 
-  home-media-dev-db:
+    home-media-dev-db:

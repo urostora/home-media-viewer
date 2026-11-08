@@ -3,11 +3,11 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { withAuthenticatedRoute } from '@/utils/auth/authenticatedRoute';
 
 interface Data {
-  message: string;
+    message: string;
 }
 
 const handler = (req: NextApiRequest, res: NextApiResponse<Data>): void => {
-  res.status(200).json({ message: 'Hello' });
+    res.status(200).json({ message: 'Hello' });
 };
 
 export default withAuthenticatedRoute(handler);

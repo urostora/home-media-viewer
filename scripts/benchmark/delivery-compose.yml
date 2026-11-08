@@ -1,72 +1,72 @@
 services:
-  db:
-    extends:
-      file: ../../docker/base-images.yml
-      service: mariadb
-    environment:
-      MARIADB_DATABASE: ${DELIVERY_DATABASE:-delivery_fixture}
-      MARIADB_USER: delivery
-      MARIADB_PASSWORD: ${DELIVERY_PASSWORD:?}
-      MARIADB_ROOT_PASSWORD: ${DELIVERY_ROOT_PASSWORD:?}
-    volumes:
-      - database:/var/lib/mysql
-    healthcheck:
-      test: [CMD, healthcheck.sh, --connect, --innodb_initialized]
-      interval: 2s
-      timeout: 5s
-      retries: 60
-    cpus: 1
-    mem_limit: 1g
-  runner:
-    image: ${DELIVERY_IMAGE:?}
-    working_dir: /app
-    entrypoint: []
-    command: [node, /tests/content-delivery.cjs]
-    environment:
-      DATABASE_URL: mysql://delivery:${DELIVERY_PASSWORD:?}@db:3306/${DELIVERY_DATABASE:-delivery_fixture}
-      HMV_APP_ROOT: /app
-      NODE_ENV: production
-      APP_ALBUM_ROOT_PATH: /fixtures
-      APP_STORAGE_PATH: /storage
-      APP_THUMBNAIL_SUBDIRECTORY: thumbnail
-      APP_SESSION_SECRET: ${DELIVERY_SESSION:?}
-      SESSION_COOKIE_SECURE: 'false'
-      DB_CONNECTION_LIMIT: 5
-      DELIVERY_VERIFY: ${DELIVERY_VERIFY:-false}
-      DELIVERY_BROWSER_CHECK: ${DELIVERY_BROWSER_CHECK:-false}
-    volumes:
-      - ../../home-media-viewer:/app:ro
-      - ../../docker/test:/tests:ro
-      - ${DELIVERY_DIRECTORY:?}/fixtures:/fixtures:ro
-      - ${DELIVERY_DIRECTORY:?}/storage:/storage:ro
-    cpus: 1
-    mem_limit: 1g
-  fixtures:
-    extends: runner
-    volumes:
-      - ${DELIVERY_DIRECTORY:?}/fixtures:/fixtures
-      - ${DELIVERY_DIRECTORY:?}/storage:/storage
-    command: [node, /tests/content-delivery.cjs, fixtures]
-  authcheck:
-    extends: runner
-    network_mode: service:db
-    environment:
-      DATABASE_URL: mysql://delivery:${DELIVERY_PASSWORD:?}@127.0.0.1:3306/hmv_auth_t6_fixture
-  browser:
-    extends: runner
-    image: ${DELIVERY_BROWSER_IMAGE:-${DELIVERY_IMAGE}}
-    command: [node, /tests/content-delivery-browser-server.cjs]
-    mem_limit: 1g
-  fullcheck:
-    extends: runner
-    command: [node, /tests/content-delivery-full.cjs]
-    environment:
-      NEXT_TELEMETRY_DISABLED: '1'
-      LONG_PROCESS_TIMEOUT_SEC: 120
-      IS_BACKGROUND_PROCESS_ENABLED: 'false'
-    volumes:
-      - ${DELIVERY_DIRECTORY:?}/storage:/storage
-    cpus: 2
-    mem_limit: 3g
+    db:
+        extends:
+            file: ../../docker/base-images.yml
+            service: mariadb
+        environment:
+            MARIADB_DATABASE: ${DELIVERY_DATABASE:-delivery_fixture}
+            MARIADB_USER: delivery
+            MARIADB_PASSWORD: ${DELIVERY_PASSWORD:?}
+            MARIADB_ROOT_PASSWORD: ${DELIVERY_ROOT_PASSWORD:?}
+        volumes:
+            - database:/var/lib/mysql
+        healthcheck:
+            test: [CMD, healthcheck.sh, --connect, --innodb_initialized]
+            interval: 2s
+            timeout: 5s
+            retries: 60
+        cpus: 1
+        mem_limit: 1g
+    runner:
+        image: ${DELIVERY_IMAGE:?}
+        working_dir: /app
+        entrypoint: []
+        command: [node, /tests/content-delivery.cjs]
+        environment:
+            DATABASE_URL: mysql://delivery:${DELIVERY_PASSWORD:?}@db:3306/${DELIVERY_DATABASE:-delivery_fixture}
+            HMV_APP_ROOT: /app
+            NODE_ENV: production
+            APP_ALBUM_ROOT_PATH: /fixtures
+            APP_STORAGE_PATH: /storage
+            APP_THUMBNAIL_SUBDIRECTORY: thumbnail
+            APP_SESSION_SECRET: ${DELIVERY_SESSION:?}
+            SESSION_COOKIE_SECURE: 'false'
+            DB_CONNECTION_LIMIT: 5
+            DELIVERY_VERIFY: ${DELIVERY_VERIFY:-false}
+            DELIVERY_BROWSER_CHECK: ${DELIVERY_BROWSER_CHECK:-false}
+        volumes:
+            - ../../home-media-viewer:/app:ro
+            - ../../docker/test:/tests:ro
+            - ${DELIVERY_DIRECTORY:?}/fixtures:/fixtures:ro
+            - ${DELIVERY_DIRECTORY:?}/storage:/storage:ro
+        cpus: 1
+        mem_limit: 1g
+    fixtures:
+        extends: runner
+        volumes:
+            - ${DELIVERY_DIRECTORY:?}/fixtures:/fixtures
+            - ${DELIVERY_DIRECTORY:?}/storage:/storage
+        command: [node, /tests/content-delivery.cjs, fixtures]
+    authcheck:
+        extends: runner
+        network_mode: service:db
+        environment:
+            DATABASE_URL: mysql://delivery:${DELIVERY_PASSWORD:?}@127.0.0.1:3306/hmv_auth_t6_fixture
+    browser:
+        extends: runner
+        image: ${DELIVERY_BROWSER_IMAGE:-${DELIVERY_IMAGE}}
+        command: [node, /tests/content-delivery-browser-server.cjs]
+        mem_limit: 1g
+    fullcheck:
+        extends: runner
+        command: [node, /tests/content-delivery-full.cjs]
+        environment:
+            NEXT_TELEMETRY_DISABLED: '1'
+            LONG_PROCESS_TIMEOUT_SEC: 120
+            IS_BACKGROUND_PROCESS_ENABLED: 'false'
+        volumes:
+            - ${DELIVERY_DIRECTORY:?}/storage:/storage
+        cpus: 2
+        mem_limit: 3g
 volumes:
-  database:
+    database:

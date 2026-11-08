@@ -1,64 +1,67 @@
 export interface ScrollToLastElementOptions {
-  scrollableContainerSelector?: string;
-  elementsSelector?: string;
-  dataAttributeName?: string;
+    scrollableContainerSelector?: string;
+    elementsSelector?: string;
+    dataAttributeName?: string;
 }
 
 class ScrollPositionResetHandler {
-  static readonly lastSelectedItemsCookieKey = 'lastSelectedItems';
+    static readonly lastSelectedItemsCookieKey = 'lastSelectedItems';
 
-  #lastAlbumSelected: string | undefined = undefined;
+    #lastAlbumSelected: string | undefined = undefined;
 
-  constructor() {
-    if (typeof window === 'undefined' || window?.localStorage === undefined) {
-      return;
+    constructor() {
+        if (typeof window === 'undefined' || window?.localStorage === undefined) {
+            return;
+        }
+
+        const storedValue = window.localStorage.getItem(ScrollPositionResetHandler.lastSelectedItemsCookieKey);
+        if (storedValue === null) {
+            return;
+        }
+
+        const storedData = JSON.parse(storedValue);
+        if (typeof storedData !== 'object' || typeof storedData.lastAlbumSelected !== 'string') {
+            return;
+        }
+
+        // hydrate properties
+        this.#lastAlbumSelected = storedData?.lastAlbumSelected;
     }
 
-    const storedValue = window.localStorage.getItem(ScrollPositionResetHandler.lastSelectedItemsCookieKey);
-    if (storedValue === null) {
-      return;
+    #saveData(): void {
+        const dataToSave = {
+            lastAlbumSelected: this.#lastAlbumSelected,
+        };
+
+        window.sessionStorage.setItem(
+            ScrollPositionResetHandler.lastSelectedItemsCookieKey,
+            JSON.stringify(dataToSave),
+        );
     }
 
-    const storedData = JSON.parse(storedValue);
-    if (typeof storedData !== 'object' || typeof storedData.lastAlbumSelected !== 'string') {
-      return;
+    get lastAlbumSelected(): string | undefined {
+        return this.#lastAlbumSelected;
     }
 
-    // hydrate properties
-    this.#lastAlbumSelected = storedData?.lastAlbumSelected;
-  }
+    set lastAlbumSelected(albumId: string | undefined) {
+        this.#lastAlbumSelected = albumId;
+        this.#saveData();
+    }
 
-  #saveData(): void {
-    const dataToSave = {
-      lastAlbumSelected: this.#lastAlbumSelected,
-    };
+    scrollToLastElement(elementId: string, options: ScrollToLastElementOptions = {}): void {
+        const opt: ScrollToLastElementOptions = {
+            scrollableContainerSelector: 'div[class^=hmv_contentsContainer]',
+            elementsSelector: 'div[class^=hmv_contentCardContainer]',
+            dataAttributeName: 'data-id',
+            ...options,
+        };
 
-    window.sessionStorage.setItem(ScrollPositionResetHandler.lastSelectedItemsCookieKey, JSON.stringify(dataToSave));
-  }
+        const scrollToElement = document.querySelector(
+            `${opt.scrollableContainerSelector} ${opt.elementsSelector}[${opt.dataAttributeName}='${elementId}']`,
+        );
 
-  get lastAlbumSelected(): string | undefined {
-    return this.#lastAlbumSelected;
-  }
-
-  set lastAlbumSelected(albumId: string | undefined) {
-    this.#lastAlbumSelected = albumId;
-    this.#saveData();
-  }
-
-  scrollToLastElement(elementId: string, options: ScrollToLastElementOptions = {}): void {
-    const opt: ScrollToLastElementOptions = {
-      scrollableContainerSelector: 'div[class^=hmv_contentsContainer]',
-      elementsSelector: 'div[class^=hmv_contentCardContainer]',
-      dataAttributeName: 'data-id',
-      ...options,
-    };
-
-    const scrollToElement = document.querySelector(
-      `${opt.scrollableContainerSelector} ${opt.elementsSelector}[${opt.dataAttributeName}='${elementId}']`,
-    );
-
-    scrollToElement?.scrollIntoView({ behavior: 'smooth' });
-  }
+        scrollToElement?.scrollIntoView({ behavior: 'smooth' });
+    }
 }
 
 const singleton = new ScrollPositionResetHandler();

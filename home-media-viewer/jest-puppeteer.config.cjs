@@ -3,10 +3,7 @@ module.exports = {
     launch: {
         executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium',
         headless: 'new',
-        args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox'
-        ],
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
     },
     browser: 'chromium',
-  }
+};

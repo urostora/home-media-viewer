@@ -8,71 +8,71 @@ import { apiOnlyWithAdminUsers } from '@/utils/auth/apiHoc';
 import { validateData } from '@/utils/dataValidator';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
-  const { method, query } = req;
+    const { method, query } = req;
 
-  if (typeof query?.id !== 'string' || query.id.length === 0) {
-    res.status(400).write(`Invalid identifier ${query?.id}`);
-    res.end();
-    return;
-  }
-
-  const id = query.id;
-
-  switch (method) {
-    case 'GET': {
-      try {
-        const result = await getUserData(id);
-        // return user data
-        res.status(200).json(getApiResponseWithData<UserExtendedDataType | null>(result));
-      } catch (e) {
-        handleApiError(res, 'get user', e, { id });
-      }
-      break;
+    if (typeof query?.id !== 'string' || query.id.length === 0) {
+        res.status(400).write(`Invalid identifier ${query?.id}`);
+        res.end();
+        return;
     }
-    case 'PATCH':
-    case 'PUT': {
-      // modify user data
-      try {
-        const patchData: UserEditType | null = getRequestBodyObject<UserEditType>(req, res);
-        if (patchData == null) {
-          res.status(400).end('Invalid data provided');
-          return;
+
+    const id = query.id;
+
+    switch (method) {
+        case 'GET': {
+            try {
+                const result = await getUserData(id);
+                // return user data
+                res.status(200).json(getApiResponseWithData<UserExtendedDataType | null>(result));
+            } catch (e) {
+                handleApiError(res, 'get user', e, { id });
+            }
+            break;
         }
+        case 'PATCH':
+        case 'PUT': {
+            // modify user data
+            try {
+                const patchData: UserEditType | null = getRequestBodyObject<UserEditType>(req, res);
+                if (patchData == null) {
+                    res.status(400).end('Invalid data provided');
+                    return;
+                }
 
-        validateData(patchData, userEditDataSchema);
+                validateData(patchData, userEditDataSchema);
 
-        const userData = await updateUser(id, patchData);
+                const userData = await updateUser(id, patchData);
 
-        // don't return password hash
-        const {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          password,
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          sessionVersion,
-          ...returnUserData
-        } = userData;
+                // don't return password hash
+                const {
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                    password,
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                    sessionVersion,
+                    ...returnUserData
+                } = userData;
 
-        res.status(200).json(getApiResponseWithData<UserDataType>(returnUserData));
-      } catch (e) {
-        handleApiError(res, 'update user', e, { id });
-      }
+                res.status(200).json(getApiResponseWithData<UserDataType>(returnUserData));
+            } catch (e) {
+                handleApiError(res, 'update user', e, { id });
+            }
 
-      break;
+            break;
+        }
+        case 'DELETE': {
+            try {
+                await deleteUser(id);
+                res.status(200).json(getApiResponse({ id }));
+            } catch (e) {
+                handleApiError(res, 'delete user', e, { id });
+            }
+
+            break;
+        }
+        default:
+            res.setHeader('Allow', ['GET', 'PATCH', 'PUT', 'DELETE']);
+            res.status(405).end(`Method ${method} Not Allowed`);
     }
-    case 'DELETE': {
-      try {
-        await deleteUser(id);
-        res.status(200).json(getApiResponse({ id }));
-      } catch (e) {
-        handleApiError(res, 'delete user', e, { id });
-      }
-
-      break;
-    }
-    default:
-      res.setHeader('Allow', ['GET', 'PATCH', 'PUT', 'DELETE']);
-      res.status(405).end(`Method ${method} Not Allowed`);
-  }
 };
 
 export default apiOnlyWithAdminUsers(handler);

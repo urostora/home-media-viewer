@@ -1,13 +1,24 @@
 import assert from 'node:assert/strict';
 const base = process.env.APP_URL;
-const login = await fetch(new URL('/api/login', base), { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: process.env.ADMIN_EMAIL, password: process.env.ADMIN_PASSWORD }) });
+const login = await fetch(new URL('/api/login', base), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ email: process.env.ADMIN_EMAIL, password: process.env.ADMIN_PASSWORD }),
+});
 assert.equal(login.status, 200);
-const cookie = login.headers.getSetCookie().map(value => value.split(';')[0]).join('; ');
+const cookie = login.headers
+    .getSetCookie()
+    .map((value) => value.split(';')[0])
+    .join('; ');
 assert(cookie);
-const search = await fetch(new URL('/api/file/search', base), { method: 'POST', headers: { cookie, 'content-type': 'application/json' }, body: JSON.stringify({ take: 0, contentType: 'image', metadataStatus: 'Processed', returnThumbnails: false }) });
+const search = await fetch(new URL('/api/file/search', base), {
+    method: 'POST',
+    headers: { cookie, 'content-type': 'application/json' },
+    body: JSON.stringify({ take: 0, contentType: 'image', metadataStatus: 'Processed', returnThumbnails: false }),
+});
 assert.equal(search.status, 200);
 const data = await search.json();
-const file = data.data?.find(file => file.thumbnailStatus === 'Processed');
+const file = data.data?.find((file) => file.thumbnailStatus === 'Processed');
 assert(file, 'A processed image fixture is required');
 const thumbnail = new URL('/api/file/thumbnail/' + file.id + '/200', base);
 assert.equal((await fetch(thumbnail)).status, 403);

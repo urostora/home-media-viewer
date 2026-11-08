@@ -13,7 +13,7 @@ if [[ "$MARIADB_USER" == root || "$MARIADB_MIGRATION_USER" == root || "$MARIADB_
 fi
 # Hex encoding avoids interpolating an untrusted password into SQL syntax/logs.
 role_password_hex=$(printf '%s' "$MARIADB_MIGRATION_PASSWORD" | od -An -v -tx1 | tr -d ' \n')
-if ! docker_process_sql > /dev/null 2>&1 <<SQL
+if ! docker_process_sql >/dev/null 2>&1 <<SQL; then
 SET SESSION sql_mode = '';
 SET @role_sql = CONCAT('CREATE USER IF NOT EXISTS \`$MARIADB_MIGRATION_USER\`@\`%\` IDENTIFIED BY ', QUOTE(CONVERT(0x$role_password_hex USING utf8mb4)));
 PREPARE role_statement FROM @role_sql;
@@ -23,7 +23,6 @@ GRANT ALL PRIVILEGES ON \`${MARIADB_DATABASE//_/\\_}\`.* TO \`$MARIADB_MIGRATION
 REVOKE ALL PRIVILEGES, GRANT OPTION FROM \`$MARIADB_USER\`@'%';
 GRANT SELECT, INSERT, UPDATE, DELETE ON \`${MARIADB_DATABASE//_/\\_}\`.* TO \`$MARIADB_USER\`@'%';
 SQL
-then
     echo "Database role initialization failed; check names, privileges and server compatibility" >&2
     return 1
 fi

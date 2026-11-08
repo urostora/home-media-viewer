@@ -11,73 +11,73 @@ import { validateData } from '@/utils/dataValidator';
 import type { FileUpdateType } from '@/types/api/fileTypes';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
-  const { method, query } = req;
+    const { method, query } = req;
 
-  if (typeof query?.id !== 'string' || query.id.length === 0) {
-    res.status(400).write(`Invalid identifier ${query?.id}`);
-    res.end();
-    return;
-  }
-
-  const id = query.id;
-  const userId = req.authenticatedUser?.isAdmin === true ? undefined : (req.authenticatedUser?.id ?? '');
-
-  const file = await getFileById(id, userId);
-
-  if (file === null) {
-    res.status(404).send('File not found');
-    return;
-  }
-
-  switch (method) {
-    case 'GET': {
-      try {
-        const result = {
-          ...file,
-          thumbnail: getFileThumbnailInBase64(file),
-        };
-
-        // return user data
-        res.status(200).json(getApiResponseWithData<File | null>(result));
-      } catch (e) {
-        handleApiError(res, 'get user', e, { id });
-      }
-      break;
-    }
-    case 'PATCH': {
-      if (req.authenticatedUser?.isAdmin !== true) {
-        res.status(403).send('Only administrators allowed');
+    if (typeof query?.id !== 'string' || query.id.length === 0) {
+        res.status(400).write(`Invalid identifier ${query?.id}`);
+        res.end();
         return;
-      }
-
-      const updateData: FileUpdateType = getRequestBodyObject(req, res);
-      validateData(updateData, fileUpdateDataSchema);
-
-      const updateResult = await updateFile(id, updateData);
-
-      res.status(200).json(getApiResponseWithData<File>(updateResult));
-      break;
     }
-    case 'DELETE': {
-      if (req.authenticatedUser?.isAdmin !== true) {
-        // forbidden
-        res.status(403).send('Only administrators allowed');
+
+    const id = query.id;
+    const userId = req.authenticatedUser?.isAdmin === true ? undefined : (req.authenticatedUser?.id ?? '');
+
+    const file = await getFileById(id, userId);
+
+    if (file === null) {
+        res.status(404).send('File not found');
         return;
-      }
-
-      try {
-        await deleteFile(file);
-        res.status(200).json(getApiResponse({ id }));
-      } catch (e) {
-        handleApiError(res, 'delete user', e, { id });
-      }
-
-      break;
     }
-    default:
-      res.setHeader('Allow', ['GET', 'PATCH', 'DELETE']);
-      res.status(405).end(`Method ${method} Not Allowed`);
-  }
+
+    switch (method) {
+        case 'GET': {
+            try {
+                const result = {
+                    ...file,
+                    thumbnail: getFileThumbnailInBase64(file),
+                };
+
+                // return user data
+                res.status(200).json(getApiResponseWithData<File | null>(result));
+            } catch (e) {
+                handleApiError(res, 'get user', e, { id });
+            }
+            break;
+        }
+        case 'PATCH': {
+            if (req.authenticatedUser?.isAdmin !== true) {
+                res.status(403).send('Only administrators allowed');
+                return;
+            }
+
+            const updateData: FileUpdateType = getRequestBodyObject(req, res);
+            validateData(updateData, fileUpdateDataSchema);
+
+            const updateResult = await updateFile(id, updateData);
+
+            res.status(200).json(getApiResponseWithData<File>(updateResult));
+            break;
+        }
+        case 'DELETE': {
+            if (req.authenticatedUser?.isAdmin !== true) {
+                // forbidden
+                res.status(403).send('Only administrators allowed');
+                return;
+            }
+
+            try {
+                await deleteFile(file);
+                res.status(200).json(getApiResponse({ id }));
+            } catch (e) {
+                handleApiError(res, 'delete user', e, { id });
+            }
+
+            break;
+        }
+        default:
+            res.setHeader('Allow', ['GET', 'PATCH', 'DELETE']);
+            res.status(405).end(`Method ${method} Not Allowed`);
+    }
 };
 
 export default withAuthenticatedRoute(handler);

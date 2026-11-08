@@ -10,41 +10,41 @@ import prisma from '@/utils/prisma/prismaImporter';
 import { respondToProcessing } from '@/utils/processes/processingResponse';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
-  const { method } = req;
+    const { method } = req;
 
-  switch (method) {
-    case 'POST':
-      // update album files metadata
-      try {
-        const albumData: EntityType | null = getEntityTypeRequestBodyObject(req, res);
-        if (albumData == null) {
-          throw new Error('Album not specified');
-        }
+    switch (method) {
+        case 'POST':
+            // update album files metadata
+            try {
+                const albumData: EntityType | null = getEntityTypeRequestBodyObject(req, res);
+                if (albumData == null) {
+                    throw new Error('Album not specified');
+                }
 
-        const { id: idToUpdate } = albumData;
+                const { id: idToUpdate } = albumData;
 
-        const album = await retryRead(() =>
-          prisma.album.findFirst({
-            where: {
-              id: idToUpdate,
-              status: { in: ['Active', 'Disabled'] },
-            },
-          }),
-        );
+                const album = await retryRead(() =>
+                    prisma.album.findFirst({
+                        where: {
+                            id: idToUpdate,
+                            status: { in: ['Active', 'Disabled'] },
+                        },
+                    }),
+                );
 
-        if (album === null) {
-          throw new Error(`Album not exists with id ${idToUpdate}`);
-        }
+                if (album === null) {
+                    throw new Error(`Album not exists with id ${idToUpdate}`);
+                }
 
-        await respondToProcessing(res, { albumId: album.id, stages: ['metadata', 'thumbnails'] });
-      } catch (e) {
-        res.status(400).end(`${e}`);
-      }
-      break;
-    default:
-      res.setHeader('Allow', ['POST']);
-      res.status(405).end(`Method ${method} Not Allowed`);
-  }
+                await respondToProcessing(res, { albumId: album.id, stages: ['metadata', 'thumbnails'] });
+            } catch (e) {
+                res.status(400).end(`${e}`);
+            }
+            break;
+        default:
+            res.setHeader('Allow', ['POST']);
+            res.status(405).end(`Method ${method} Not Allowed`);
+    }
 };
 
 export default apiOnlyWithAdminUsers(handler);

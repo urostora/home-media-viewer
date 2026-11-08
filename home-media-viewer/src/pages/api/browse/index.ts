@@ -6,23 +6,23 @@ import { getBrowseResult } from '@/utils/fileHelper';
 import type { BrowseResult } from '@/types/api/browseTypes';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
-  const { method } = req;
+    const { method } = req;
 
-  switch (method) {
-    case 'GET': {
-      try {
-        const results = await getBrowseResult('');
-        res.status(200).json(getApiResponseWithData<BrowseResult>(results));
-      } catch (e) {
-        handleApiError(res, 'get broswe result', e);
-      }
+    switch (method) {
+        case 'GET': {
+            try {
+                const results = await getBrowseResult('');
+                res.status(200).json(getApiResponseWithData<BrowseResult>(results));
+            } catch (e) {
+                handleApiError(res, 'get broswe result', e);
+            }
 
-      break;
+            break;
+        }
+        default:
+            res.setHeader('Allow', ['GET']);
+            res.status(405).end(`Method ${method} Not Allowed`);
     }
-    default:
-      res.setHeader('Allow', ['GET']);
-      res.status(405).end(`Method ${method} Not Allowed`);
-  }
 };
 
 export default apiOnlyWithAdminUsers(handler);

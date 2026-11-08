@@ -10,210 +10,212 @@ import hmvStyle from '@/styles/gallery.module.scss';
 import globus from 'public/globus.png';
 
 export interface ContentThumbnailPropsType {
-  contentSelected?: (content: FileResultType) => void;
-  contentInfoSelected?: (content: FileResultType) => void;
-  content: FileResultType;
-  displayDetails?: boolean;
+    contentSelected?: (content: FileResultType) => void;
+    contentInfoSelected?: (content: FileResultType) => void;
+    content: FileResultType;
+    displayDetails?: boolean;
 }
 
 const getMetaMap = (metaList?: FileMetadataType[] | undefined): Map<string, string | number | Date | object> => {
-  return (metaList ?? []).reduce((carry: Map<string, string | number | Date | object>, meta: FileMetadataType) => {
-    const key = meta.metaKey;
-    let value;
+    return (metaList ?? []).reduce((carry: Map<string, string | number | Date | object>, meta: FileMetadataType) => {
+        const key = meta.metaKey;
+        let value;
 
-    switch (meta.type) {
-      case 'Int':
-        value = meta.intValue;
-        break;
-      case 'Float':
-        value = meta.floatValue;
-        break;
-      case 'String':
-        value = meta.stringValue;
-        break;
-      case 'DateTime':
-        value = meta.dateValue;
-        break;
-      case 'Location':
-        value = {
-          latitude: meta.latitude,
-          longitude: meta.longitude,
-        };
-        break;
-      default:
-        break;
-    }
+        switch (meta.type) {
+            case 'Int':
+                value = meta.intValue;
+                break;
+            case 'Float':
+                value = meta.floatValue;
+                break;
+            case 'String':
+                value = meta.stringValue;
+                break;
+            case 'DateTime':
+                value = meta.dateValue;
+                break;
+            case 'Location':
+                value = {
+                    latitude: meta.latitude,
+                    longitude: meta.longitude,
+                };
+                break;
+            default:
+                break;
+        }
 
-    if (typeof value !== 'undefined' && value != null) {
-      carry.set(key, value);
-    }
+        if (typeof value !== 'undefined' && value != null) {
+            carry.set(key, value);
+        }
 
-    return carry;
-  }, new Map<string, string | number | Date | object>());
+        return carry;
+    }, new Map<string, string | number | Date | object>());
 };
 
 const ContentThumbnail = (props: ContentThumbnailPropsType): JSX.Element => {
-  const { content, contentSelected, contentInfoSelected, displayDetails = false } = props;
+    const { content, contentSelected, contentInfoSelected, displayDetails = false } = props;
 
-  const onCardClicked = (): void => {
-    if (typeof contentSelected === 'function') {
-      contentSelected(content);
+    const onCardClicked = (): void => {
+        if (typeof contentSelected === 'function') {
+            contentSelected(content);
+        }
+    };
+
+    const onLocationClicked = (e: React.SyntheticEvent): void => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const locationMeta = content.metas.find((m) => m.metaKey === MetaType.GpsCoordinates);
+        if (locationMeta === undefined) {
+            return;
+        }
+
+        const url = `https://www.google.com/maps/search/?api=1&query=${locationMeta.latitude}%2C${locationMeta.longitude}`;
+        window.open(url, '__blank');
+    };
+
+    const onInfoClicked = (e: React.SyntheticEvent): void => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (typeof contentInfoSelected === 'function') {
+            contentInfoSelected(content);
+        }
+    };
+
+    const isVideo = typeof content?.extension === 'string' ? isVideoByExtension(content.extension) : false;
+
+    const imageSrc: string | null = content.isDirectory
+        ? '/directory.png'
+        : content.thumbnail === null
+          ? content.thumbnailStatus === 'Processed'
+              ? getThumbnailUrl(content.id, 200, content.thumbnailProcessedAt)
+              : null
+          : `data:image/jpeg;base64,${content.thumbnail}`;
+
+    const imageContent =
+        typeof imageSrc === 'string' ? (
+            <img className={hmvStyle.thumbnailImage} alt={content.name} src={imageSrc} />
+        ) : null;
+
+    const videoIcon = isVideo ? <img alt="play" src="/play.svg" className={hmvStyle.videoIcon} /> : null;
+
+    let contentDetails = null;
+
+    const metaMap = getMetaMap(content.metas);
+
+    const metaListElements: Array<{ name: string; value: string | ReactElement }> = [];
+    const highlightedMetaValues: string[] = [];
+
+    metaListElements.push({ name: 'Size', value: contentSizeToString(content.size ?? 0) });
+    metaListElements.push({ name: 'Path', value: content.path.replace('_', '_ ').replace('/', '/ ') });
+
+    let coordinates: { latitude?: number; longitude?: number } | undefined;
+
+    if (typeof content.contentDate === 'string' && content.contentDate.length > 0) {
+        const cd = new Date(content.contentDate);
+        metaListElements.push({ name: 'Date', value: `${cd.toLocaleDateString()} ${cd.toLocaleTimeString()}` });
     }
-  };
+    if (typeof metaMap.get(MetaType.ResolutionX) === 'number') {
+        const size = `${metaMap.get(MetaType.ResolutionX)} x ${metaMap.get(MetaType.ResolutionY)}`;
+        metaListElements.push({ name: 'Resolution', value: size });
+        highlightedMetaValues.push(size);
+    }
+    if (typeof metaMap.get(MetaType.Duration) === 'number') {
+        const durationValue = durationInSecToString((metaMap.get(MetaType.Duration) as number) ?? 0);
+        metaListElements.push({ name: 'Duration', value: durationValue });
+        highlightedMetaValues.push(durationValue);
+    }
+    if (typeof metaMap.get(MetaType.Fps) === 'number') {
+        const fpsValue = `${metaMap.get(MetaType.Fps) as number}fps`;
+        metaListElements.push({ name: 'FPS', value: fpsValue });
+        highlightedMetaValues.push(fpsValue);
+    }
+    if (typeof metaMap.get(MetaType.GpsCoordinates) === 'object') {
+        const coord = metaMap.get(MetaType.GpsCoordinates) as { latitude?: number; longitude?: number };
 
-  const onLocationClicked = (e: React.SyntheticEvent): void => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const locationMeta = content.metas.find((m) => m.metaKey === MetaType.GpsCoordinates);
-    if (locationMeta === undefined) {
-      return;
+        if (typeof coord?.latitude === 'number' && typeof coord?.longitude === 'number') {
+            const link = `https://www.google.com/maps/search/?api=1&query=${coord?.latitude}%2C${coord?.longitude}`;
+            metaListElements.push({
+                name: 'Location',
+                value: (
+                    <a href={link} target="__blank">
+                        View in Google Maps
+                    </a>
+                ),
+            });
+            coordinates = coord;
+        }
     }
 
-    const url = `https://www.google.com/maps/search/?api=1&query=${locationMeta.latitude}%2C${locationMeta.longitude}`;
-    window.open(url, '__blank');
-  };
+    if ((content?.size ?? 0) > 0) {
+        highlightedMetaValues.push(contentSizeToString(content.size ?? 0));
+    }
 
-  const onInfoClicked = (e: React.SyntheticEvent): void => {
-    e.preventDefault();
-    e.stopPropagation();
+    contentDetails = displayDetails ? (
+        <div className={hmvStyle.contentDetails}>
+            <ul>
+                {metaListElements.map((mle, index) => (
+                    <li key={index}>
+                        {mle.name}: {mle.value}
+                    </li>
+                ))}
+            </ul>
+        </div>
+    ) : null;
+
+    const contentName = content.name + (content.extension.length > 0 ? `.${content.extension}` : '');
+
+    const highlightedMetaElements = highlightedMetaValues.map((text, index) => <div key={index}>{text}</div>);
+
+    if (coordinates !== undefined) {
+        highlightedMetaElements.push(
+            <button
+                type="button"
+                aria-label={`View location of ${content.name}`}
+                key="location"
+                onClick={onLocationClicked}
+                className={hmvStyle.locationIcon}
+            >
+                <Image src={globus} alt="" />
+            </button>,
+        );
+    }
 
     if (typeof contentInfoSelected === 'function') {
-      contentInfoSelected(content);
+        highlightedMetaElements.push(
+            <button type="button" aria-label={`Information about ${content.name}`} key="info" onClick={onInfoClicked}>
+                &#8505;
+            </button>,
+        );
     }
-  };
 
-  const isVideo = typeof content?.extension === 'string' ? isVideoByExtension(content.extension) : false;
-
-  const imageSrc: string | null = content.isDirectory
-    ? '/directory.png'
-    : content.thumbnail === null
-      ? content.thumbnailStatus === 'Processed'
-        ? getThumbnailUrl(content.id, 200, content.thumbnailProcessedAt)
-        : null
-      : `data:image/jpeg;base64,${content.thumbnail}`;
-
-  const imageContent =
-    typeof imageSrc === 'string' ? <img className={hmvStyle.thumbnailImage} alt={content.name} src={imageSrc} /> : null;
-
-  const videoIcon = isVideo ? <img alt="play" src="/play.svg" className={hmvStyle.videoIcon} /> : null;
-
-  let contentDetails = null;
-
-  const metaMap = getMetaMap(content.metas);
-
-  const metaListElements: Array<{ name: string; value: string | ReactElement }> = [];
-  const highlightedMetaValues: string[] = [];
-
-  metaListElements.push({ name: 'Size', value: contentSizeToString(content.size ?? 0) });
-  metaListElements.push({ name: 'Path', value: content.path.replace('_', '_ ').replace('/', '/ ') });
-
-  let coordinates: { latitude?: number; longitude?: number } | undefined;
-
-  if (typeof content.contentDate === 'string' && content.contentDate.length > 0) {
-    const cd = new Date(content.contentDate);
-    metaListElements.push({ name: 'Date', value: `${cd.toLocaleDateString()} ${cd.toLocaleTimeString()}` });
-  }
-  if (typeof metaMap.get(MetaType.ResolutionX) === 'number') {
-    const size = `${metaMap.get(MetaType.ResolutionX)} x ${metaMap.get(MetaType.ResolutionY)}`;
-    metaListElements.push({ name: 'Resolution', value: size });
-    highlightedMetaValues.push(size);
-  }
-  if (typeof metaMap.get(MetaType.Duration) === 'number') {
-    const durationValue = durationInSecToString((metaMap.get(MetaType.Duration) as number) ?? 0);
-    metaListElements.push({ name: 'Duration', value: durationValue });
-    highlightedMetaValues.push(durationValue);
-  }
-  if (typeof metaMap.get(MetaType.Fps) === 'number') {
-    const fpsValue = `${metaMap.get(MetaType.Fps) as number}fps`;
-    metaListElements.push({ name: 'FPS', value: fpsValue });
-    highlightedMetaValues.push(fpsValue);
-  }
-  if (typeof metaMap.get(MetaType.GpsCoordinates) === 'object') {
-    const coord = metaMap.get(MetaType.GpsCoordinates) as { latitude?: number; longitude?: number };
-
-    if (typeof coord?.latitude === 'number' && typeof coord?.longitude === 'number') {
-      const link = `https://www.google.com/maps/search/?api=1&query=${coord?.latitude}%2C${coord?.longitude}`;
-      metaListElements.push({
-        name: 'Location',
-        value: (
-          <a href={link} target="__blank">
-            View in Google Maps
-          </a>
-        ),
-      });
-      coordinates = coord;
-    }
-  }
-
-  if ((content?.size ?? 0) > 0) {
-    highlightedMetaValues.push(contentSizeToString(content.size ?? 0));
-  }
-
-  contentDetails = displayDetails ? (
-    <div className={hmvStyle.contentDetails}>
-      <ul>
-        {metaListElements.map((mle, index) => (
-          <li key={index}>
-            {mle.name}: {mle.value}
-          </li>
-        ))}
-      </ul>
-    </div>
-  ) : null;
-
-  const contentName = content.name + (content.extension.length > 0 ? `.${content.extension}` : '');
-
-  const highlightedMetaElements = highlightedMetaValues.map((text, index) => <div key={index}>{text}</div>);
-
-  if (coordinates !== undefined) {
-    highlightedMetaElements.push(
-      <button
-        type="button"
-        aria-label={`View location of ${content.name}`}
-        key="location"
-        onClick={onLocationClicked}
-        className={hmvStyle.locationIcon}
-      >
-        <Image src={globus} alt="" />
-      </button>,
-    );
-  }
-
-  if (typeof contentInfoSelected === 'function') {
-    highlightedMetaElements.push(
-      <button type="button" aria-label={`Information about ${content.name}`} key="info" onClick={onInfoClicked}>
-        &#8505;
-      </button>,
-    );
-  }
-
-  return (
-    <div className={hmvStyle.contentCardContainer} data-testid="content-card" data-id={content.id}>
-      <div className={hmvStyle.contentName} data-testid="card-name">
-        <abbr title={content.path}>
-          <button type="button" onClick={onCardClicked}>
-            {contentName}
-          </button>
-        </abbr>
-      </div>
-      <div className={hmvStyle.contentDataContainer}>
-        {contentDetails}
-        <div className={hmvStyle.imageContainer}>
-          <button
-            type="button"
-            className={hmvStyle.imageButton}
-            aria-label={`Open ${contentName}`}
-            onClick={onCardClicked}
-          >
-            {imageContent}
-            {videoIcon}
-          </button>
-          <div className={hmvStyle.metadataContainer}>{highlightedMetaElements}</div>
+    return (
+        <div className={hmvStyle.contentCardContainer} data-testid="content-card" data-id={content.id}>
+            <div className={hmvStyle.contentName} data-testid="card-name">
+                <abbr title={content.path}>
+                    <button type="button" onClick={onCardClicked}>
+                        {contentName}
+                    </button>
+                </abbr>
+            </div>
+            <div className={hmvStyle.contentDataContainer}>
+                {contentDetails}
+                <div className={hmvStyle.imageContainer}>
+                    <button
+                        type="button"
+                        className={hmvStyle.imageButton}
+                        aria-label={`Open ${contentName}`}
+                        onClick={onCardClicked}
+                    >
+                        {imageContent}
+                        {videoIcon}
+                    </button>
+                    <div className={hmvStyle.metadataContainer}>{highlightedMetaElements}</div>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 };
 
 export default ContentThumbnail;

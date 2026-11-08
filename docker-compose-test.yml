@@ -1,172 +1,172 @@
 services:
-  db:
-    hostname: home-media-viewer-test-db
-    extends:
-      file: ./docker/base-images.yml
-      service: mariadb
-    environment:
-      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
-      MARIADB_DATABASE: ${MARIADB_DATABASE}
-      MARIADB_USER: ${MARIADB_USER}
-      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
-    healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
-      interval: 5s
-      timeout: 5s
-      retries: 12
-      start_period: 30s
-    ports:
-      - "127.0.0.1:${MARIADB_PORT_ON_HOST}:3306"
-    networks:
-      - home-media-test-network
-    volumes:
-      - home-media-test-db-storage:/var/lib/mysql
+    db:
+        hostname: home-media-viewer-test-db
+        extends:
+            file: ./docker/base-images.yml
+            service: mariadb
+        environment:
+            MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+            MARIADB_DATABASE: ${MARIADB_DATABASE}
+            MARIADB_USER: ${MARIADB_USER}
+            MARIADB_PASSWORD: ${MARIADB_PASSWORD}
+        healthcheck:
+            test: ['CMD', 'healthcheck.sh', '--connect', '--innodb_initialized']
+            interval: 5s
+            timeout: 5s
+            retries: 12
+            start_period: 30s
+        ports:
+            - '127.0.0.1:${MARIADB_PORT_ON_HOST}:3306'
+        networks:
+            - home-media-test-network
+        volumes:
+            - home-media-test-db-storage:/var/lib/mysql
 
-  migration:
-    command: ["npx", "--no-install", "prisma", "migrate", "deploy"]
-    restart: "no"
-    image: ${HMV_MIGRATION_IMAGE:-urostora/home-media-viewer/migration-test:latest}
-    hostname: home-media-viewer-test-migration
-    extends:
-      file: ./docker/base-images.yml
-      service: build
-    build:
-      dockerfile: ./docker/prod/migration/Dockerfile
-      context: .
-      target: migration
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      APP_ALBUM_ROOT_PATH: ${APP_ALBUM_ROOT_PATH}
-      APP_STORAGE_PATH: ${APP_STORAGE_PATH:-/mnt/storage}
-      APP_THUMBNAIL_SUBDIRECTORY: ${APP_THUMBNAIL_SUBDIRECTORY:-thumbnail}
-      DATABASE_URL: ${DATABASE_URL}
-      LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
-      LOGIN_TRUST_FORWARDED_HEADERS: ${LOGIN_TRUST_FORWARDED_HEADERS:-false}
-      LOGIN_TRUSTED_PROXY_CIDRS: ${LOGIN_TRUSTED_PROXY_CIDRS:-}
-      APP_SESSION_SECRET: ${APP_SESSION_SECRET}
-      PROCESS_TOKEN: ${PROCESS_TOKEN}
-      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
-      IS_BACKGROUND_PROCESS_ENABLED: 0
-      ADMIN_EMAIL: ${ADMIN_EMAIL}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
-    networks:
-      - home-media-test-network
+    migration:
+        command: ['npx', '--no-install', 'prisma', 'migrate', 'deploy']
+        restart: 'no'
+        image: ${HMV_MIGRATION_IMAGE:-urostora/home-media-viewer/migration-test:latest}
+        hostname: home-media-viewer-test-migration
+        extends:
+            file: ./docker/base-images.yml
+            service: build
+        build:
+            dockerfile: ./docker/prod/migration/Dockerfile
+            context: .
+            target: migration
+        depends_on:
+            db:
+                condition: service_healthy
+        environment:
+            APP_ALBUM_ROOT_PATH: ${APP_ALBUM_ROOT_PATH}
+            APP_STORAGE_PATH: ${APP_STORAGE_PATH:-/mnt/storage}
+            APP_THUMBNAIL_SUBDIRECTORY: ${APP_THUMBNAIL_SUBDIRECTORY:-thumbnail}
+            DATABASE_URL: ${DATABASE_URL}
+            LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
+            LOGIN_TRUST_FORWARDED_HEADERS: ${LOGIN_TRUST_FORWARDED_HEADERS:-false}
+            LOGIN_TRUSTED_PROXY_CIDRS: ${LOGIN_TRUSTED_PROXY_CIDRS:-}
+            APP_SESSION_SECRET: ${APP_SESSION_SECRET}
+            PROCESS_TOKEN: ${PROCESS_TOKEN}
+            SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
+            IS_BACKGROUND_PROCESS_ENABLED: 0
+            ADMIN_EMAIL: ${ADMIN_EMAIL}
+            ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+        networks:
+            - home-media-test-network
 
-  testrunner:
-    hostname: home-media-viewer-test-testrunner
-    extends:
-      file: ./docker/base-images.yml
-      service: build
-    build:
-      dockerfile: ./docker/test/testrunner/Dockerfile
-      context: .
-      target: testrunner
-    depends_on:
-      - app
-    environment:
-      APP_ALBUM_ROOT_PATH: ${APP_ALBUM_ROOT_PATH}
-      APP_STORAGE_PATH: ${APP_STORAGE_PATH:-/mnt/storage}
-      APP_THUMBNAIL_SUBDIRECTORY: ${APP_THUMBNAIL_SUBDIRECTORY:-thumbnail}
-      DATABASE_URL: ${DATABASE_URL}
-      LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
-      LOGIN_TRUST_FORWARDED_HEADERS: ${LOGIN_TRUST_FORWARDED_HEADERS:-false}
-      LOGIN_TRUSTED_PROXY_CIDRS: ${LOGIN_TRUSTED_PROXY_CIDRS:-}
-      APP_SESSION_SECRET: ${APP_SESSION_SECRET}
-      PROCESS_TOKEN: ${PROCESS_TOKEN}
-      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
-      IS_BACKGROUND_PROCESS_ENABLED: 0
-      APP_URL: http://web.test:3000
-      BACKGROUND_URL: http://background:3000
-      ADMIN_EMAIL: ${ADMIN_EMAIL}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
-    networks:
-      - home-media-test-network
+    testrunner:
+        hostname: home-media-viewer-test-testrunner
+        extends:
+            file: ./docker/base-images.yml
+            service: build
+        build:
+            dockerfile: ./docker/test/testrunner/Dockerfile
+            context: .
+            target: testrunner
+        depends_on:
+            - app
+        environment:
+            APP_ALBUM_ROOT_PATH: ${APP_ALBUM_ROOT_PATH}
+            APP_STORAGE_PATH: ${APP_STORAGE_PATH:-/mnt/storage}
+            APP_THUMBNAIL_SUBDIRECTORY: ${APP_THUMBNAIL_SUBDIRECTORY:-thumbnail}
+            DATABASE_URL: ${DATABASE_URL}
+            LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
+            LOGIN_TRUST_FORWARDED_HEADERS: ${LOGIN_TRUST_FORWARDED_HEADERS:-false}
+            LOGIN_TRUSTED_PROXY_CIDRS: ${LOGIN_TRUSTED_PROXY_CIDRS:-}
+            APP_SESSION_SECRET: ${APP_SESSION_SECRET}
+            PROCESS_TOKEN: ${PROCESS_TOKEN}
+            SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
+            IS_BACKGROUND_PROCESS_ENABLED: 0
+            APP_URL: http://web.test:3000
+            BACKGROUND_URL: http://background:3000
+            ADMIN_EMAIL: ${ADMIN_EMAIL}
+            ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+        networks:
+            - home-media-test-network
 
-  scheduler:
-    image: ${HMV_APP_IMAGE:-urostora/home-media-viewer/app-test:latest}
-    profiles: [scheduled]
-    init: true
-    command: ["node", "runBackgroundScheduler.mjs"]
-    depends_on:
-      - background
-    environment:
-      BACKGROUND_URL: http://background:3000
-      PROCESS_TOKEN: ${PROCESS_TOKEN}
-      LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
-      BACKGROUND_INTERVAL_SEC: ${BACKGROUND_INTERVAL_SEC:-180}
-      BACKGROUND_CATCHUP_INTERVAL_SEC: ${BACKGROUND_CATCHUP_INTERVAL_SEC:-30}
-      BACKGROUND_MAX_BACKOFF_SEC: ${BACKGROUND_MAX_BACKOFF_SEC:-900}
-    networks:
-      - home-media-test-network
+    scheduler:
+        image: ${HMV_APP_IMAGE:-urostora/home-media-viewer/app-test:latest}
+        profiles: [scheduled]
+        init: true
+        command: ['node', 'runBackgroundScheduler.mjs']
+        depends_on:
+            - background
+        environment:
+            BACKGROUND_URL: http://background:3000
+            PROCESS_TOKEN: ${PROCESS_TOKEN}
+            LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
+            BACKGROUND_INTERVAL_SEC: ${BACKGROUND_INTERVAL_SEC:-180}
+            BACKGROUND_CATCHUP_INTERVAL_SEC: ${BACKGROUND_CATCHUP_INTERVAL_SEC:-30}
+            BACKGROUND_MAX_BACKOFF_SEC: ${BACKGROUND_MAX_BACKOFF_SEC:-900}
+        networks:
+            - home-media-test-network
 
-  background:
-    image: ${HMV_APP_IMAGE:-urostora/home-media-viewer/app-test:latest}
-    hostname: home-media-viewer-test-background
-    depends_on:
-      db:
-        condition: service_healthy
-      migration:
-        condition: service_completed_successfully
-    environment:
-      APP_ALBUM_ROOT_PATH: ${APP_ALBUM_ROOT_PATH}
-      APP_STORAGE_PATH: ${APP_STORAGE_PATH:-/mnt/storage}
-      APP_THUMBNAIL_SUBDIRECTORY: ${APP_THUMBNAIL_SUBDIRECTORY:-thumbnail}
-      DATABASE_URL: ${DATABASE_URL}
-      LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
-      LOGIN_TRUST_FORWARDED_HEADERS: ${LOGIN_TRUST_FORWARDED_HEADERS:-false}
-      LOGIN_TRUSTED_PROXY_CIDRS: ${LOGIN_TRUSTED_PROXY_CIDRS:-}
-      APP_SESSION_SECRET: ${APP_SESSION_SECRET}
-      PROCESS_TOKEN: ${PROCESS_TOKEN}
-      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
-      IS_BACKGROUND_PROCESS_ENABLED: 1
-    volumes:
-      - home-media-test-storage:${APP_STORAGE_PATH}
-      - ./test/files:${APP_ALBUM_ROOT_PATH}:ro
-    networks:
-      - home-media-test-network
+    background:
+        image: ${HMV_APP_IMAGE:-urostora/home-media-viewer/app-test:latest}
+        hostname: home-media-viewer-test-background
+        depends_on:
+            db:
+                condition: service_healthy
+            migration:
+                condition: service_completed_successfully
+        environment:
+            APP_ALBUM_ROOT_PATH: ${APP_ALBUM_ROOT_PATH}
+            APP_STORAGE_PATH: ${APP_STORAGE_PATH:-/mnt/storage}
+            APP_THUMBNAIL_SUBDIRECTORY: ${APP_THUMBNAIL_SUBDIRECTORY:-thumbnail}
+            DATABASE_URL: ${DATABASE_URL}
+            LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
+            LOGIN_TRUST_FORWARDED_HEADERS: ${LOGIN_TRUST_FORWARDED_HEADERS:-false}
+            LOGIN_TRUSTED_PROXY_CIDRS: ${LOGIN_TRUSTED_PROXY_CIDRS:-}
+            APP_SESSION_SECRET: ${APP_SESSION_SECRET}
+            PROCESS_TOKEN: ${PROCESS_TOKEN}
+            SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
+            IS_BACKGROUND_PROCESS_ENABLED: 1
+        volumes:
+            - home-media-test-storage:${APP_STORAGE_PATH}
+            - ./test/files:${APP_ALBUM_ROOT_PATH}:ro
+        networks:
+            - home-media-test-network
 
-  app:
-    image: ${HMV_APP_IMAGE:-urostora/home-media-viewer/app-test:latest}
-    hostname: home-media-viewer-test-app
-    extends:
-      file: ./docker/base-images.yml
-      service: build
-    build:
-      dockerfile: ./docker/prod/app/Dockerfile
-      context: .
-      target: app
-    depends_on:
-      db:
-        condition: service_healthy
-      migration:
-        condition: service_completed_successfully
-    environment:
-      APP_ALBUM_ROOT_PATH: ${APP_ALBUM_ROOT_PATH}
-      APP_STORAGE_PATH: ${APP_STORAGE_PATH:-/mnt/storage}
-      APP_THUMBNAIL_SUBDIRECTORY: ${APP_THUMBNAIL_SUBDIRECTORY:-thumbnail}
-      DATABASE_URL: ${DATABASE_URL}
-      LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
-      LOGIN_TRUST_FORWARDED_HEADERS: ${LOGIN_TRUST_FORWARDED_HEADERS:-false}
-      LOGIN_TRUSTED_PROXY_CIDRS: ${LOGIN_TRUSTED_PROXY_CIDRS:-}
-      APP_SESSION_SECRET: ${APP_SESSION_SECRET}
-      PROCESS_TOKEN: ${PROCESS_TOKEN}
-      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
-      IS_BACKGROUND_PROCESS_ENABLED: 0
-    volumes:
-      - home-media-test-storage:${APP_STORAGE_PATH}
-      - ./test/files:${APP_ALBUM_ROOT_PATH}:ro
-    ports:
-      - ${WEB_PORT}:3000
-    networks:
-      home-media-test-network:
-        aliases: [web.test]
+    app:
+        image: ${HMV_APP_IMAGE:-urostora/home-media-viewer/app-test:latest}
+        hostname: home-media-viewer-test-app
+        extends:
+            file: ./docker/base-images.yml
+            service: build
+        build:
+            dockerfile: ./docker/prod/app/Dockerfile
+            context: .
+            target: app
+        depends_on:
+            db:
+                condition: service_healthy
+            migration:
+                condition: service_completed_successfully
+        environment:
+            APP_ALBUM_ROOT_PATH: ${APP_ALBUM_ROOT_PATH}
+            APP_STORAGE_PATH: ${APP_STORAGE_PATH:-/mnt/storage}
+            APP_THUMBNAIL_SUBDIRECTORY: ${APP_THUMBNAIL_SUBDIRECTORY:-thumbnail}
+            DATABASE_URL: ${DATABASE_URL}
+            LONG_PROCESS_TIMEOUT_SEC: ${LONG_PROCESS_TIMEOUT_SEC}
+            LOGIN_TRUST_FORWARDED_HEADERS: ${LOGIN_TRUST_FORWARDED_HEADERS:-false}
+            LOGIN_TRUSTED_PROXY_CIDRS: ${LOGIN_TRUSTED_PROXY_CIDRS:-}
+            APP_SESSION_SECRET: ${APP_SESSION_SECRET}
+            PROCESS_TOKEN: ${PROCESS_TOKEN}
+            SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
+            IS_BACKGROUND_PROCESS_ENABLED: 0
+        volumes:
+            - home-media-test-storage:${APP_STORAGE_PATH}
+            - ./test/files:${APP_ALBUM_ROOT_PATH}:ro
+        ports:
+            - ${WEB_PORT}:3000
+        networks:
+            home-media-test-network:
+                aliases: [web.test]
 
 networks:
-  home-media-test-network:
+    home-media-test-network:
 
 volumes:
-  home-media-test-storage:
+    home-media-test-storage:
 
-  home-media-test-db-storage:
+    home-media-test-db-storage:

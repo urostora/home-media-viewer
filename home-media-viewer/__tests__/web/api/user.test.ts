@@ -5,64 +5,64 @@ import type { GeneralResponseWithData } from '@/types/api/generalTypes';
 import type { UserDataType } from '@/types/api/userTypes';
 
 describe('web/api/user', () => {
-  const path = 'user';
+    const path = 'user';
 
-  const userIdsAdded: string[] = [];
+    const userIdsAdded: string[] = [];
 
-  afterAll(async () => {
-    // delete created users
-    for (const userId of userIdsAdded) {
-      try {
-        await fetchDataFromApi<GeneralResponseWithData<UserDataType>>(`${path}/${userId}`, undefined, 'DELETE');
-      } catch {
-        // Cleanup is best-effort; the fixture may already have been deleted.
-      }
-    }
-  });
+    afterAll(async () => {
+        // delete created users
+        for (const userId of userIdsAdded) {
+            try {
+                await fetchDataFromApi<GeneralResponseWithData<UserDataType>>(`${path}/${userId}`, undefined, 'DELETE');
+            } catch {
+                // Cleanup is best-effort; the fixture may already have been deleted.
+            }
+        }
+    });
 
-  it('create guest user', async () => {
-    const { email, name, password, isAdmin } = getTestUserData('guest');
+    it('create guest user', async () => {
+        const { email, name, password, isAdmin } = getTestUserData('guest');
 
-    const result = await fetchDataFromApi<GeneralResponseWithData<UserDataType>>(
-      path,
-      { email, password, name, isAdmin },
-      'POST',
-    );
+        const result = await fetchDataFromApi<GeneralResponseWithData<UserDataType>>(
+            path,
+            { email, password, name, isAdmin },
+            'POST',
+        );
 
-    expect(result?.ok).toBe(true);
-    expect(typeof result?.data).toBe('object');
-    expect(typeof result?.data?.id).toBe('string');
+        expect(result?.ok).toBe(true);
+        expect(typeof result?.data).toBe('object');
+        expect(typeof result?.data?.id).toBe('string');
 
-    const createdId = result?.data?.id;
+        const createdId = result?.data?.id;
 
-    expect(typeof createdId).toBe('string');
-    if (typeof createdId !== 'string') {
-      return;
-    }
+        expect(typeof createdId).toBe('string');
+        if (typeof createdId !== 'string') {
+            return;
+        }
 
-    await checkUserData(createdId, { email, name, isAdmin });
-  });
+        await checkUserData(createdId, { email, name, isAdmin });
+    });
 
-  it('create admin user', async () => {
-    const { email, name, password, isAdmin } = getTestUserData('admin', true);
+    it('create admin user', async () => {
+        const { email, name, password, isAdmin } = getTestUserData('admin', true);
 
-    const result = await fetchDataFromApi<GeneralResponseWithData<UserDataType>>(
-      path,
-      { email, password, name, isAdmin },
-      'POST',
-    );
+        const result = await fetchDataFromApi<GeneralResponseWithData<UserDataType>>(
+            path,
+            { email, password, name, isAdmin },
+            'POST',
+        );
 
-    expect(result?.ok).toBe(true);
-    expect(typeof result?.data).toBe('object');
-    expect(typeof result?.data?.id).toBe('string');
+        expect(result?.ok).toBe(true);
+        expect(typeof result?.data).toBe('object');
+        expect(typeof result?.data?.id).toBe('string');
 
-    const createdId = result?.data?.id;
+        const createdId = result?.data?.id;
 
-    expect(typeof createdId).toBe('string');
-    if (typeof createdId !== 'string') {
-      return;
-    }
+        expect(typeof createdId).toBe('string');
+        if (typeof createdId !== 'string') {
+            return;
+        }
 
-    await checkUserData(createdId, { email, name, isAdmin });
-  });
+        await checkUserData(createdId, { email, name, isAdmin });
+    });
 });

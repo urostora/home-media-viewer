@@ -2,179 +2,179 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider   = "prisma-client-js"
-  engineType = "client"
+    provider   = "prisma-client-js"
+    engineType = "client"
 }
 
 datasource db {
-  provider = "mysql"
+    provider = "mysql"
 }
 
 enum Status {
-  Deleted
-  Active
-  Disabled
+    Deleted
+    Active
+    Disabled
 }
 
 enum MetadataProcessingStatus {
-  New
-  Processed
-  NotSupported
-  Error
+    New
+    Processed
+    NotSupported
+    Error
 }
 
 model User {
-  id             String        @id @default(uuid())
-  status         Status        @default(Active)
-  email          String        @unique
-  name           String
-  password       String
-  albums         Album[]
-  isAdmin        Boolean       @default(false)
-  sessionVersion Int           @default(0)
-  sessions       AuthSession[]
+    id             String        @id @default(uuid())
+    status         Status        @default(Active)
+    email          String        @unique
+    name           String
+    password       String
+    albums         Album[]
+    isAdmin        Boolean       @default(false)
+    sessionVersion Int           @default(0)
+    sessions       AuthSession[]
 }
 
 model AuthSession {
-  id            String    @id @default(uuid())
-  tokenHash     String    @unique @db.Char(64)
-  userId        String
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userVersion   Int
-  issuedAt      DateTime  @default(now())
-  expiresAt     DateTime
-  idleExpiresAt DateTime
-  lastSeenAt    DateTime
-  revokedAt     DateTime?
+    id            String    @id @default(uuid())
+    tokenHash     String    @unique @db.Char(64)
+    userId        String
+    user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+    userVersion   Int
+    issuedAt      DateTime  @default(now())
+    expiresAt     DateTime
+    idleExpiresAt DateTime
+    lastSeenAt    DateTime
+    revokedAt     DateTime?
 
-  @@index([userId, revokedAt])
-  @@index([expiresAt])
-  @@index([idleExpiresAt])
-  @@index([revokedAt])
+    @@index([userId, revokedAt])
+    @@index([expiresAt])
+    @@index([idleExpiresAt])
+    @@index([revokedAt])
 }
 
 enum AlbumSourceType {
-  File
-  Ftp
+    File
+    Ftp
 }
 
 model Album {
-  id               String          @id @default(uuid())
-  status           Status          @default(Active)
-  name             String
-  sourceType       AlbumSourceType
-  connectionString String          @db.Text
-  basePath         String          @db.Text
-  users            User[]
-  files            File[]          @relation("AlbumFiles")
-  parentAlbumId    String?
-  parent           Album?          @relation("AlbumChildren", fields: [parentAlbumId], references: [id])
-  childAlbums      Album[]         @relation("AlbumChildren")
-  thumbnailFileId  String?
-  thumbnailFile    File?           @relation("AlbumThumbnails", fields: [thumbnailFileId], references: [id])
+    id               String          @id @default(uuid())
+    status           Status          @default(Active)
+    name             String
+    sourceType       AlbumSourceType
+    connectionString String          @db.Text
+    basePath         String          @db.Text
+    users            User[]
+    files            File[]          @relation("AlbumFiles")
+    parentAlbumId    String?
+    parent           Album?          @relation("AlbumChildren", fields: [parentAlbumId], references: [id])
+    childAlbums      Album[]         @relation("AlbumChildren")
+    thumbnailFileId  String?
+    thumbnailFile    File?           @relation("AlbumThumbnails", fields: [thumbnailFileId], references: [id])
 }
 
 model File {
-  id                       String                   @id @default(uuid())
-  status                   Status                   @default(Active)
-  path                     String                   @db.Text
-  name                     String
-  extension                String
-  isDirectory              Boolean                  @default(false)
-  createdAt                DateTime                 @default(now())
-  modifiedAt               DateTime                 @default(now())
-  contentDate              DateTime?
-  size                     Int?
-  hash                     String?
-  metadataStatus           MetadataProcessingStatus @default(New)
-  metadataProcessedAt      DateTime?
-  metadataProcessingError  String?                  @db.Text
-  thumbnailStatus          MetadataProcessingStatus @default(New)
-  thumbnailProcessedAt     DateTime?
-  thumbnailProcessingError String?                  @db.Text
-  sourceVersion            String?                  @db.VarChar(64)
-  metadataSourceVersion    String?                  @db.VarChar(64)
-  thumbnailSourceVersion   String?                  @db.VarChar(64)
-  albums                   Album[]                  @relation("AlbumFiles")
-  metas                    FileMeta[]
-  parentFileId             String?
-  parentFile               File?                    @relation("DirectoryContent", fields: [parentFileId], references: [id])
-  files                    File[]                   @relation("DirectoryContent")
-  albumsUseAsThumbnail     Album[]                  @relation("AlbumThumbnails")
+    id                       String                   @id @default(uuid())
+    status                   Status                   @default(Active)
+    path                     String                   @db.Text
+    name                     String
+    extension                String
+    isDirectory              Boolean                  @default(false)
+    createdAt                DateTime                 @default(now())
+    modifiedAt               DateTime                 @default(now())
+    contentDate              DateTime?
+    size                     Int?
+    hash                     String?
+    metadataStatus           MetadataProcessingStatus @default(New)
+    metadataProcessedAt      DateTime?
+    metadataProcessingError  String?                  @db.Text
+    thumbnailStatus          MetadataProcessingStatus @default(New)
+    thumbnailProcessedAt     DateTime?
+    thumbnailProcessingError String?                  @db.Text
+    sourceVersion            String?                  @db.VarChar(64)
+    metadataSourceVersion    String?                  @db.VarChar(64)
+    thumbnailSourceVersion   String?                  @db.VarChar(64)
+    albums                   Album[]                  @relation("AlbumFiles")
+    metas                    FileMeta[]
+    parentFileId             String?
+    parentFile               File?                    @relation("DirectoryContent", fields: [parentFileId], references: [id])
+    files                    File[]                   @relation("DirectoryContent")
+    albumsUseAsThumbnail     Album[]                  @relation("AlbumThumbnails")
 
-  @@index([extension])
-  @@index([name, extension])
-  @@index([path(length: 120)])
-  @@index([contentDate])
-  @@index([status, isDirectory, metadataStatus, id])
-  @@index([status, isDirectory, thumbnailStatus, id])
+    @@index([extension])
+    @@index([name, extension])
+    @@index([path(length: 120)])
+    @@index([contentDate])
+    @@index([status, isDirectory, metadataStatus, id])
+    @@index([status, isDirectory, thumbnailStatus, id])
 }
 
 enum FileMetaType {
-  Int
-  Float
-  String
-  DateTime
-  Location
+    Int
+    Float
+    String
+    DateTime
+    Location
 }
 
 // Independent discovery progress; never use media statuses as scan cursors.
 model DiscoveryDirectory {
-  id            String   @id @db.VarChar(64)
-  path          String   @db.Text
-  entryCursor   String?  @db.Text
-  cleanupCursor String?  @db.VarChar(191)
-  scanVersion   String?  @db.VarChar(64)
-  lastServedAt  DateTime @default(now())
+    id            String   @id @db.VarChar(64)
+    path          String   @db.Text
+    entryCursor   String?  @db.Text
+    cleanupCursor String?  @db.VarChar(191)
+    scanVersion   String?  @db.VarChar(64)
+    lastServedAt  DateTime @default(now())
 
-  @@index([lastServedAt, id])
+    @@index([lastServedAt, id])
 }
 
 // Fair dispatch position only; File stage statuses remain the durable backlog.
 model MediaQueueCursor {
-  id         String  @id @db.VarChar(64)
-  lastFileId String? @db.VarChar(191)
+    id         String  @id @db.VarChar(64)
+    lastFileId String? @db.VarChar(191)
 }
 
 enum MetadataOrigin {
-  Legacy
-  Extracted
-  Manual
+    Legacy
+    Extracted
+    Manual
 }
 
 model FileMeta {
-  id          String         @id @default(uuid())
-  fileId      String
-  file        File           @relation(fields: [fileId], references: [id])
-  metaKey     String
-  type        FileMetaType
-  origin      MetadataOrigin @default(Legacy)
-  intValue    Int?
-  floatValue  Float?
-  stringValue String?        @db.Text
-  dateValue   DateTime?
-  latitude    Float?
-  longitude   Float?
+    id          String         @id @default(uuid())
+    fileId      String
+    file        File           @relation(fields: [fileId], references: [id])
+    metaKey     String
+    type        FileMetaType
+    origin      MetadataOrigin @default(Legacy)
+    intValue    Int?
+    floatValue  Float?
+    stringValue String?        @db.Text
+    dateValue   DateTime?
+    latitude    Float?
+    longitude   Float?
 
-  @@unique([fileId, metaKey])
-  @@index([fileId, metaKey])
-  @@index([metaKey])
-  @@index([metaKey(length: 32), latitude, longitude])
+    @@unique([fileId, metaKey])
+    @@index([fileId, metaKey])
+    @@index([metaKey])
+    @@index([metaKey(length: 32), latitude, longitude])
 }
 
 // Shared login budgets. Keys are HMAC digests; the global coordination row is fixed.
 model LoginBudget {
-  key       String   @id @db.VarChar(64)
-  used      Int
-  startedAt DateTime
-  resetAt   DateTime
+    key       String   @id @db.VarChar(64)
+    used      Int
+    startedAt DateTime
+    resetAt   DateTime
 
-  @@index([resetAt])
+    @@index([resetAt])
 }
 
 // No timed expiry: a slot is released only after its bcrypt work actually ends.
 model LoginPermit {
-  slot       Int       @id
-  owner      String?   @db.VarChar(191)
-  acquiredAt DateTime?
+    slot       Int       @id
+    owner      String?   @db.VarChar(191)
+    acquiredAt DateTime?
 }

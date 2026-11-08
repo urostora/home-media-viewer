@@ -15,26 +15,32 @@ const PathNavigator = (props: PathNavigatorProps): JSX.Element => {
         return <></>;
     }
 
-    const pathParts = [ '', ...path.split('/') ];
+    const pathParts = ['', ...path.split('/')];
 
     const rootPath = '/browse';
 
     const linkElements = pathParts.map((element: string, index: number, allParts: string[]) => {
         if (element.length === 0) {
             // root element
-            return <Link key="/" href={rootPath}>/</Link>;
+            return (
+                <Link key="/" href={rootPath}>
+                    /
+                </Link>
+            );
         }
 
         const text = `/${element}`;
         const hrefPostfix = allParts.slice(0, index + 1).join('/');
         const fullHref = `${rootPath}/${hrefPostfix}`.replace('//', '/');
 
-        return <Link key={hrefPostfix} href={fullHref}>{text}</Link>;
+        return (
+            <Link key={hrefPostfix} href={fullHref}>
+                {text}
+            </Link>
+        );
     });
 
-    return <div className={hmvStyle.pathNavigator}>
-        {linkElements}
-    </div>;
+    return <div className={hmvStyle.pathNavigator}>{linkElements}</div>;
 };
 
 export default PathNavigator;

@@ -1,125 +1,109 @@
-import { useState, useEffect, type ReactElement } from 'react';
+import { useCallback, type ReactElement } from 'react';
 
-import type { AlbumExtendedDataType } from '@/types/api/albumTypes';
+import { useAsyncData } from '@/utils/frontend/hooks/useAsyncData';
 import { apiAlbumDetails } from '@/utils/frontend/dataSource/album';
 
 import hmvStyle from '@/styles/hmv.module.scss';
 
 export interface AlbumDetailsProps {
-  albumId?: string;
-  showDetails?: boolean;
+    albumId?: string;
+    showDetails?: boolean;
 }
 
 const AlbumDetails = (props: AlbumDetailsProps): ReactElement => {
-  const { albumId, showDetails = false } = props;
+    const { albumId, showDetails = false } = props;
 
-  const [albumData, setAlbumData] = useState<AlbumExtendedDataType | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+    if (typeof albumId !== 'string') return <></>;
+    return <LoadedAlbumDetails key={albumId} albumId={albumId} showDetails={showDetails} />;
+};
 
-  useEffect(() => {
-    if (typeof albumId !== 'string') {
-      setIsLoading(false);
-      return;
+const LoadedAlbumDetails = ({ albumId, showDetails }: { albumId: string; showDetails: boolean }): ReactElement => {
+    const loader = useCallback(() => apiAlbumDetails(albumId), [albumId]);
+    const { data: albumData, isLoading, error } = useAsyncData(loader);
+
+    if (isLoading) {
+        return (
+            <div className={`${hmvStyle.roundBorderedContainer} ${hmvStyle.albumDetails}`}>
+                Loading album details...
+            </div>
+        );
     }
 
-    apiAlbumDetails(albumId)
-      .then((fetchedAlbumData) => {
-        setIsLoading(false);
-        setAlbumData(fetchedAlbumData ?? null);
-        setError(null);
-      })
-      .catch((e) => {
-        setIsLoading(false);
-        setError(`${e}`);
-      });
-  }, [albumId]);
+    if (albumData == null) {
+        return (
+            <div className={`${hmvStyle.roundBorderedContainer} ${hmvStyle.albumDetails}`}>
+                {`Could not load album details (${albumId}): ${error}`}
+            </div>
+        );
+    }
 
-  if (typeof albumId !== 'string') {
-    return <></>;
-  }
+    // data is loaded
 
-  if (isLoading) {
-    return (
-      <div className={`${hmvStyle.roundBorderedContainer} ${hmvStyle.albumDetails}`}>Loading album details...</div>
+    const fileStatusData: {
+        all: number;
+        new: number;
+        processed: number;
+        failed: number;
+    } = albumData?.fileStatus?.reduce(
+        (carry, fs) => {
+            carry.all += fs.fileCount;
+
+            if (fs.metadataStatus === 'New') {
+                carry.new += fs.fileCount;
+            } else if (fs.metadataStatus === 'Processed') {
+                carry.processed += fs.fileCount;
+            } else if (fs.metadataStatus === 'Failed') {
+                carry.failed += fs.fileCount;
+            }
+
+            return carry;
+        },
+        {
+            all: 0,
+            new: 0,
+            processed: 0,
+            failed: 0,
+        },
     );
-  }
 
-  if (albumData === null) {
+    let fileStatusString = `${fileStatusData?.all}`;
+
+    if (fileStatusData.all > 0) {
+        let fileStatusDetailString = '';
+        if (fileStatusData.new > 0) {
+            fileStatusDetailString += `, New: ${fileStatusData?.new}`;
+        }
+        if (fileStatusData.processed > 0) {
+            fileStatusDetailString += `, Processed: ${fileStatusData?.processed}`;
+        }
+        if (fileStatusData.failed > 0) {
+            fileStatusDetailString += `, Failed: ${fileStatusData?.failed}`;
+        }
+
+        fileStatusString += ` (${fileStatusDetailString.slice(2)})`;
+    }
+
     return (
-      <div className={`${hmvStyle.roundBorderedContainer} ${hmvStyle.albumDetails}`}>
-        {`Could not load album details (${albumId}): ${error}`}
-      </div>
+        <div className={`${hmvStyle.roundBorderedContainer} ${hmvStyle.albumDetails}`}>
+            <div className={hmvStyle.title}>{showDetails ? 'Album details' : albumData.name}</div>
+            {showDetails ? (
+                <>
+                    <div>
+                        <span className={hmvStyle.caption}>Name:</span>
+                        <span className={hmvStyle.value}>{`${albumData.name} (${albumData.id})`}</span>
+                    </div>
+                    <div>
+                        <span className={hmvStyle.caption}>Path:</span>
+                        <span className={hmvStyle.value}>{albumData.basePath}</span>
+                    </div>
+                    <div>
+                        <span className={hmvStyle.caption}>Files:</span>
+                        <span className={hmvStyle.value}>{fileStatusString}</span>
+                    </div>
+                </>
+            ) : null}
+        </div>
     );
-  }
-
-  // data is loaded
-
-  const fileStatusData: {
-    all: number;
-    new: number;
-    processed: number;
-    failed: number;
-  } = albumData?.fileStatus?.reduce(
-    (carry, fs) => {
-      carry.all += fs.fileCount;
-
-      if (fs.metadataStatus === 'New') {
-        carry.new += fs.fileCount;
-      } else if (fs.metadataStatus === 'Processed') {
-        carry.processed += fs.fileCount;
-      } else if (fs.metadataStatus === 'Failed') {
-        carry.failed += fs.fileCount;
-      }
-
-      return carry;
-    },
-    {
-      all: 0,
-      new: 0,
-      processed: 0,
-      failed: 0,
-    },
-  );
-
-  let fileStatusString = `${fileStatusData?.all}`;
-
-  if (fileStatusData.all > 0) {
-    let fileStatusDetailString = '';
-    if (fileStatusData.new > 0) {
-      fileStatusDetailString += `, New: ${fileStatusData?.new}`;
-    }
-    if (fileStatusData.processed > 0) {
-      fileStatusDetailString += `, Processed: ${fileStatusData?.processed}`;
-    }
-    if (fileStatusData.failed > 0) {
-      fileStatusDetailString += `, Failed: ${fileStatusData?.failed}`;
-    }
-
-    fileStatusString += ` (${fileStatusDetailString.slice(2)})`;
-  }
-
-  return (
-    <div className={`${hmvStyle.roundBorderedContainer} ${hmvStyle.albumDetails}`}>
-      <div className={hmvStyle.title}>{showDetails ? 'Album details' : albumData.name}</div>
-      {showDetails ? (
-        <>
-          <div>
-            <span className={hmvStyle.caption}>Name:</span>
-            <span className={hmvStyle.value}>{`${albumData.name} (${albumData.id})`}</span>
-          </div>
-          <div>
-            <span className={hmvStyle.caption}>Path:</span>
-            <span className={hmvStyle.value}>{albumData.basePath}</span>
-          </div>
-          <div>
-            <span className={hmvStyle.caption}>Files:</span>
-            <span className={hmvStyle.value}>{fileStatusString}</span>
-          </div>
-        </>
-      ) : null}
-    </div>
-  );
 };
 
 export default AlbumDetails;

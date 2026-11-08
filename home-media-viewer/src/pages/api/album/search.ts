@@ -7,36 +7,38 @@ import { validateData } from '@/utils/dataValidator';
 import type { AlbumDataTypeWithFiles, AlbumSearchType } from '@/types/api/albumTypes';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
-  const { method, authenticatedUser } = req;
+    const { method, authenticatedUser } = req;
 
-  switch (method) {
-    case 'POST': {
-      // search albums
-      const postData = getRequestBodyObject<AlbumSearchType>(req, res);
+    switch (method) {
+        case 'POST': {
+            // search albums
+            const postData = getRequestBodyObject<AlbumSearchType>(req, res);
 
-      try {
-        if (postData == null) {
-          throw new HmvError('Empty request', { isPublic: true });
+            try {
+                if (postData == null) {
+                    throw new HmvError('Empty request', { isPublic: true });
+                }
+
+                validateData(postData, albumSearchDataSchema);
+
+                if (authenticatedUser?.isAdmin !== true) {
+                    postData.user = authenticatedUser?.id ?? '';
+                }
+
+                const results = await getAlbums(postData);
+                res.status(200).json(
+                    getApiResponseWithEntityList<AlbumDataTypeWithFiles>(results, { filter: postData }),
+                );
+            } catch (e) {
+                handleApiError(res, 'search user', e, postData);
+            }
+
+            break;
         }
-
-        validateData(postData, albumSearchDataSchema);
-
-        if (authenticatedUser?.isAdmin !== true) {
-          postData.user = authenticatedUser?.id ?? '';
-        }
-
-        const results = await getAlbums(postData);
-        res.status(200).json(getApiResponseWithEntityList<AlbumDataTypeWithFiles>(results, { filter: postData }));
-      } catch (e) {
-        handleApiError(res, 'search user', e, postData);
-      }
-
-      break;
+        default:
+            res.setHeader('Allow', ['POST']);
+            res.status(405).end(`Method ${method} Not Allowed`);
     }
-    default:
-      res.setHeader('Allow', ['POST']);
-      res.status(405).end(`Method ${method} Not Allowed`);
-  }
 };
 
 export default withAuthenticatedRoute(handler);
