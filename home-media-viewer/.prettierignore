@@ -1,0 +1,12 @@
+# Also used by editors and package-only Docker tooling.
+node_modules/
+.next/
+out/
+build/
+coverage/
+next-env.d.ts
+*.tsbuildinfo
+package-lock.json
+public/
+prisma/migrations/
+.env*

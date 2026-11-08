@@ -1,0 +1,15 @@
+# Generated output, immutable inputs and private/local data.
+**/node_modules/
+**/.next/
+**/out/
+/home-media-viewer/build/
+**/coverage/
+**/next-env.d.ts
+**/*.tsbuildinfo
+**/package-lock.json
+**/public/
+**/prisma/migrations/
+**/.env*
+releases/
+test/files/
+temp/

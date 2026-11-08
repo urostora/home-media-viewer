@@ -7,6 +7,7 @@ import prettier from 'eslint-config-prettier';
 
 export default defineConfig(
     globalIgnores(['coverage/**']),
+    { linterOptions: { reportUnusedDisableDirectives: 'error' } },
     js.configs.recommended,
     ...nextVitals,
     {
@@ -14,8 +15,19 @@ export default defineConfig(
         extends: nextTypeScript,
     },
     {
-        files: ['*.{js,cjs,mjs}'],
+        files: ['*.{js,cjs,mjs}', '*.js.prod'],
         languageOptions: { globals: globals.node },
+    },
+    {
+        files: ['*.{js,cjs}', '*.js.prod'],
+        languageOptions: { sourceType: 'commonjs' },
+    },
+    {
+        files: ['*.mjs'],
+        languageOptions: {
+            sourceType: 'module',
+            globals: { require: 'off', module: 'off', exports: 'off', __dirname: 'off', __filename: 'off' },
+        },
     },
     {
         files: ['src/components/content/**/*.tsx'],

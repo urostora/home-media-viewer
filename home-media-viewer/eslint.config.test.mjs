@@ -76,3 +76,21 @@ test('effect state updates are errors in existing loading components', async () 
         );
     }
 });
+
+test('Node scripts distinguish CommonJS and ESM, including production config', async () => {
+    for (const file of ['next.config.js', 'startServer.cjs', 'next.config.js.prod']) {
+        assert.deepEqual(await messages('if (process.env.SKIP) return; module.exports = {};', file), [], file);
+    }
+    const diagnostics = await messages("require('node:fs');", 'runBackgroundScheduler.mjs');
+    assert.ok(diagnostics.some(({ ruleId, severity }) => ruleId === 'no-undef' && severity === 2));
+});
+
+test('unused ESLint suppressions are errors', async () => {
+    const diagnostics = await messages('// eslint-disable-next-line no-alert\nexport const value = 1;', 'src/probe.ts');
+    assert.ok(
+        diagnostics.some(
+            ({ ruleId, severity, message }) =>
+                ruleId === null && severity === 2 && message.includes('Unused eslint-disable'),
+        ),
+    );
+});
