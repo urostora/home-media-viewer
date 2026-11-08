@@ -4,6 +4,8 @@ Reviewed on 2026-11-08 against the official [Next.js ESLint guide](https://nextj
 
 The application uses ESLint flat config with the JavaScript recommended rules and the Next.js Core Web Vitals and TypeScript presets. These provide React, Hooks, accessibility and framework checks. Keep the Next.js preset version aligned with Next.js; avoid adding duplicate React/Hook presets.
 
+ESLint remains pinned to 9.39.5, the latest compatible 9.x release. As of this review, the latest ESLint is 10.14.0, but the Next.js preset depends on `eslint-plugin-react` 7.37.5 and `eslint-plugin-jsx-a11y` 6.10.2, whose peer dependency ranges exclude ESLint 10. Revisit the major upgrade when those plugins support it; do not bypass dependency resolution with `--force` or `--legacy-peer-deps`. `eslint-config-prettier` is pinned to 10.1.8.
+
 Prettier handles formatting separately. `eslint-config-prettier` stays last to disable conflicting lint rules. Its compatibility checker reports no conflicts with the current configuration. `npm run lint` rejects warnings, and unused suppression comments are errors. A documented exception permits native images in media-content components using authenticated thumbnails and native sizing.
 
 Root-level application `.js`/`.cjs` scripts and `next.config.js.prod` use CommonJS; `.mjs` scripts use ESM and reject undeclared CommonJS globals. TypeScript rules cover `.ts`, `.tsx`, `.mts` and `.cts`.
