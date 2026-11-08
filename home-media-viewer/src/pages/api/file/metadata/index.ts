@@ -1,3 +1,4 @@
+import { retryRead } from '../../../../utils/prisma/retryRead';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getApiResponse, getEntityTypeRequestBodyObject } from '@/utils/apiHelpers';
 import { type EntityType } from '@/types/api/generalTypes';
@@ -22,12 +23,14 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
 
         const { id: idToUpdate } = fileData;
 
-        const file = await prisma.file.findFirst({
-          where: {
-            id: idToUpdate,
-            status: { in: ['Active', 'Disabled'] },
-          },
-        });
+        const file = await retryRead(() =>
+          prisma.file.findFirst({
+            where: {
+              id: idToUpdate,
+              status: { in: ['Active', 'Disabled'] },
+            },
+          }),
+        );
 
         if (file === null) {
           throw new Error(`File not exists with id ${idToUpdate}`);
@@ -53,12 +56,14 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
 
         const { id: idToUpdate } = updateData;
 
-        const file = await prisma.file.findFirst({
-          where: {
-            id: idToUpdate,
-            status: { in: ['Active', 'Disabled'] },
-          },
-        });
+        const file = await retryRead(() =>
+          prisma.file.findFirst({
+            where: {
+              id: idToUpdate,
+              status: { in: ['Active', 'Disabled'] },
+            },
+          }),
+        );
 
         if (file == null) {
           throw new Error(`File not exists with id ${idToUpdate}`);

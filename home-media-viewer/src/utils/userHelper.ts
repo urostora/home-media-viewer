@@ -1,3 +1,4 @@
+import { retryRead } from './prisma/retryRead';
 import prisma from '@/utils/prisma/prismaImporter';
 import { lockSessionUser, revokeUserSessions } from './auth/serverSession';
 import { getHashedPassword } from './passwordHelper';
@@ -69,12 +70,14 @@ export const checkUserData = async (data: UserEditType, currentId: string | null
 
   // check if user exists with same name or email
   if (uniqueFilters.length > 0) {
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        OR: uniqueFilters,
-        NOT: notFilter,
-      },
-    });
+    const existingUser = await retryRead(() =>
+      prisma.user.findFirst({
+        where: {
+          OR: uniqueFilters,
+          NOT: notFilter,
+        },
+      }),
+    );
 
     if (existingUser != null) {
       throw new HmvError('A user with this name or email already exists', { isPublic: true });
@@ -122,27 +125,29 @@ export const searchUser = async (param: UserSearchType): Promise<EntityListResul
 };
 
 export const getUserData = async (id: string): Promise<UserExtendedDataType | null> => {
-  const user = await prisma.user.findFirst({
-    where: {
-      id,
-    },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      status: true,
-      albums: {
-        select: {
-          id: true,
-          name: true,
-        },
-        orderBy: {
-          name: 'asc',
-        },
+  const user = await retryRead(() =>
+    prisma.user.findFirst({
+      where: {
+        id,
       },
-      isAdmin: true,
-    },
-  });
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        status: true,
+        albums: {
+          select: {
+            id: true,
+            name: true,
+          },
+          orderBy: {
+            name: 'asc',
+          },
+        },
+        isAdmin: true,
+      },
+    }),
+  );
 
   return user;
 };
@@ -179,7 +184,7 @@ export const updateUser = async (id: string, data: UserEditType): Promise<User> 
     throw Error('Parameter "id" must be a non-empty string');
   }
 
-  const user = await prisma.user.findFirst({ where: { id } });
+  const user = await retryRead(() => prisma.user.findFirst({ where: { id } }));
 
   if (user == null) {
     throw Error(`User not found with id ${id}`);

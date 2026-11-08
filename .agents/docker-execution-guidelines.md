@@ -10,11 +10,11 @@ The default configuration lets run the containers with developer settings. If th
 
 ```sh
 docker compose run --rm dependencies npm ci
-docker compose run --rm dependencies npx prisma generate
+docker compose run --rm dependencies npx --no-install prisma generate
 docker compose run --rm dependencies npm run lint
 docker compose run --rm dependencies npm run typecheck
 docker compose run --rm dependencies npm run build
-docker compose run --rm testrunner npx jest --runInBand --runTestsByPath __tests__/components/albumDetails.test.tsx
+docker compose run --rm testrunner npx --no-install jest --runInBand --runTestsByPath __tests__/components/albumDetails.test.tsx
 ```
 
 Node services work in `/home/node/app` with the application bind-mounted. Check configured ports rather than assuming defaults. The test runner depends on `app`; running it may start the database and migration service too.

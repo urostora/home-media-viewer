@@ -1,3 +1,4 @@
+import { retryRead } from '../prisma/retryRead';
 import type { File, Prisma } from '@prisma/client';
 import { VideoThumbnailTimeError, type MediaStage } from '@/types/processingTypes';
 import prisma from '../prisma/prismaImporter';
@@ -53,9 +54,11 @@ export const processFileStage = async (
       const video = isVideoFile(file);
       const savedTime =
         video && videoThumbnailTimeSec === undefined
-          ? await prisma.fileMeta.findUnique({
-              where: { fileId_metaKey: { fileId: file.id, metaKey: MetaType.VideoThumbnailTime } },
-            })
+          ? await retryRead(() =>
+              prisma.fileMeta.findUnique({
+                where: { fileId_metaKey: { fileId: file.id, metaKey: MetaType.VideoThumbnailTime } },
+              }),
+            )
           : null;
       await publishThumbnails(
         file,

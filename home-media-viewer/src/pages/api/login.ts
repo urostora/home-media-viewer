@@ -1,3 +1,4 @@
+import { retryRead } from '../../utils/prisma/retryRead';
 import { withSessionRoute } from '@/utils/sessionRoute';
 
 import {
@@ -64,7 +65,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
     let matched;
     let account;
     try {
-      user = await prisma.user.findFirst({ where: { email: loginData.email } });
+      user = await retryRead(() => prisma.user.findFirst({ where: { email: loginData.email } }));
       account = await admitLoginAccount(user, loginData.email);
       if (account.allowed) matched = await verifyLoginPassword(loginData.password, user?.password);
     } finally {

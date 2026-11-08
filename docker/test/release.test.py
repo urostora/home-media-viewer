@@ -115,6 +115,9 @@ class ReleaseTests(unittest.TestCase):
     def test_test_order_and_environment_isolation(self):
         with patch.dict(pipeline.os.environ, {'DATABASE_URL': 'production', 'COMPOSE_FILE': 'production', 'MARIADB_PASSWORD': 'production'}):
             calls, images, _ = self.scenario('test')
+        self.assertEqual(self.build_services['testrunner']['environment'], {
+            'HMV_RESET_TEST_LOGIN_BUDGETS': 'true', 'HMV_TEST_DATABASE': '${MARIADB_DATABASE:?}',
+        })
         compose = [(args, kwargs) for args, kwargs in calls if args[:2] == ['docker', 'compose']]
         sequence = [' '.join(args) for args, _ in compose]
         migration = next(i for i, value in enumerate(sequence) if 'run --rm --no-deps migration' in value)

@@ -1,3 +1,4 @@
+import { retryRead } from './prisma/retryRead';
 import fs from 'fs';
 import path from 'path';
 
@@ -59,10 +60,12 @@ export const getFileById = async (
           },
         };
 
-  const file = await prisma.file.findFirst({
-    where: { id, albums: albumWhere },
-    include: { metas: true, albums: true },
-  });
+  const file = await retryRead(() =>
+    prisma.file.findFirst({
+      where: { id, albums: albumWhere },
+      include: { metas: true, albums: true },
+    }),
+  );
 
   if (file === null) {
     return null;
@@ -79,7 +82,7 @@ export const addFile = async (filePath: string, albums: Album[], parentFile?: Fi
   const relativePath = filePath.substring(ALBUM_PATH.length + 1);
 
   // check if file already exists
-  const existingFile = await prisma.file.findFirst({ where: { path: relativePath, isDirectory } });
+  const existingFile = await retryRead(() => prisma.file.findFirst({ where: { path: relativePath, isDirectory } }));
   if (existingFile !== null) {
     // if it was deleted, reactivate file and reload metadata
     if (existingFile.status === 'Deleted') {
@@ -204,11 +207,11 @@ export const getFiles = async (params: FileSearchType): Promise<EntityListResult
 
   if (params?.parentFileId === null && typeof params?.album?.id === 'string') {
     // album root requested - get directory file representing the album root (if any)
-    const album = await prisma.album.findFirst({ where: { id: params?.album?.id } });
+    const album = await retryRead(() => prisma.album.findFirst({ where: { id: params?.album?.id } }));
 
     if (album != null) {
       const relativePath = album.basePath.substring(ALBUM_PATH.length + 1);
-      const parentFile = await prisma.file.findFirst({ where: { path: relativePath } });
+      const parentFile = await retryRead(() => prisma.file.findFirst({ where: { path: relativePath } }));
 
       if (parentFile != null) {
         parentFileIdFilter = parentFile.id;
@@ -343,12 +346,14 @@ export const getPureExtension = (extension?: string): string => {
 };
 
 export const loadMetadataById = async (fileId: string): Promise<void> => {
-  const file = await prisma.file.findFirst({
-    where: {
-      id: fileId,
-      status: { in: ['Active', 'Disabled'] },
-    },
-  });
+  const file = await retryRead(() =>
+    prisma.file.findFirst({
+      where: {
+        id: fileId,
+        status: { in: ['Active', 'Disabled'] },
+      },
+    }),
+  );
 
   if (file === null) {
     throw Error(`File not found with id ${fileId}`);
@@ -368,9 +373,9 @@ export const loadMetadata = async (file: File): Promise<boolean> =>
 
 export const deleteMetadata = async (file: File): Promise<void> =>
   await withProcessingLock(async () => {
-    const metaIds = (await prisma.fileMeta.findMany({ where: { fileId: file.id }, select: { id: true } })).map(
-      (r) => r.id,
-    );
+    const metaIds = (
+      await retryRead(() => prisma.fileMeta.findMany({ where: { fileId: file.id }, select: { id: true } }))
+    ).map((r) => r.id);
 
     const deleteOperations = metaIds.map((metaId) => prisma.fileMeta.delete({ where: { id: metaId } }));
 

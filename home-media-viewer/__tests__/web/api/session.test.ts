@@ -22,7 +22,7 @@ describe('session lifecycle and authorization', () => {
     const cookie = cookieFrom(response);
     expect((await fetch(getApiUrl('me'), { headers: { cookie } })).status).toBe(200);
     expect((await fetch(getApiUrl('me'), { headers: { cookie: cookie.slice(0, -8) + 'tampered' } })).status).toBe(403);
-    const logout = await fetch(getApiUrl('logout'), { headers: { cookie } });
+    const logout = await fetch(getApiUrl('logout'), { method: 'POST', headers: { cookie } });
     expect(logout.status).toBe(200);
     expect(logout.headers.get('set-cookie')).toMatch(/Max-Age=0/i);
     expect((await fetch(getApiUrl('me'))).status).toBe(403);

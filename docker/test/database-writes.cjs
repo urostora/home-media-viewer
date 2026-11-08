@@ -12,6 +12,7 @@ app.cache[app.resolve('@prisma/client')].exports = {...client, PrismaClient:clas
 }};
 app('ts-node').register({transpileOnly:true,project:'/home/node/app/tsconfig.json'}); app('tsconfig-paths/register');
 const load = name=>app(`./src/utils/${name}`);
+const queryHooks = require('./prisma-hooks.cjs')(app);
 const prisma = load('prisma/prismaImporter').default;
 const { processFileStage } = load('processes/fileStages');
 const { withProcessingLock } = load('processes/processingLock');
@@ -20,7 +21,7 @@ const { MetadataCollector } = load('fileProcessor/metadata');
 const factory = load('fileProcessor/processorFactory');
 const checks = [], measurements = [];
 let hook;
-prisma.$use(async(params,next)=>hook ? hook(params,next) : next(params));
+queryHooks.use(async(params,next)=>hook ? hook(params,next) : next(params));
 const check = async(name,test)=>{await test(); checks.push(name);};
 const metas = id=>prisma.fileMeta.findMany({where:{fileId:id},orderBy:{metaKey:'asc'}});
 async function main() {
@@ -105,8 +106,13 @@ async function main() {
       assert.equal(await stage(target.id),'succeeded');
     });
     await check('a rolled-back conflict retries every chunk; ambiguous failures are not retried',async()=>{
-      revision=3; let commits=0;
+      revision=3; let commits=0, observedRollback=false;
+      const beforeConflict=JSON.stringify(await metas(target.id));
       hook=async(params,next)=>{
+        if(commits===1 && !observedRollback && params.model==='FileMeta' && params.action==='findMany') {
+          observedRollback=true;
+          assert.equal(JSON.stringify(await metas(target.id)),beforeConflict);
+        }
         if(params.model==='File' && params.action==='updateMany' && params.args.data.metadataStatus==='Processed') {
           commits++; const result=await next(params);
           if(commits===1) throw Object.assign(new Error('rolled-back conflict'),{code:'P2034'});
@@ -116,7 +122,9 @@ async function main() {
       };
       queries.length=0; recording=true;
       try { assert.equal(await stage(target.id),'succeeded'); } finally {hook=undefined; recording=false;}
-      assert.equal(commits,2); assert(queries.some(row=>row.sql==='ROLLBACK'));
+      // Adapter transaction control is not emitted through Prisma's query logger.
+      // Verify the rollback's data effect before the second attempt instead.
+      assert.equal(commits,2); assert(observedRollback);
       assert.equal(queries.filter(row=>/INSERT INTO `FileMeta`/.test(row.sql)).length,6);
       assert.equal((await metas(target.id)).find(row=>row.metaKey==='integer').intValue,3);
       revision=4; commits=0; const before=JSON.stringify(await metas(target.id));
@@ -143,12 +151,14 @@ async function main() {
             if(attempts[index]===1) { signal(); await wait; }
             await tx.$executeRaw`UPDATE File SET size = COALESCE(size,0)+1 WHERE id = ${b}`;
           });
-        } catch(error) {failures.push({code:error.code,databaseCode:error.meta?.code}); throw error;}
+        } catch(error) {failures.push({code:error.code,databaseCode:error.meta?.code ?? error.meta?.driverAdapterError?.cause?.originalCode}); throw error;}
       });
       const before=await prisma.file.findMany({where:{id:{in:[target.id,other.id]}}});
       await Promise.all([work(0,target.id,other.id,firstReady,second),work(1,other.id,target.id,secondReady,first)]);
       assert.equal(attempts[0]+attempts[1],3);
-      assert.equal(failures.length,1); assert.equal(failures[0].code,'P2010'); assert.equal(failures[0].databaseCode,'1213');
+      assert.equal(failures.length,1);
+      assert(['P2010','P2034'].includes(failures[0].code));
+      if(failures[0].code==='P2010') assert.equal(failures[0].databaseCode,'1213');
       for(const row of await prisma.file.findMany({where:{id:{in:[target.id,other.id]}}})) {
         assert.equal(row.size,(before.find(old=>old.id===row.id).size??0)+2);
       }

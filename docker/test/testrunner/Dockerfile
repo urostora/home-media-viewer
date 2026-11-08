@@ -7,6 +7,7 @@ ENV PUPPETEER_SKIP_DOWNLOAD=true
 COPY ./home-media-viewer/package.json ./home-media-viewer/package-lock.json ./
 RUN --mount=type=cache,id=hmv-npm,target=/root/.npm,sharing=locked npm ci --no-audit --no-fund
 COPY ./home-media-viewer/prisma/schema.prisma ./prisma/schema.prisma
+COPY ./home-media-viewer/prisma.config.ts ./prisma.config.ts
 RUN ./node_modules/.bin/prisma generate
 
 FROM ${NODE_SLIM_IMAGE} AS browser

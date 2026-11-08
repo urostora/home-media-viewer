@@ -1,3 +1,4 @@
+import { retryRead } from '../../../../utils/prisma/retryRead';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 import { getEntityTypeRequestBodyObject } from '@/utils/apiHelpers';
@@ -22,12 +23,14 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
 
         const { id: idToUpdate } = albumData;
 
-        const album = await prisma.album.findFirst({
-          where: {
-            id: idToUpdate,
-            status: { in: ['Active', 'Disabled'] },
-          },
-        });
+        const album = await retryRead(() =>
+          prisma.album.findFirst({
+            where: {
+              id: idToUpdate,
+              status: { in: ['Active', 'Disabled'] },
+            },
+          }),
+        );
 
         if (album === null) {
           throw new Error(`Album not exists with id ${idToUpdate}`);

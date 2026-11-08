@@ -30,6 +30,7 @@ const gate = () => {
   return { promise, open };
 };
 (async () => {
+  const queryHooks = require('./prisma-hooks.cjs')(reqApp);
   prisma = reqApp('./src/utils/prisma/prismaImporter.ts').default;
   check(await prisma.user.count(), 0, 'fresh fixture DB');
   const password = 'Synthetic-T6-P4ssword!';
@@ -211,7 +212,7 @@ const gate = () => {
     onTouch,
     failRevocation = false;
   let failRead = false;
-  prisma.$use(async (params, next) => {
+  queryHooks.use(async (params, next) => {
     if (failRead && params.model === 'AuthSession' && params.action === 'findUnique') {
       failRead = false;
       throw new Error('Synthetic session database failure');

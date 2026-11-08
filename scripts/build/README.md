@@ -1,6 +1,6 @@
 # Committed releases and disposable tests
 
-Run from any directory with Python 3.9+, Git, Docker and Docker Compose >=2.24.4 (test port removal uses `!reset`). Commands build only **committed** content from the selected local repository. Commit the infrastructure changes before selecting a normal release revision. Fetch private refs beforehand using Git's configured SSH agent or credential helper; do not put credentials in URLs. No clone, fetch, checkout replacement, push or deployment occurs automatically.
+Run from any directory with Python 3.9+, Git, Docker and Docker Compose >=2.24.4 (test port removal uses `!reset`). Commands build only **committed** content from the selected local repository. Commit the intended application/infrastructure changes before selecting a normal release revision. Fetch private refs beforehand using Git's configured SSH agent or credential helper; do not put credentials in URLs. No clone, fetch, checkout replacement, push or deployment occurs automatically.
 
 ```sh
 # From the repository root; choose a locally available commit, tag or branch.
@@ -19,27 +19,35 @@ Release output is intentional: immutable image tags and the manifest remain. Tem
 
 The test command builds the app, migration and test runner, starts only the fresh DB, applies migrations and explicitly seeds its generated administrator, then starts app/background. It waits for service readiness, initializes fixtures and runs the existing Jest suite. Every setup command must succeed before the next phase; it never runs `migrate reset` or clears existing thumbnail storage. Fixture setup rejects transport/HTTP/API/login errors immediately and keeps cookies in process memory. A failed test/setup never prints `Tests passed`.
 
+The disposable runner explicitly enables `HMV_RESET_TEST_LOGIN_BUDGETS=true` and
+sets `HMV_TEST_DATABASE` to its fixture database name. Before each API/browser
+suite, Jest checks that exact database/host and that no login work is active, then
+clears only fixture login budgets. Run these suites serially (`--runInBand`).
+This keeps repeated synthetic logins independent while preserving production
+rate limits. The reset hook is inactive without explicit opt-in; never enable it
+against a shared or production database.
+
 ## Deploying a completed release
 
 Use the manifest's app reference for `HMV_APP_IMAGE` (web/background/scheduler) and migration reference for `HMV_MIGRATION_IMAGE`. Set both in the private production environment file or export them together. All services must use the same manifest. Keep the previous manifest/images for deliberate rollback; database compatibility may require restoring a backup.
 
-Take a verified backup and follow the security/credential transition runbook first. For an existing installation, using the exact deployment project and its private environment:
+Take a verified backup and follow the security/credential transition runbook first. For an existing installation, using the exact deployment project and its private environment (replace `media` below with that existing project):
 
 ```sh
 # Set both HMV_*_IMAGE variables to the references from the release manifest first.
 set -e
 # Inspect only image references; do not print resolved environment configuration.
-for image in $(docker compose -f docker-compose-prod.yml --env-file .env-prod config --images); do
+for image in $(docker compose -p media -f docker-compose-prod.yml --env-file .env-prod config --images); do
   docker image inspect "$image" >/dev/null
 done
-docker compose -f docker-compose-prod.yml --env-file .env-prod stop scheduler app background
-docker compose -f docker-compose-prod.yml --env-file .env-prod run --rm --pull never migration
+docker compose -p media -f docker-compose-prod.yml --env-file .env-prod stop scheduler app background
+docker compose -p media -f docker-compose-prod.yml --env-file .env-prod run --rm --pull never migration
 # For a first installation only, explicitly bootstrap the administrator:
-# docker compose -f docker-compose-prod.yml --env-file .env-prod run --rm --pull never migration npx --no-install prisma db seed
-docker compose -f docker-compose-prod.yml --env-file .env-prod up -d --no-build --pull never app background scheduler
+# docker compose -p media -f docker-compose-prod.yml --env-file .env-prod run --rm --pull never migration npx --no-install prisma db seed
+docker compose -p media -f docker-compose-prod.yml --env-file .env-prod up -d --no-build --pull never app background scheduler
 ```
 
-Run these against the release revision's Compose/configuration files. The image preflight must pass before running migrations; `compose run` has no `--no-build` flag. It uses existing local images unless `--build` is requested. `compose up` retains `--no-build`; no mutable default may be built or pulled during release deployment. These scripts do not deploy or publish artifacts. Release build acceptance verifies artifact identity; it does not replace application smoke tests or the integration suite. Dependency locking and image packaging changes remain infrastructure review point 7.
+Run these against the release revision's Compose/configuration files. The image preflight must pass before running migrations; `compose run` has no `--no-build` flag. It uses existing local images unless `--build` is requested. `compose up` retains `--no-build`; no mutable default may be built or pulled during release deployment. These scripts do not deploy or publish artifacts. Release build acceptance verifies artifact identity; it does not replace application smoke tests or the integration suite. Revalidate dependency locking and image packaging when those inputs change.
 
 ## Focused orchestration regression checks
 
@@ -48,6 +56,6 @@ docker compose run --rm --no-deps -v "$PWD:/workspace:ro" dependencies python3 /
 docker compose run --rm --no-deps -v "$PWD:/workspace:ro" dependencies node --test /workspace/docker/test/fixture-init.test.mjs
 ```
 
-These check successful artifact identity with no existing images, refused tag overwrites, build/setup/fixture failure gating, caller-environment isolation, initialization order and cleanup. They mock orchestration commands or HTTP responses and do not reset an application database. The point 6 live test run passed migration/seed/startup/fixture setup but its application suite was blocked in Node 26 Puppeteer/yargs global setup (`require is not defined in ES module scope`); this was resolved in infrastructure review point 7, where all 109 application tests passed.
+These check successful artifact identity with no existing images, refused tag overwrites, build/setup/fixture failure gating, caller-environment isolation, initialization order and cleanup. They mock orchestration commands or HTTP responses and do not reset an application database. The disposable runner also opts into per-suite login-budget isolation, allowing repeated API/browser logins without changing production rate limits. Current Prisma 7 validation passed all 485 Jest tests; rerun the workflow for the candidate revision rather than relying on a historical test count.
 
 If the default Debian CDN is slow or unavailable, `--debian-mirror https://MIRROR_HOST` selects an HTTPS origin serving `/debian` for build-time packages. Security updates retain the default Debian security repository. The Dockerfiles also accept `--build-arg DEBIAN_MIRROR=https://MIRROR_HOST` with manual Compose builds. Choose a current official Debian mirror; HTTPS certificate checks and signed apt metadata/package verification remain enabled. Package requests have a 30-second HTTPS timeout and three retries. The override does not change database URLs or application runtime configuration.

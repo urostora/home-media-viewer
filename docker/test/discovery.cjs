@@ -18,13 +18,14 @@ async function main() {
   requireApp('ts-node').register({ transpileOnly: true, project: '/home/node/app/tsconfig.json' });
   requireApp('tsconfig-paths/register');
   const load = name => requireApp(`./src/${name}`);
+  const queryHooks = require('./prisma-hooks.cjs')(requireApp);
   const prisma = load('utils/prisma/prismaImporter.ts').default;
   const { discover } = load('utils/processes/discovery.ts');
   const { withProcessingLock } = load('utils/processes/processingLock.ts');
   const runner = load('utils/processes/updateMetadataProcess.ts').default;
   const albumIds = [];
   let queryCount = 0;
-  prisma.$use(async (params, next) => { queryCount++; return next(params); });
+  queryHooks.use(async (params, next) => { queryCount++; return next(params); });
   const albumsInScope = async () => {
     const albums = await prisma.album.findMany({ where: { id: { in: albumIds } } });
     return albumIds.map(id => albums.find(album => album.id === id));

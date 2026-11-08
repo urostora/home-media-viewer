@@ -1,9 +1,9 @@
-import { PrismaClient } from '@prisma/client';
+import { createPrismaClient } from '../src/utils/prisma/clientFactory';
 
 import { getHashedPassword } from '../src/utils/passwordHelper';
 import { logApiFailure } from '../src/utils/apiLogger';
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 
 async function main(): Promise<void> {
   // create admin user if not exists

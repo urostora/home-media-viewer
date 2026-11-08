@@ -1,3 +1,4 @@
+import { retryRead } from '../../../utils/prisma/retryRead';
 import { access, mkdir, mkdtemp, rmdir, statfs, writeFile, unlink } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import path from 'node:path';
@@ -10,10 +11,10 @@ let pending: Promise<void> | undefined;
 let checkedAt = 0;
 const check = async (): Promise<void> => {
   await Promise.all([
-    prisma.album.findFirst(),
-    prisma.user.findFirst(),
-    prisma.file.findFirst(),
-    prisma.fileMeta.findFirst(),
+    retryRead(() => prisma.album.findFirst()),
+    retryRead(() => prisma.user.findFirst()),
+    retryRead(() => prisma.file.findFirst()),
+    retryRead(() => prisma.fileMeta.findFirst()),
     prisma.$queryRaw`SELECT migration_name FROM _prisma_migrations WHERE finished_at IS NULL AND rolled_back_at IS NULL`.then(
       (failed) => {
         if ((failed as unknown[]).length > 0) throw new Error('Unfinished migration');

@@ -1,3 +1,4 @@
+import { retryRead } from './prisma/retryRead';
 import fs from 'fs';
 import pathModule from 'path';
 
@@ -47,37 +48,39 @@ export const albumUpdateDataSchema: DataValidatorSchema = [
 
 export const getAlbum = async (id: string, onlyActive: boolean = true): Promise<AlbumExtendedDataType | null> => {
   const statusFilter = onlyActive ? { in: [$Enums.Status.Active, $Enums.Status.Disabled] } : undefined;
-  const album = await prisma.album.findFirst({
-    where: { id, status: statusFilter },
-    select: {
-      id: true,
-      status: true,
-      name: true,
-      basePath: true,
-      sourceType: true,
-      connectionString: true,
-      parentAlbumId: true,
-      thumbnailFile: {
-        select: {
-          id: true,
-          contentDate: true,
+  const album = await retryRead(() =>
+    prisma.album.findFirst({
+      where: { id, status: statusFilter },
+      select: {
+        id: true,
+        status: true,
+        name: true,
+        basePath: true,
+        sourceType: true,
+        connectionString: true,
+        parentAlbumId: true,
+        thumbnailFile: {
+          select: {
+            id: true,
+            contentDate: true,
+          },
         },
+        files: {
+          where: {
+            status: 'Active',
+            metadataStatus: 'Processed',
+            isDirectory: false,
+          },
+          take: 1,
+          select: {
+            id: true,
+            contentDate: true,
+          },
+        },
+        users: { select: { id: true, status: true, name: true, isAdmin: true }, orderBy: { name: 'asc' } },
       },
-      files: {
-        where: {
-          status: 'Active',
-          metadataStatus: 'Processed',
-          isDirectory: false,
-        },
-        take: 1,
-        select: {
-          id: true,
-          contentDate: true,
-        },
-      },
-      users: { select: { id: true, status: true, name: true, isAdmin: true }, orderBy: { name: 'asc' } },
-    },
-  });
+    }),
+  );
 
   if (album === null) {
     return null;
@@ -85,20 +88,22 @@ export const getAlbum = async (id: string, onlyActive: boolean = true): Promise<
 
   // collect file statistics
   // get file processing informations
-  const fileStatus = await prisma.file.groupBy({
-    where: {
-      isDirectory: false,
-      albums: {
-        some: {
-          id: album.id,
+  const fileStatus = await retryRead(() =>
+    prisma.file.groupBy({
+      where: {
+        isDirectory: false,
+        albums: {
+          some: {
+            id: album.id,
+          },
         },
       },
-    },
-    by: ['metadataStatus'],
-    _count: {
-      id: true,
-    },
-  });
+      by: ['metadataStatus'],
+      _count: {
+        id: true,
+      },
+    }),
+  );
 
   const fileStatusData = fileStatus.map((fs) => {
     return {
@@ -249,20 +254,22 @@ export const checkAlbumData = async (
 
   // check if user exists with same name or email
   if (uniqueFilters.length > 0) {
-    const existingOtherAlbum = await prisma.album.findFirst({
-      where: {
-        AND: [
-          {
-            status: {
-              in: ['Active', 'Disabled'],
+    const existingOtherAlbum = await retryRead(() =>
+      prisma.album.findFirst({
+        where: {
+          AND: [
+            {
+              status: {
+                in: ['Active', 'Disabled'],
+              },
             },
-          },
-        ],
-        OR: uniqueFilters,
-        NOT: notFilter,
-      },
-      select: { id: true },
-    });
+          ],
+          OR: uniqueFilters,
+          NOT: notFilter,
+        },
+        select: { id: true },
+      }),
+    );
 
     if (existingOtherAlbum != null) {
       throw new HmvError(`Album with same name or path already exists (id: ${existingOtherAlbum.id})`, {
@@ -284,15 +291,17 @@ export const getAlbumsContainingPath = async (path: string): Promise<Album[]> =>
     return carry;
   }, []);
 
-  const albumsContainingThisDirectory = await prisma.album.findMany({
-    where: {
-      status: { in: ['Active', 'Disabled'] },
-      basePath: { in: pathList },
-    },
-    orderBy: {
-      basePath: 'asc',
-    },
-  });
+  const albumsContainingThisDirectory = await retryRead(() =>
+    prisma.album.findMany({
+      where: {
+        status: { in: ['Active', 'Disabled'] },
+        basePath: { in: pathList },
+      },
+      orderBy: {
+        basePath: 'asc',
+      },
+    }),
+  );
 
   // order by path length ascending
   return albumsContainingThisDirectory.sort((a, b) => {
@@ -320,9 +329,11 @@ export const getClosestParentAlbum = async (path: string, includingPath: boolean
 };
 
 export const getChildAlbumsInPath = async (path: string): Promise<Album[]> => {
-  const albumsInThisDirectory = await prisma.album.findMany({
-    where: { status: { in: ['Active', 'Disabled'] }, basePath: { startsWith: `${path}/` } },
-  });
+  const albumsInThisDirectory = await retryRead(() =>
+    prisma.album.findMany({
+      where: { status: { in: ['Active', 'Disabled'] }, basePath: { startsWith: `${path}/` } },
+    }),
+  );
 
   // order by path length descending
   return albumsInThisDirectory.sort((a, b) => {
@@ -390,7 +401,9 @@ const addAlbumUnlocked = async (data: AlbumAddType): Promise<Album> => {
   }
 
   // attach all files under album path to the newly created album
-  const filesInAlbum = await prisma.file.findMany({ where: { path: { startsWith: `${relativePath}/` } } });
+  const filesInAlbum = await retryRead(() =>
+    prisma.file.findMany({ where: { path: { startsWith: `${relativePath}/` } } }),
+  );
 
   for (const file of filesInAlbum) {
     await prisma.file.update({ where: { id: file.id }, data: { albums: { connect: { id: newAlbum.id } } } });
@@ -410,7 +423,7 @@ export const updateAlbum = async (id: string, data: AlbumUpdateType): Promise<Al
     throw new HmvError('Parameter "id" must be a non-empty string');
   }
 
-  const album = await prisma.album.findFirst({ where: { id } });
+  const album = await retryRead(() => prisma.album.findFirst({ where: { id } }));
 
   if (album == null) {
     throw Error(`Album not found with id ${id}`);
@@ -453,7 +466,9 @@ export const deleteAlbum = async (id: string): Promise<AlbumDataType | null> => 
 
 export const syncAlbumFiles = async (albumId: string): Promise<void> =>
   await withProcessingLock(async () => {
-    const album = await prisma.album.findFirst({ where: { id: albumId, status: { in: ['Active', 'Disabled'] } } });
+    const album = await retryRead(() =>
+      prisma.album.findFirst({ where: { id: albumId, status: { in: ['Active', 'Disabled'] } } }),
+    );
 
     if (album == null) {
       throw Error(`Album not found with id ${albumId}`);
@@ -470,16 +485,20 @@ export const processAlbumFilesMetadata = async (
 };
 
 export const addUserToAlbum = async (album: string, user: string): Promise<void> => {
-  const albumEntity = await prisma.album.findFirst({
-    where: { id: album, status: { in: ['Active', 'Disabled'] } },
-    include: { users: true },
-  });
+  const albumEntity = await retryRead(() =>
+    prisma.album.findFirst({
+      where: { id: album, status: { in: ['Active', 'Disabled'] } },
+      include: { users: true },
+    }),
+  );
 
   if (albumEntity == null) {
     throw new HmvError(`Album not found with id ${album}`, { isPublic: true });
   }
 
-  const userEntity = await prisma.user.findFirst({ where: { id: user, status: { in: ['Active', 'Disabled'] } } });
+  const userEntity = await retryRead(() =>
+    prisma.user.findFirst({ where: { id: user, status: { in: ['Active', 'Disabled'] } } }),
+  );
 
   if (userEntity == null) {
     throw new HmvError(`User not found with id ${user}`, { isPublic: true });
@@ -493,16 +512,20 @@ export const addUserToAlbum = async (album: string, user: string): Promise<void>
 };
 
 export const removeUserFromAlbum = async (album: string, user: string): Promise<void> => {
-  const albumEntity = await prisma.album.findFirst({
-    where: { id: album, status: { in: ['Active', 'Disabled'] } },
-    include: { users: true },
-  });
+  const albumEntity = await retryRead(() =>
+    prisma.album.findFirst({
+      where: { id: album, status: { in: ['Active', 'Disabled'] } },
+      include: { users: true },
+    }),
+  );
 
   if (albumEntity == null) {
     throw new HmvError(`Album not found with id ${album}`, { isPublic: true });
   }
 
-  const userEntity = await prisma.user.findFirst({ where: { id: user, status: { in: ['Active', 'Disabled'] } } });
+  const userEntity = await retryRead(() =>
+    prisma.user.findFirst({ where: { id: user, status: { in: ['Active', 'Disabled'] } } }),
+  );
 
   if (userEntity == null) {
     throw new HmvError(`User not found with id ${user}`, { isPublic: true });

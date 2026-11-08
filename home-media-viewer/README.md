@@ -1,38 +1,56 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Home Media Viewer application package
 
-## Getting Started
+This directory contains the Next.js Pages Router application: React, strict
+TypeScript, Prisma 7.10.1 and MariaDB access. Compose files, Dockerfiles, scripts
+and media fixtures live in the parent repository directory.
 
-First, run the development server:
+Start with the [repository setup guide](../README.md). Run development,
+dependency, Prisma, build and test commands through Docker **from the repository
+root**, rather than installing Node/npm dependencies on the host.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
+## Source layout
+
+| Path | Contents |
+| --- | --- |
+| `src/pages/` | Pages Router UI and API routes |
+| `src/components/` | React components |
+| `src/utils/` | Authentication, database, media and processing helpers |
+| `src/types/` | Shared TypeScript contracts |
+| `src/backgroundProcesses/` | Background CLI entry point |
+| `prisma/schema.prisma` | Database models and client generator |
+| `prisma/migrations/` | Versioned SQL migrations |
+| `prisma/seed.ts` | Explicit administrator bootstrap |
+| `prisma.config.ts` | Prisma CLI URL, schema, migration and seed configuration |
+| `__tests__/` | Component, utility, API and browser tests |
+
+The `@/` import alias resolves to `src/`. The application uses Webpack for both
+`next dev` and `next build`; production uses standalone output.
+
+## Commands
+
+After completing repository bootstrap, run these from the repository root:
+
+```sh
+docker compose up -d app
+docker compose exec app npm run lint
+docker compose exec app npm run typecheck
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The development template publishes the app at [localhost:23080](http://localhost:23080);
+use the configured `WEB_PORT` if changed. Port 3000 is the internal container port.
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+See [development dependency/schema updates](../README.md#subsequent-starts-and-updates)
+for client generation and migration commands. Prisma 7 uses the MariaDB driver
+adapter and explicit seed; see [Prisma configuration](../docs/prisma-upgrade.md).
 
-[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+## Validation and deployment
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
+Use the [isolated build/test workflow](../scripts/build/README.md) for committed
+revisions. It prepares the database, administrator and media fixtures before
+running Jest with Chromium and guarded fixture login-budget isolation. For
+working-tree/focused checks, see the [test instructions](../README.md#tests).
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+Production deployment uses the repository's app/migration images and persistent
+MariaDB/generated-storage volumes. Follow the [release and recovery
+instructions](../docs/database-lifecycle.md); the generated Next.js starter
+hosting instructions do not describe this application's deployment.

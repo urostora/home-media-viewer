@@ -12,6 +12,7 @@ const config = {
   // setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
 
   testEnvironment: 'jest-environment-jsdom',
+  setupFilesAfterEnv: ['<rootDir>/jest.fixtureSetup.cjs'],
   moduleNameMapper: { '^@/(.*)$': '<rootDir>/src/$1' },
   preset: 'jest-puppeteer',
   testPathIgnorePatterns: ['<rootDir>/node_modules/', 'helper.[jt]s$'],

@@ -1,5 +1,5 @@
-jest.mock('@prisma/client', () => ({
-  PrismaClient: jest.fn().mockImplementation(() => ({
+jest.mock('../../src/utils/prisma/clientFactory', () => ({
+  createPrismaClient: jest.fn().mockImplementation(() => ({
     user: {
       findFirst: jest.fn().mockRejectedValue(new Error('SYNTHETIC_BOOTSTRAP_CREDENTIAL_SENTINEL')),
     },

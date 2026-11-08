@@ -1,3 +1,4 @@
+import { retryRead } from '../prisma/retryRead';
 import { type File } from '@prisma/client';
 import { type FileProcessor } from './processorFactory';
 import { syncFilesInAlbumAndFile } from '../fileHelper';
@@ -9,9 +10,11 @@ export const directoryFileProcessor: FileProcessor = async (file: File) => {
     throw Error(`File ${file.name} is not directory`);
   }
 
-  const albums = await prisma.album.findMany({
-    where: { status: { in: ['Active', 'Disabled'] }, files: { some: { id: file.id } } },
-  });
+  const albums = await retryRead(() =>
+    prisma.album.findMany({
+      where: { status: { in: ['Active', 'Disabled'] }, files: { some: { id: file.id } } },
+    }),
+  );
 
   if (albums.length === 0) {
     throw Error('Album not found');

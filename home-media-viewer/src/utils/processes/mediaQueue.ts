@@ -1,3 +1,4 @@
+import { retryRead } from '../prisma/retryRead';
 import { createHash } from 'node:crypto';
 import type { File, Prisma } from '@prisma/client';
 import { emptyStageStatistics, type MediaStage, type StageStatistics } from '@/types/processingTypes';
@@ -52,13 +53,16 @@ export const processMediaQueue = async ({
     AND: [eligible, ...(mode === 'pending' ? [{ OR: stages.map(status) }] : [])],
   };
   if (progress !== undefined) {
-    const total = mode === 'refresh' ? await prisma.file.count({ where: eligible }) : undefined;
+    const total = mode === 'refresh' ? await retryRead(() => prisma.file.count({ where: eligible })) : undefined;
     for (const stage of stages) {
-      const pending = await prisma.file.count({ where: { AND: [eligible, status(stage)] } });
+      const pending = await retryRead(() => prisma.file.count({ where: { AND: [eligible, status(stage)] } }));
       await progress.initial(stage, total ?? pending, pending);
     }
   }
-  const saved = cursorKey === undefined ? null : await prisma.mediaQueueCursor.findUnique({ where: { id: cursorKey } });
+  const saved =
+    cursorKey === undefined
+      ? null
+      : await retryRead(() => prisma.mediaQueueCursor.findUnique({ where: { id: cursorKey } }));
   const start = saved?.lastFileId ?? null;
   let after = start ?? undefined;
   let wrapped = false;
@@ -91,16 +95,18 @@ export const processMediaQueue = async ({
         if (stopped()) return;
         page = [];
         offset = 0;
-        page = await prisma.file.findMany({
-          where: {
-            AND: [
-              selector,
-              { id: { ...(after === undefined ? {} : { gt: after }), ...(wrapped ? { lte: start! } : {}) } },
-            ],
-          },
-          orderBy: { id: 'asc' },
-          take: mediaPageSize,
-        });
+        page = await retryRead(() =>
+          prisma.file.findMany({
+            where: {
+              AND: [
+                selector,
+                { id: { ...(after === undefined ? {} : { gt: after }), ...(wrapped ? { lte: start! } : {}) } },
+              ],
+            },
+            orderBy: { id: 'asc' },
+            take: mediaPageSize,
+          }),
+        );
         if (stopped()) return;
         if (page.length > 0) {
           after = page[page.length - 1].id;
@@ -173,12 +179,14 @@ export const processMediaQueue = async ({
   if (failure !== undefined) throw failure.error;
 
   if (mode === 'refresh') {
-    const total = await prisma.file.count({ where: eligible });
+    const total = await retryRead(() => prisma.file.count({ where: eligible }));
     for (const stage of stages) statistics[stage].deferred += Math.max(0, total - statistics[stage].attempted);
   } else {
     await Promise.all(
       stages.map(async (stage) => {
-        statistics[stage].deferred = await prisma.file.count({ where: { AND: [eligible, status(stage)] } });
+        statistics[stage].deferred = await retryRead(() =>
+          prisma.file.count({ where: { AND: [eligible, status(stage)] } }),
+        );
       }),
     );
   }
@@ -187,7 +195,7 @@ export const processMediaQueue = async ({
       const pending =
         mode === 'pending'
           ? statistics[stage].deferred
-          : await prisma.file.count({ where: { AND: [eligible, status(stage)] } });
+          : await retryRead(() => prisma.file.count({ where: { AND: [eligible, status(stage)] } }));
       await progress.complete(stage, statistics[stage], pending);
     }
   }

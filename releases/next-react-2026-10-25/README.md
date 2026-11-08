@@ -1,5 +1,12 @@
 # Next.js / React release handoff
 
+> Historical release handoff for the October 2026 Next.js upgrade. These images
+> predate database-backed revocable sessions and Prisma 7. Do not use them as
+> rollback targets for an installation with the newer authentication model. Use
+> the current [release workflow](../../scripts/build/README.md),
+> [security/cutover guidance](../../docs/production-security.md) and
+> [database lifecycle runbook](../../docs/database-lifecycle.md).
+
 Prepared 2026-10-25. **Release artifacts are local; nothing has been deployed or pushed.**
 
 | Artifact | Source | Purpose |
@@ -89,4 +96,4 @@ export HMV_MIGRATION_IMAGE='hmv-releases/migration:git-2d10888150179c7b13d671c72
 
 For these two revisions, migration deploy is a no-op on an up-to-date schema: schema and migration files are identical. There is no down migration and no automatic database restore. If another release changed the production schema, reassess compatibility before rollback; use the documented recovery workflow when a restore is required. Repeat the same live acceptance checks after rollback. Current cookies were tested compatible in both directions; an unreadable/expired cookie should return the user to sign-in.
 
-See [nuxt-update.md](../../nuxt-update.md) for all execution evidence. This handoff is an intentional deliverable; its manifests and four release/rollback image tags survive task cleanup.
+Retained validation details are in [acceptance.json](acceptance.json); the historical execution notebook is not included in this checkout. This handoff is an intentional deliverable; its manifests and four release/rollback image tags survive task cleanup.

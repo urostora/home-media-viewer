@@ -11,6 +11,7 @@ app.cache[app.resolve('@prisma/client')].exports={...client,PrismaClient:class e
 }};
 app('ts-node').register({transpileOnly:true,project:'/home/node/app/tsconfig.json'}); app('tsconfig-paths/register');
 const load=name=>app(`./src/utils/${name}`);
+const queryHooks = require('./prisma-hooks.cjs')(app);
 const prisma=load('prisma/prismaImporter').default;
 const { processMediaQueue }=load('processes/mediaQueue');
 const N=32768, prefix='i7-plan-', cursor='i7-plan-cursor';
@@ -21,7 +22,7 @@ const candidates=[
   {name:'File_status_isDirectory_thumbnailStatus_id_idx',columns:'`status`, `isDirectory`, `thumbnailStatus`, `id`'},
 ];
 let capture=false, stop=false;
-prisma.$use(async(params,next)=>{
+queryHooks.use(async(params,next)=>{
   const result=await next(params);
   if(capture && params.model==='File' && params.action==='findMany' && params.args.take===64) stop=true;
   return result;

@@ -1,3 +1,4 @@
+import { retryRead } from '../prisma/retryRead';
 import { createHash, randomBytes } from 'node:crypto';
 import type { AuthSession, Prisma, User } from '@prisma/client';
 import prisma from '@/utils/prisma/prismaImporter';
@@ -78,7 +79,7 @@ export const resolveServerSession = async (
   expiresOn: number;
 } | null> => {
   if (cookie === undefined || !hasSessionToken(cookie)) return null;
-  const found = await prisma.authSession.findUnique({ where: { tokenHash: digest(cookie.token!) } });
+  const found = await retryRead(() => prisma.authSession.findUnique({ where: { tokenHash: digest(cookie.token!) } }));
   if (found === null) return null;
   return prisma.$transaction(async (tx) => {
     const user = await readSessionUser(tx, found.userId);
@@ -121,7 +122,7 @@ export const resolveServerSession = async (
 
 export const revokeSession = async (cookie: Partial<SessionData>): Promise<void> => {
   if (!hasSessionToken(cookie)) return;
-  const record = await prisma.authSession.findUnique({ where: { tokenHash: digest(cookie.token!) } });
+  const record = await retryRead(() => prisma.authSession.findUnique({ where: { tokenHash: digest(cookie.token!) } }));
   if (record === null) return;
   await prisma.$transaction(async (tx) => {
     if ((await lockSessionUser(tx, record.userId)) === null) return;
@@ -150,7 +151,9 @@ export const cleanupSessions = async (): Promise<void> => {
   const expired: Prisma.AuthSessionWhereInput = {
     OR: [{ expiresAt: { lte: now } }, { idleExpiresAt: { lte: now } }, { revokedAt: { not: null } }],
   };
-  const candidates = await prisma.authSession.findMany({ where: expired, select: { id: true }, take: 100 });
+  const candidates = await retryRead(() =>
+    prisma.authSession.findMany({ where: expired, select: { id: true }, take: 100 }),
+  );
   if (candidates.length !== 0)
     await prisma.authSession.deleteMany({
       where: { ...expired, id: { in: candidates.map((row) => row.id) } },

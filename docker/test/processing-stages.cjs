@@ -261,7 +261,8 @@ async function main() {
     const admin=await prisma.user.findFirstOrThrow({where:{email:process.env.ADMIN_EMAIL}});
     await prisma.user.create({data:{name:'Stage viewer',email:'stage-viewer@example.invalid',password:admin.password,
       albums:{connect:{id:album.id}}}});
-    const login=await request('/api/login',{email:'stage-viewer@example.invalid',password:process.env.ADMIN_PASSWORD});
+    // A separate viewer login must not replace/revoke the administrator session.
+    const login=await request('/api/login',{email:'stage-viewer@example.invalid',password:process.env.ADMIN_PASSWORD},'POST','');
     const viewer=login.response.headers.getSetCookie().map(v=>v.split(';')[0]).join('; ');
     const before=await metadataSnapshot(image.id);
     assert.equal((await request('/api/process/run',{stages:['metadata'],fileId:image.id},'POST',viewer)).response.status,403);

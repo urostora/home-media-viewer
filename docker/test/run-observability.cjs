@@ -7,6 +7,7 @@ const {createRequire}=require('node:module');
 const app=createRequire('/home/node/app/package.json');
 app('ts-node').register({transpileOnly:true,project:'/home/node/app/tsconfig.json'}); app('tsconfig-paths/register');
 const load=name=>app(`./src/utils/${name}`);
+const queryHooks = require('./prisma-hooks.cjs')(app);
 const prisma=load('prisma/prismaImporter').default;
 const runner=load('processes/updateMetadataProcess').default;
 const {ProcessingFailedError}=load('processes/updateMetadataProcess');
@@ -47,7 +48,7 @@ async function main(){
   for(const output of outputs.values())await fs.writeFile(output,'fixture-preview');
  };
  let hook;
- prisma.$use(async(params,next)=>hook?hook(params,next):next(params));
+ queryHooks.use(async(params,next)=>hook?hook(params,next):next(params));
  try{
   const source=path.join(temporary,'source.txt');await fs.writeFile(source,'fixture');
   album=await prisma.album.create({data:{name:'run-observability',sourceType:'File',connectionString:'',basePath:temporary}});

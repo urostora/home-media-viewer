@@ -1,6 +1,6 @@
 # Database lifecycle and release recovery
 
-Run from a release checkout with Docker Compose v2.20+ (validation: v5.6.0). MariaDB server upgrades and Prisma application migrations are separate maintenance operations. Normal Compose startup never sets MARIADB_AUTO_UPGRADE. The maintenance override opts into system-table upgrades only for an approved server update; setting this variable to `0` can still enable it, so omit it entirely during normal operation. The image's automatic system-table backup is not a complete application backup. See the [official image behavior](https://github.com/docker-library/docs/blob/master/mariadb/content.md).
+Run from a release checkout with Docker Compose >=2.24.4 (validation: v5.6.0). MariaDB server upgrades and Prisma application migrations are separate maintenance operations. Normal Compose startup never sets MARIADB_AUTO_UPGRADE. The maintenance override opts into system-table upgrades only for an approved server update; setting this variable to `0` can still enable it, so omit it entirely during normal operation. The image's automatic system-table backup is not a complete application backup. See the [official image behavior](https://github.com/docker-library/docs/blob/master/mariadb/content.md).
 
 ## Persistent identity
 
@@ -27,6 +27,8 @@ For example `media_home-media-db-storage` maps to `/var/lib/mysql`, and `media_h
 Fixed container names were removed so projects can coexist. Use service DNS `db`, `app`, `background` inside Compose and `compose exec SERVICE` for commands. Before recreating an older installation, replace legacy container-name hosts in private DATABASE_URL, MIGRATION_DATABASE_URL and SHADOW_DATABASE_URL with `db`; preserve usernames, passwords, database and query settings. This changes addressing, not account credentials. Use the [existing-volume identity/grant and ALTER USER procedure](production-security.md) for credential rotation; initialization environment variables do not rotate existing accounts.
 
 Development `dependencies` is opt-in via `tools`, and `testrunner` via `test`. Explicit `compose run --rm dependencies ...` or `run --rm testrunner ...` still works without enabling a profile. Ordinary development startup includes DB, the finite migration dependency and app; scheduler remains opt-in via `scheduled`. Migration stays in the dependency graph because app must not start before it succeeds. Test Compose retains its dedicated test workflow. Dockerfiles no longer create implicit anonymous volumes; Compose owns all persistent mounts.
+
+For the Prisma 5 → 7 application dependency upgrade, see [Prisma upgrade notes](prisma-upgrade.md).
 
 ## Application update and rollback
 

@@ -132,6 +132,7 @@ if (process.argv[2] === 'client') {
     baseUrl: app,
     paths: { '@/*': ['src/*'] },
   });
+  const queryHooks = require('./prisma-hooks.cjs')(reqApp);
   const prisma = reqApp('./src/utils/prisma/prismaImporter.ts').default;
   let server;
   let child;
@@ -160,7 +161,7 @@ if (process.argv[2] === 'client') {
     file.createReadStream = (...options) => trackStream(create(...options));
     return file;
   };
-  prisma.$use(async (params, next) => {
+  queryHooks.use(async (params, next) => {
     if (params.action === 'queryRaw') {
       // Prisma middleware receives tagged-template args before the driver maps them to SQL.
       const template = Array.isArray(params.args) ? params.args[0] : params.args;

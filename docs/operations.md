@@ -4,7 +4,7 @@ Use Docker Engine with Compose >=2.24.4 on Linux. Run commands from the release 
 
 ## Health, failure and recovery
 
-`GET /api/health/live` returns 200 while the HTTP event loop responds, and 503 during shutdown. `GET /api/health/ready` checks all four application models, unfinished/failed migration history, source-root access, a create/write/delete probe under thumbnail storage and available generated-storage space. It never indexes or returns credentials, file paths or DB error details. Successful results are cached for five seconds; concurrent checks share one probe. Docker checks readiness every 30 seconds with a 60-second startup window and three retries. DB connections/queries have bounded timeouts. Low space below MIN_STORAGE_FREE_BYTES (256 MiB default) fails readiness. Monitor DB/datadir and backup/log filesystems separately.
+`GET /api/health/live` returns 200 while the HTTP event loop responds, and 503 during shutdown. `GET /api/health/ready` queries Album, User, File and FileMeta, and checks unfinished/failed migration history, source-root access, a create/write/delete probe under thumbnail storage and available generated-storage space. It never indexes or returns credentials, file paths or DB error details. Successful results are cached for five seconds; concurrent checks share one probe. Docker checks readiness every 30 seconds with a 60-second startup window and three retries. DB connections/queries have bounded timeouts. Low space below MIN_STORAGE_FREE_BYTES (256 MiB default) fails readiness. Monitor DB/datadir and backup/log filesystems separately.
 
 Production db/app/background/scheduler restart with `unless-stopped`; migration remains a finite job with `restart: "no"`. Container logs use Docker's `local` driver with 10 MiB × 3 files per container. Recreate existing containers to apply these settings. An **unhealthy** running container remains running under ordinary Compose. No automatic health-driven restart is configured. The host probe below exits nonzero for alert delivery; have your existing monitoring agent run it every minute and page the deployment operator on failure. Also alert on container restarts/OOM events and collect Docker logs. Alert delivery credentials, remote agents and installation of host timers belong to the deployment environment.
 
@@ -28,7 +28,7 @@ docker inspect --format '{{.HostConfig.NanoCpus}} {{.HostConfig.Memory}} {{.Host
 docker stats --no-stream
 ```
 
-NanoCpus is CPUs × 1,000,000,000; Memory is bytes. Confirm DB `@@innodb_buffer_pool_size` and `@@max_connections` in a protected SQL session. Sample container memory/CPU during representative photos and longest videos, HTTP latency during indexing, OOM/restart counters, DB connections and tool/request durations. Do not infer enforcement merely from successful `compose config`. Fixture acceptance is recorded in section 8 of the review; it is not a deployment-scale capacity claim.
+NanoCpus is CPUs × 1,000,000,000; Memory is bytes. Confirm DB `@@innodb_buffer_pool_size` and `@@max_connections` in a protected SQL session. Sample container memory/CPU during representative photos and longest videos, HTTP latency during indexing, OOM/restart counters, DB connections and tool/request durations. Do not infer enforcement merely from successful `compose config`. Use the [isolated stage/benchmark workflow](background-processing.md#validation) for repeatable fixture checks; those results are not a deployment-scale capacity claim.
 
 ## Scheduling, authentication and overlap
 
@@ -54,7 +54,7 @@ APP_STORAGE_PATH is the **mounted generated-storage root**, passed into every Co
 
 Before changing storage configuration, stop writers, take a verified backup and preserve the same named volume/project. Installations that manually passed APP_STORAGE_PATH to the old code as the full thumbnail directory must move to the root/subdirectory convention deliberately; inspect the existing layout first. Compose previously used it only as a mount destination. Changing that destination does not move files in the volume: retain the existing thumbnail-relative layout. Fresh volumes at a custom destination may initially be root-owned because Docker cannot copy ownership from `/mnt/storage` at another image path. With consumers stopped, use the README's targeted one-time ownership repair on **only this generated-storage volume**, then probe writing as UID 1000. Never chown source media or database storage. This applies to legacy incompatible volume ownership too.
 
-A non-default configuration such as APP_STORAGE_PATH=/srv/hmv-generated and APP_THUMBNAIL_SUBDIRECTORY=previews must pass readiness, actual thumbnail writes, web reads, backup mount detection and restart persistence before scheduling is enabled. The isolated validation in section 8 exercises this layout.
+A non-default configuration such as APP_STORAGE_PATH=/srv/hmv-generated and APP_THUMBNAIL_SUBDIRECTORY=previews must pass readiness, actual thumbnail writes, web reads, backup mount detection and restart persistence before scheduling is enabled. Repeat those checks in an isolated project before applying a custom layout to the deployment.
 
 ## Host monitoring
 

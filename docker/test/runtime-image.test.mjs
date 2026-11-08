@@ -41,8 +41,14 @@ const bcrypt = require("bcrypt");
 const hashed = await bcrypt.hash("native-runtime-probe", 4);
 assert(await bcrypt.compare("native-runtime-probe", hashed));
 const { PrismaClient, Prisma } = require("@prisma/client");
-assert.equal(Prisma.prismaVersion.client, "5.8.1");
-const prisma = new PrismaClient();
+assert.equal(Prisma.prismaVersion.client, "7.10.1");
+const { PrismaMariaDb } = require("@prisma/adapter-mariadb");
+const url = new URL(process.env.DATABASE_URL);
+const prisma = new PrismaClient({ adapter: new PrismaMariaDb({
+  host: url.hostname, port: Number(url.port || 3306),
+  user: decodeURIComponent(url.username), password: decodeURIComponent(url.password),
+  database: decodeURIComponent(url.pathname.slice(1)), connectionLimit: 1,
+}) });
 for (const binary of ["/usr/bin/ffmpeg", "/usr/bin/ffprobe"]) {
   assert.equal(typeof binary, "string");
   assert(existsSync(binary));

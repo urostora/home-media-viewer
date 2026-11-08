@@ -9,6 +9,7 @@ const requireApp = createRequire('/home/node/app/package.json');
 requireApp('ts-node').register({ transpileOnly: true, project: '/home/node/app/tsconfig.json' });
 requireApp('tsconfig-paths/register');
 const load = name => requireApp(`./src/${name}`);
+const queryHooks = require('./prisma-hooks.cjs')(requireApp);
 const prisma = load('utils/prisma/prismaImporter.ts').default;
 const fileStages = load('utils/processes/fileStages.ts');
 const { processMediaQueue, mediaQueueCursorKey, mediaPageSize } = load('utils/processes/mediaQueue.ts');
@@ -25,7 +26,7 @@ let pageHook;
 let virtual;
 let pageReads = 0;
 fileStages.processFileStage = async (file, stage) => processor(file, stage);
-prisma.$use(async (params, next) => {
+queryHooks.use(async (params, next) => {
   if (params.model === 'File' && params.action === 'findMany' && params.args.take === mediaPageSize) {
     assert.equal(params.args.skip, undefined, 'Offset paging can skip a shrinking queue');
     assert.deepEqual(params.args.orderBy, { id: 'asc' });

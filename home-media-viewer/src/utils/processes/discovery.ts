@@ -1,3 +1,4 @@
+import { retryRead } from '../prisma/retryRead';
 import { readdir, stat, lstat, realpath } from 'node:fs/promises';
 import path from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
@@ -39,7 +40,7 @@ export const discover = async (
   progress?: DiscoveryProgress,
 ): Promise<{ statistics: StageStatistics; directories: number }> => {
   const statistics = emptyStageStatistics();
-  const allAlbums = await prisma.album.findMany({ where: { status: { in: ['Active', 'Disabled'] } } });
+  const allAlbums = await retryRead(() => prisma.album.findMany({ where: { status: { in: ['Active', 'Disabled'] } } }));
   const albumsByPath = new Map<string, Album[]>();
   for (const album of allAlbums) {
     const base = path.resolve(album.basePath);
@@ -68,12 +69,19 @@ export const discover = async (
   };
 
   if (progress !== undefined)
-    await progress(statistics, directories, 'initial', await prisma.discoveryDirectory.count({ where: eligible }));
+    await progress(
+      statistics,
+      directories,
+      'initial',
+      await retryRead(() => prisma.discoveryDirectory.count({ where: eligible })),
+    );
   while (!stopped() && roots.length > 0) {
-    const nextTask = await prisma.discoveryDirectory.findFirst({
-      where: { ...eligible, id: { notIn: [...finished] } },
-      orderBy: [{ lastServedAt: 'asc' }, { id: 'asc' }],
-    });
+    const nextTask = await retryRead(() =>
+      prisma.discoveryDirectory.findFirst({
+        where: { ...eligible, id: { notIn: [...finished] } },
+        orderBy: [{ lastServedAt: 'asc' }, { id: 'asc' }],
+      }),
+    );
     if (nextTask === null) break;
     let task = nextTask;
     attempted.add(task.id);
@@ -113,7 +121,7 @@ export const discover = async (
         });
         task = { ...task, scanVersion: snapshot.version, entryCursor: null, cleanupCursor: null };
       }
-      let parent = await prisma.file.findFirst({ where: { path: relative(task.path) } });
+      let parent = await retryRead(() => prisma.file.findFirst({ where: { path: relative(task.path) } }));
       let containing = albumCache.get(task.path);
       if (containing === undefined) {
         containing = [];
@@ -170,10 +178,12 @@ export const discover = async (
           }
         }
         const names = snapshot.names.slice(low, low + batchSize);
-        const existing = await prisma.file.findMany({
-          where: { path: { in: names.map((name) => relative(path.join(task.path, name))) } },
-          include: { albums: { select: { id: true } } },
-        });
+        const existing = await retryRead(() =>
+          prisma.file.findMany({
+            where: { path: { in: names.map((name) => relative(path.join(task.path, name))) } },
+            include: { albums: { select: { id: true } } },
+          }),
+        );
         const byPath = new Map(existing.map((file) => [file.path, file]));
         let cursor = task.entryCursor;
         for (let offset = 0; offset < names.length && !stopped(); offset += 8) {
@@ -258,16 +268,19 @@ export const discover = async (
         // directory restarts the scan without deleting any unvisited records.
         if (sourceVersion(await stat(task.path)) !== snapshot.version)
           throw new Error('Directory changed before reconciliation');
-        const files = await prisma.file.findMany({
-          where: {
-            parentFileId: parent?.id ?? null,
-            status: { not: 'Deleted' },
-            path: { startsWith: relative(task.path) === '' ? '' : `${relative(task.path)}/` },
-            id: { gt: task.cleanupCursor },
-          },
-          orderBy: { id: 'asc' },
-          take: batchSize,
-        });
+        const cleanupAfter = task.cleanupCursor;
+        const files = await retryRead(() =>
+          prisma.file.findMany({
+            where: {
+              parentFileId: parent?.id ?? null,
+              status: { not: 'Deleted' },
+              path: { startsWith: relative(task.path) === '' ? '' : `${relative(task.path)}/` },
+              id: { gt: cleanupAfter },
+            },
+            orderBy: { id: 'asc' },
+            take: batchSize,
+          }),
+        );
         const removed: string[] = [];
         let cleanupCursor = task.cleanupCursor;
         for (const file of files) {
@@ -310,7 +323,9 @@ export const discover = async (
     }
     await progress?.(statistics, directories, 'progress');
   }
-  statistics.deferred = await prisma.discoveryDirectory.count({ where: { ...eligible, id: { notIn: [...finished] } } });
+  statistics.deferred = await retryRead(() =>
+    prisma.discoveryDirectory.count({ where: { ...eligible, id: { notIn: [...finished] } } }),
+  );
   await progress?.(statistics, directories, 'complete');
   return { statistics, directories };
 };

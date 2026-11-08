@@ -36,9 +36,12 @@ appRequire.cache[appRequire.resolve('@prisma/client')].exports = {
     constructor(options) {
       super({ ...options, log: [{ emit: 'event', level: 'query' }] });
       this.$on('query', (event) => {
-        if (measuring) { metrics.sqlCount++; metrics.sqlMs += event.duration; }
+        // Driver adapters log synthetic commit comments; compare data SQL only.
+        if (measuring && !event.query.trim().startsWith('--') && !/^(?:BEGIN|START TRANSACTION|COMMIT|ROLLBACK|SET TRANSACTION)\b/i.test(event.query.trim())) { metrics.sqlCount++; metrics.sqlMs += event.duration; }
       });
-      this.$use(async (params, next) => {
+      return this.$extends({ query: { async $allOperations({ model, operation, args, query }) {
+        const params = { model, action: operation, args };
+        const next = params => query(params.args);
         const result = await next(params);
         if (measuring && params.model === 'File') {
           if (['update', 'updateMany'].includes(params.action) && params.args.data.thumbnailProcessedAt) metrics.thumbnailPublishes++;
@@ -50,7 +53,7 @@ appRequire.cache[appRequire.resolve('@prisma/client')].exports = {
           }
         }
         return result;
-      });
+      } } });
     }
   },
 };

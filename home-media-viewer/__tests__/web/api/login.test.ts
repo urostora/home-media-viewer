@@ -2,6 +2,7 @@ import { fetchDataFromApi, fetchResultFromApi } from './helpers/helper';
 
 import type { GeneralResponseWithData } from '@/types/api/generalTypes';
 import type { LoginResponseDataType } from '@/types/loginTypes';
+import { SESSION_IDLE_SECONDS } from '@/utils/auth/sessionPolicy';
 
 describe('web/api/login', () => {
   const path = 'login';
@@ -16,6 +17,7 @@ describe('web/api/login', () => {
   });
 
   it('existing user', async () => {
+    const before = Date.now();
     const email = process.env.ADMIN_EMAIL;
     const password = process.env.ADMIN_PASSWORD;
 
@@ -28,8 +30,9 @@ describe('web/api/login', () => {
     expect(response.ok).toBe(true);
     expect(response?.data?.email).toBe(email);
     expect(response?.data?.isAdmin).toBe(true);
-    expect(response.data?.sessionExpiresInSeconds).toBe(14 * 24 * 60 * 60);
-    expect(response.data?.sessionExpiresOn).toBeGreaterThan(Date.now() + 13 * 24 * 60 * 60 * 1000);
-    expect(response.data?.sessionExpiresOn).toBeLessThanOrEqual(Date.now() + 14 * 24 * 60 * 60 * 1000);
+    expect(response.data?.sessionExpiresInSeconds).toBeGreaterThan(SESSION_IDLE_SECONDS - 60);
+    expect(response.data?.sessionExpiresInSeconds).toBeLessThanOrEqual(SESSION_IDLE_SECONDS);
+    expect(response.data?.sessionExpiresOn).toBeGreaterThanOrEqual(before + SESSION_IDLE_SECONDS * 1000);
+    expect(response.data?.sessionExpiresOn).toBeLessThanOrEqual(Date.now() + SESSION_IDLE_SECONDS * 1000);
   });
 });

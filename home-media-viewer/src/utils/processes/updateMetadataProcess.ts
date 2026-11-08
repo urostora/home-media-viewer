@@ -1,3 +1,4 @@
+import { retryRead } from '../prisma/retryRead';
 import type { Prisma } from '@prisma/client';
 import {
   validateProcessingOptions,
@@ -149,16 +150,20 @@ const run = async (input: ProcessingOptions = {}): Promise<MetadataProcessStatis
           const albums =
             options.fileId !== undefined
               ? []
-              : await prisma.album.findMany({
-                  where: { id: options.albumId, status: { in: ['Active', 'Disabled'] } },
-                  orderBy: { basePath: 'asc' },
-                });
+              : await retryRead(() =>
+                  prisma.album.findMany({
+                    where: { id: options.albumId, status: { in: ['Active', 'Disabled'] } },
+                    orderBy: { basePath: 'asc' },
+                  }),
+                );
           albumsCount = albums.length;
           if (options.albumId !== undefined && albums.length === 0) throw new ProcessingOptionsError('Album not found');
           if (options.fileId !== undefined) {
-            const file = await prisma.file.findFirst({
-              where: { id: options.fileId, status: { in: ['Active', 'Disabled'] } },
-            });
+            const file = await retryRead(() =>
+              prisma.file.findFirst({
+                where: { id: options.fileId, status: { in: ['Active', 'Disabled'] } },
+              }),
+            );
             if (file === null || file.isDirectory) throw new ProcessingOptionsError('Media file not found');
           }
           const scope: Prisma.FileWhereInput =

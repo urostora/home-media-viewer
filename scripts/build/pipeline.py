@@ -83,7 +83,9 @@ def build(mode, repository, ref, prefix, manifest=None, cache_directory=None, bu
             for role in ('background', 'scheduler'):
                 services[role] = {'image': temporary_images[0]}
             if mode == 'test':
-                services['testrunner'] = {'image': temporary_images[2]}
+                services['testrunner'] = {'image': temporary_images[2], 'environment': {
+                    'HMV_RESET_TEST_LOGIN_BUDGETS': 'true', 'HMV_TEST_DATABASE': '${MARIADB_DATABASE:?}',
+                }}
             if debian_mirror is not None:
                 for role in ('app', 'migration', *(['testrunner'] if mode == 'test' else [])):
                     services[role].setdefault('build', {})['args'] = {'DEBIAN_MIRROR': debian_mirror}

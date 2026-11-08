@@ -99,7 +99,10 @@ def main():
               }
               const applied=cp.spawnSync('npx',['--no-install','prisma','migrate','deploy'],{stdio:'inherit'});
               if(applied.status!==0) process.exit(applied.status || 1);
-              const {PrismaClient}=require('@prisma/client'); const p=new PrismaClient();
+              const {PrismaClient}=require('@prisma/client');
+              const {PrismaMariaDb}=require('@prisma/adapter-mariadb');
+              const u=new URL(process.env.DATABASE_URL);
+              const p=new PrismaClient({adapter:new PrismaMariaDb({host:u.hostname,port:Number(u.port||3306),user:decodeURIComponent(u.username),password:decodeURIComponent(u.password),database:decodeURIComponent(u.pathname.slice(1)),connectionLimit:1})});
               (async()=>{
                 await p.$executeRawUnsafe("INSERT INTO File (id,path,name,extension,metadataStatus,thumbnailStatus,metadataProcessedAt,thumbnailProcessedAt) VALUES ('i3-legacy-file','legacy.jpg','legacy','jpg','Processed','Processed','2001-01-01','2001-01-02')");
                 await p.$executeRawUnsafe("INSERT INTO FileMeta (id,fileId,metaKey,type,stringValue) VALUES ('i3-legacy-meta','i3-legacy-file','legacy-key','String','keep historical value')");
@@ -114,7 +117,10 @@ def main():
               }
               const applied=cp.spawnSync('npx',['--no-install','prisma','migrate','deploy'],{stdio:'inherit'});
               if(applied.status!==0) process.exit(applied.status || 1);
-              const {PrismaClient}=require('@prisma/client'); const p=new PrismaClient();
+              const {PrismaClient}=require('@prisma/client');
+              const {PrismaMariaDb}=require('@prisma/adapter-mariadb');
+              const u=new URL(process.env.DATABASE_URL);
+              const p=new PrismaClient({adapter:new PrismaMariaDb({host:u.hostname,port:Number(u.port||3306),user:decodeURIComponent(u.username),password:decodeURIComponent(u.password),database:decodeURIComponent(u.pathname.slice(1)),connectionLimit:1})});
               p.$executeRawUnsafe("INSERT INTO DiscoveryDirectory (id,path,entryCursor,cleanupCursor,lastServedAt) VALUES ('i4-existing-task','/unselected-historical-discovery','keep-entry','keep-id','2001-01-01')")
                 .catch(error=>{console.error('Discovery seed failed',error.code);process.exitCode=1}).finally(()=>p.$disconnect());
             """)
@@ -157,6 +163,19 @@ def main():
             return
 
         def measure(scenario, mode, iteration):
+            # Each scenario logs in independently. Reset only this guarded fixture's
+            # login budgets so repeated benchmarks do not measure rate limiting.
+            run('worker', 'node', '-r', 'ts-node/register/transpile-only', '-r', 'tsconfig-paths/register', '-e', """
+              const assert=require('node:assert/strict');
+              const u=new URL(process.env.DATABASE_URL);
+              assert.equal(u.hostname,'db'); assert.equal(u.pathname,'/benchmark');
+              const p=require('./src/utils/prisma/prismaImporter').default;
+              (async()=>{
+                assert.equal(await p.loginPermit.count({where:{owner:{not:null}}}),0);
+                await p.loginBudget.deleteMany({where:{key:{not:'global'}}});
+                await p.loginBudget.update({where:{key:'global'},data:{used:0,resetAt:new Date(0)}});
+              })().finally(()=>p.$disconnect());
+            """)
             print(f'{scenario}: run {iteration + 1}/{args.repeats}', flush=True)
             record = record_json(run('worker', 'node', '/benchmark/benchmark.cjs', mode))
             record.update(scenario=scenario, iteration=iteration + 1)

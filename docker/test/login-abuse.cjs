@@ -15,6 +15,7 @@ reqApp('ts-node').register({ project: path.join(app, 'tsconfig.json'), transpile
 reqApp('tsconfig-paths').register({ baseUrl: app, paths: { '@/*': ['src/*'] } });
 
 async function worker() {
+  const queryHooks = require('./prisma-hooks.cjs')(reqApp);
   const prisma = reqApp('./src/utils/prisma/prismaImporter.ts').default;
   const proof = reqApp('./src/utils/auth/loginProof.ts');
   const actual = proof.verifyLoginPassword;
@@ -32,7 +33,7 @@ async function worker() {
       process.send?.({ event: 'proof-end' });
     }
   };
-  prisma.$use((params, next) => {
+  queryHooks.use((params, next) => {
     if (
       (failStorage === true && params.action === 'queryRaw') ||
       (failStorage === 'write' &&
